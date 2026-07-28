@@ -1,133 +1,174 @@
 #!/usr/bin/env python3
 """
 公众号爆款封面数据查询脚本
+对接接口：POST https://redfox.hk/story/api/gzh/search/hotArticleNew
 """
 
 import os
 import sys
 import argparse
 import json
+from datetime import datetime
 
 import requests
 
 
-def fetch_wx_covers(keyword: str, debug: bool = False, max_retries: int = 3, start_date: str = None):
+def _do_fetch(keyword, headers, base_url, start_date=None, end_date=None, debug=False):
+    """执行单次 POST 请求，返回解析后的 dict
+
+    startDate / endDate 仅在用户显式指定时传入，否则由接口自行决定默认范围。
     """
-    调用接口获取公众号爆款封面数据
-
-    Args:
-        keyword: 搜索关键词（多个关键词用逗号分隔）
-        debug: 是否打印调试信息
-        max_retries: 最大重试次数
-        start_date: 开始日期，格式 yyyy-MM-dd
-
-    Returns:
-        dict: 包含3类爆款数据
-
-    Raises:
-        Exception: 当API调用失败时抛出异常
-    """
-    # 从环境变量获取 API Key
-    api_key = os.getenv("REDFOX_API_KEY")
-    if not api_key:
-        raise ValueError("缺少 API Key 配置，请设置环境变量 REDFOX_API_KEY。获取方式：前往 https://redfox.hk/settings/api-keys?source=github 申请，然后执行 export REDFOX_API_KEY=\"ak_xxxx...\"")
-
-    url = "https://redfox.hk/story/api/cozeSkill/getWxCozeSkillData"
-    params = {
+    json_body = {
         "keyword": keyword,
-        "source": "公众号爆款封面生成-GitHub"
+        "source": "公众号爆款封面生成-GitHub",
+        "pageSize": 50
     }
 
-    # 添加开始日期参数
+    # 时间参数：仅在用户显式指定时才传入
     if start_date:
-        params["startDate"] = start_date
+        json_body["startDate"] = start_date
+    if end_date:
+        json_body["endDate"] = end_date
 
+    if debug:
+        print(f"\n[DEBUG] POST {base_url}", file=sys.stderr)
+        print(f"[DEBUG] Body: {json_body}", file=sys.stderr)
+
+    try:
+        response = requests.post(base_url, json=json_body, headers=headers, timeout=30)
+
+        if debug:
+            print(f"[DEBUG] 状态码: {response.status_code}", file=sys.stderr)
+
+        if response.status_code >= 400:
+            print(f"[DEBUG] HTTP错误: {response.status_code} {response.text[:200]}", file=sys.stderr)
+            return None
+
+        result = response.json()
+
+        if result.get("code") == 2000:
+            data = result.get("data", {})
+            if debug:
+                articles = data.get("articles", [])
+                print(f"[DEBUG] 获取到 {len(articles)} 篇文章", file=sys.stderr)
+            return data
+        else:
+            if debug:
+                print(f"[DEBUG] 接口错误: {result.get('msg')}", file=sys.stderr)
+            return None
+
+    except Exception as e:
+        if debug:
+            print(f"[DEBUG] 请求异常: {e}", file=sys.stderr)
+        return None
+
+
+def fetch_wx_covers(keyword: str, debug: bool = False, start_date: str = None, end_date: str = None):
+    """
+    调用 hotArticleNew 接口获取公众号爆款文章数据
+
+    Args:
+        keyword: 搜索关键词（多个关键词用逗号分隔，空字符串表示全站热门）
+        debug: 是否打印调试信息
+        start_date: 开始日期，格式 yyyy-MM-dd
+        end_date: 结束日期，格式 yyyy-MM-dd（默认今天）
+
+    Returns:
+        dict: 包含 articles / latestHotArticles / hotTopics / relatedSearches
+    """
+    api_key = os.getenv("REDFOX_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "缺少 API Key 配置，请设置环境变量 REDFOX_API_KEY。"
+            "获取方式：前往 https://redfox.hk/settings/api-keys?source=github 申请，"
+            '然后执行 export REDFOX_API_KEY="ak_xxxx..."'
+        )
+
+    base_url = "https://redfox.hk/story/api/gzh/search/hotArticleNew"
     headers = {
         "X-API-KEY": api_key,
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
 
-    last_error = None
-    for attempt in range(max_retries):
-        try:
-            if debug:
-                print(f"\n=== DEBUG: 第 {attempt + 1} 次尝试 ===", file=sys.stderr)
-                print(f"URL: {url}", file=sys.stderr)
-                print(f"参数: {params}", file=sys.stderr)
+    # 关键词原样传入，单次调用
+    kw = keyword.strip() if keyword else ""
 
-            response = requests.get(url, params=params, headers=headers, timeout=30)
+    data = _do_fetch(kw, headers, base_url, start_date=start_date, end_date=end_date, debug=debug)
 
-            if debug:
-                print(f"状态码: {response.status_code}", file=sys.stderr)
-                print(f"响应长度: {len(response.text)} 字节", file=sys.stderr)
+    all_articles = data.get("articles", []) if data else []
+    all_latest_hot = data.get("latestHotArticles", []) if data else []
+    all_hot_topics = data.get("hotTopics", []) if data else []
+    all_related_searches = data.get("relatedSearches", []) if data else []
 
-            if response.status_code >= 400:
-                raise Exception(f"HTTP请求失败: 状态码 {response.status_code}, {response.text[:200]}")
+    # 按 id 去重
+    seen_ids = set()
+    unique_articles = []
+    for article in all_articles:
+        article_id = article.get("id")
+        if article_id and article_id not in seen_ids:
+            seen_ids.add(article_id)
+            unique_articles.append(article)
 
-            data = response.json()
+    unique_latest = []
+    for article in all_latest_hot:
+        article_id = article.get("id")
+        if article_id and article_id not in seen_ids:
+            seen_ids.add(article_id)
+            unique_latest.append(article)
 
-            if "data" not in data:
-                error_msg = data.get("msg", "未知错误")
-                raise Exception(f"API 错误: {error_msg}")
+    seen_topics = set()
+    unique_topics = []
+    for topic in all_hot_topics:
+        topic_name = topic.get("name", "") or topic.get("topic", "")
+        if topic_name and topic_name not in seen_topics:
+            seen_topics.add(topic_name)
+            unique_topics.append(topic)
 
-            result_data = data.get("data", {})
-
-            if debug:
-                print("=== DEBUG: API 返回的 data 字段键 ===", file=sys.stderr)
-                print(json.dumps(list(result_data.keys()), ensure_ascii=False, indent=2), file=sys.stderr)
-
-            return {
-                "keyword": keyword,
-                "low_fan_explosive": result_data.get("lowPowderExplosiveArticle", []),
-                "ten_w_reading": result_data.get("tenWReadingRank", []),
-                "original_rank": result_data.get("originalRank", [])
-            }
-
-        except requests.exceptions.RequestException as e:
-            last_error = f"请求失败: {str(e)}"
-            if debug:
-                print(f"  错误: {type(e).__name__}: {str(e)[:100]}", file=sys.stderr)
-            import time
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
-            continue
-        except Exception as e:
-            last_error = str(e)
-            if debug:
-                print(f"  错误: {type(e).__name__}: {str(e)[:100]}", file=sys.stderr)
-            import time
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
-            continue
-
-    raise Exception(f"{last_error}（已尝试 {max_retries} 次）")
+    return {
+        "keyword": keyword,
+        "articles": unique_articles,
+        "latestHotArticles": unique_latest,
+        "hotTopics": unique_topics[:10],
+        "relatedSearches": all_related_searches[:10],
+    }
 
 
-def get_cover_urls(data, max_per_category=5):
-    """提取所有封面图URL"""
+def get_cover_urls(data, max_items=20):
+    """
+    从 articles 数组提取封面图 URL
+
+    hotArticleNew 接口封面图字段名为 imageUrl（旧接口为 coverUrl），此处做双字段兑容。
+    """
     urls = []
-    categories = [
-        ('low_fan_explosive', '低粉爆文榜'),
-        ('ten_w_reading', '10w+阅读榜'),
-        ('original_rank', '原创榜')
-    ]
-
-    for key, name in categories:
-        items = data.get(key, [])[:max_per_category]
-        for item in items:
-            cover_url = item.get('coverUrl', '')
-            photo_id = item.get('photoId', '')
-            title = item.get('title', '')[:20]
-            if cover_url and photo_id:
-                urls.append({
-                    'category': name,
-                    'title': title,
-                    'photo_id': photo_id,
-                    'cover_url': cover_url,
-                    'link': f"https://mp.weixin.qq.com/s/{photo_id}"
-                })
+    items = data.get("articles", [])[:max_items]
+    for item in items:
+        # 优先取 imageUrl（新接口），兑容 coverUrl（旧接口）
+        cover_url = item.get("imageUrl", "") or item.get("coverUrl", "")
+        article_id = item.get("id", "")
+        title = (item.get("title", "") or "")[:20]
+        url = item.get("url", "")
+        if cover_url:
+            urls.append({
+                "title": title,
+                "article_id": article_id,
+                "cover_url": cover_url,
+                "link": url,
+            })
     return urls
+
+
+def format_num(n):
+    """格式化数字：10000 → 1.0w"""
+    if not n:
+        return "0"
+    try:
+        n = int(n)
+    except (ValueError, TypeError):
+        return str(n)
+    if n >= 10000:
+        return f"{n / 10000:.1f}w"
+    return str(n)
 
 
 def format_output(data: dict, max_items: int = None, start_date: str = None):
@@ -135,114 +176,66 @@ def format_output(data: dict, max_items: int = None, start_date: str = None):
     格式化输出爆款数据（表格形式）
 
     Args:
-        data: 原始数据
-        max_items: 每类爆款数据最多展示数量，None 表示展示所有数据
-        start_date: 开始日期，格式 yyyy-MM-dd，用于计算统计时间范围
+        data: 原始数据（含 articles 数组）
+        max_items: 最多展示条数，None 表示展示所有
+        start_date: 开始日期，用于计算统计时间范围
     """
-    from datetime import datetime, timedelta
 
-    # 计算统计时间范围
     def get_time_range(start_date):
         if start_date:
             try:
-                start = datetime.strptime(start_date, '%Y-%m-%d')
-                end = datetime.now()
-                days = (end - start).days
-                if days <= 1:
-                    return "近1天"
-                elif days <= 7:
-                    return f"近{days}天"
-                else:
-                    return f"近{days}天"
-            except:
-                return "近30天"
+                start = datetime.strptime(start_date, "%Y-%m-%d")
+                days = (datetime.now() - start).days
+                return f"近{max(days, 1)}天"
+            except Exception:
+                pass
         return "近30天"
 
     time_range = get_time_range(start_date)
 
     def process_title(item):
-        """处理标题：转义特殊字符，空标题使用summary替代"""
-        title = item.get('title', '')
-        # 如果标题为空，尝试使用 summary 字段
-        if not title or title.strip() == '':
-            summary = item.get('summary', '')
+        title = item.get("title", "") or ""
+        if not title.strip():
+            summary = item.get("summary", "") or ""
             if summary:
-                # 移除 summary 中的换行符并截取前30个字符
-                title = summary.replace('\n', ' ').replace('\r', ' ').strip()[:30]
+                title = summary.replace("\n", " ").replace("\r", " ").strip()[:30]
                 if len(summary) > 30:
-                    title = title + '...'
-
-        if not title or title.strip() == '':
-            title = '无标题'
-
-        # 转义 Markdown 表格特殊字符（|）
-        title = title.replace('|', '\\|')
-        # 移除换行符
-        title = title.replace('\n', ' ').replace('\r', ' ')
-        # 移除多余空格
-        title = ' '.join(title.split())
-
-        # 截断过长标题
+                    title += "..."
+        if not title.strip():
+            title = "无标题"
+        title = title.replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+        title = " ".join(title.split())
         if len(title) > 30:
             title = title[:30] + "..."
-
         return title
 
     def format_time(item):
-        """格式化发布时间为 X月X日"""
-        pub_time = item.get('publicTime', '')
+        pub_time = item.get("publicTime", "") or ""
         if pub_time:
-            # publicTime 格式: "2026-03-06 13:03:56"
             try:
                 month = int(pub_time[5:7])
                 day = int(pub_time[8:10])
                 return f"{month}月{day}日"
-            except:
+            except Exception:
                 pass
-        return '--'
-
-    def get_latest_date(data):
-        """获取数据中最新的发布日期"""
-        all_items = []
-        for key in ['low_fan_explosive', 'ten_w_reading', 'original_rank']:
-            all_items.extend(data.get(key, []))
-
-        latest_date = None
-        for item in all_items:
-            pub_time = item.get('publicTime', '')
-            if pub_time:
-                try:
-                    date_str = pub_time[:10]  # 取 "YYYY-MM-DD" 部分
-                    if latest_date is None or date_str > latest_date:
-                        latest_date = date_str
-                except:
-                    pass
-        return latest_date
+        return "--"
 
     output = []
+    articles = data.get("articles", [])
 
-    # 检查数据日期
-    latest_date = get_latest_date(data)
+    # 按 clicksCount 降序排序
+    def get_clicks(item):
+        try:
+            return int(item.get("clicksCount", 0) or 0)
+        except (ValueError, TypeError):
+            return 0
 
-    # 按 photoId 去重（API 返回数据可能有重复）
-    def dedup_items(items):
-        seen = set()
-        result = []
-        for item in items:
-            photo_id = item.get('photoId', '')
-            if photo_id and photo_id not in seen:
-                seen.add(photo_id)
-                result.append(item)
-        return result
+    articles_sorted = sorted(articles, key=get_clicks, reverse=True)
+    if max_items is not None:
+        articles_sorted = articles_sorted[:max_items]
 
-    # 检查是否有任何数据
-    low_fan_items = dedup_items(data.get("low_fan_explosive", []))
-    ten_w_items = dedup_items(data.get("ten_w_reading", []))
-    original_items = dedup_items(data.get("original_rank", []))
+    total_count = len(articles)
 
-    total_count = len(low_fan_items) + len(ten_w_items) + len(original_items)
-
-    # 如果所有类型都没有数据，输出友好提示
     if total_count == 0:
         keyword = data.get("keyword", "")
         output.append(f"# 公众号爆款数据分析报告\n\n**关键词**：{keyword}\n\n")
@@ -261,205 +254,85 @@ def format_output(data: dict, max_items: int = None, start_date: str = None):
         output.append("*数据来源：公众号爆款雷达，每日更新最新热门内容*\n")
         return "\n".join(output)
 
-    # 1. 低粉爆文榜
-    items = low_fan_items
-    if max_items is not None:
-        items = items[:max_items]
+    output.append(f"\n### 爆款文章（{time_range}，按阅读数排序，共 {total_count} 条）\n")
+    output.append("| 序号 | 发布时间 | 标题 | 作者 | 阅读数 | 在看数 |")
+    output.append("|------|----------|------|------|--------|--------|")
 
-    output.append(f"\n### - **低粉爆文榜**（粉丝量较少的账号中爆款文章）")
-    output.append("\n")
+    for idx, item in enumerate(articles_sorted, 1):
+        author = item.get("author", "") or "未知"
+        title = process_title(item)
+        url = item.get("url", "")
+        title_with_link = f"[{title}]({url})" if url else title
+        pub_time = format_time(item)
+        clicks = format_num(item.get("clicksCount", 0))
+        watches = format_num(item.get("watchCount", 0))
 
-    if not items:
-        output.append("(无数据)\n")
-    else:
-        output.append("| 封面 | 序号 | 发布时间 | 标题 | 作者 | 阅读数 | 点赞数 | 在看数 |")
-        output.append("|------|------|----------|------|------|--------|--------|--------|")
-
-        for idx, item in enumerate(items, 1):
-            user_name = item.get('userName', '未知')
-            fans = item.get('fans', '未知')
-
-            # 封面缩略图
-            cover_url = item.get('coverUrl', '')
-            if cover_url:
-                cover_str = f"![]({cover_url})"
-            else:
-                cover_str = "--"
-
-            # 作者信息
-            author_str = f"{user_name}（粉丝：{fans}）"
-
-            # 标题添加链接
-            title = process_title(item)
-            ori_url = item.get('oriUrl', '')
-            if ori_url:
-                title_with_link = f"[{title}]({ori_url})"
-            else:
-                title_with_link = title
-
-            pub_time = format_time(item)
-
-            # 获取互动数据（字符串类型）
-            clicks = item.get('clicksCount', '--')
-            likes = item.get('likeCount', '--')
-            watches = item.get('watchCount', '--')
-
-            output.append(f"| {cover_str} | {idx} | {pub_time} | {title_with_link} | {author_str} | {clicks} | {likes} | {watches} |")
-
-    # 2. 10w+阅读榜
-    items = ten_w_items
-    if max_items is not None:
-        items = items[:max_items]
-
-    output.append(f"\n### - **10w+阅读榜**（阅读量超过10万的爆款文章）")
-    output.append("\n")
-
-    if not items:
-        output.append("(无数据)\n")
-    else:
-        output.append("| 封面 | 序号 | 发布时间 | 标题 | 作者 | 阅读数 | 点赞数 | 在看数 |")
-        output.append("|------|------|----------|------|------|--------|--------|--------|")
-
-        for idx, item in enumerate(items, 1):
-            user_name = item.get('userName', '未知')
-            fans = item.get('fans', '未知')
-
-            # 封面缩略图
-            cover_url = item.get('coverUrl', '')
-            if cover_url:
-                cover_str = f"![]({cover_url})"
-            else:
-                cover_str = "--"
-
-            # 作者信息
-            author_str = f"{user_name}（粉丝：{fans}）"
-
-            # 标题添加链接
-            title = process_title(item)
-            ori_url = item.get('oriUrl', '')
-            if ori_url:
-                title_with_link = f"[{title}]({ori_url})"
-            else:
-                title_with_link = title
-
-            pub_time = format_time(item)
-
-            # 获取互动数据（字符串类型）
-            clicks = item.get('clicksCount', '--')
-            likes = item.get('likeCount', '--')
-            watches = item.get('watchCount', '--')
-
-            output.append(f"| {cover_str} | {idx} | {pub_time} | {title_with_link} | {author_str} | {clicks} | {likes} | {watches} |")
-
-    # 3. 原创榜
-    items = original_items
-    if max_items is not None:
-        items = items[:max_items]
-
-    output.append(f"\n### - **原创榜**（优质原创爆款文章）")
-    output.append("\n")
-
-    if not items:
-        output.append("(无数据)\n")
-    else:
-        output.append("| 封面 | 序号 | 发布时间 | 标题 | 作者 | 阅读数 | 点赞数 | 在看数 |")
-        output.append("|------|------|----------|------|------|--------|--------|--------|")
-
-        for idx, item in enumerate(items, 1):
-            user_name = item.get('userName', '未知')
-            fans = item.get('fans', '未知')
-
-            # 封面缩略图
-            cover_url = item.get('coverUrl', '')
-            if cover_url:
-                cover_str = f"![]({cover_url})"
-            else:
-                cover_str = "--"
-
-            # 作者信息
-            author_str = f"{user_name}（粉丝：{fans}）"
-
-            # 标题添加链接
-            title = process_title(item)
-            ori_url = item.get('oriUrl', '')
-            if ori_url:
-                title_with_link = f"[{title}]({ori_url})"
-            else:
-                title_with_link = title
-
-            pub_time = format_time(item)
-
-            # 获取互动数据（字符串类型）
-            clicks = item.get('clicksCount', '--')
-            likes = item.get('likeCount', '--')
-            watches = item.get('watchCount', '--')
-
-            output.append(f"| {cover_str} | {idx} | {pub_time} | {title_with_link} | {author_str} | {clicks} | {likes} | {watches} |")
+        output.append(f"| {idx} | {pub_time} | {title_with_link} | {author} | {clicks} | {watches} |")
 
     return "\n".join(output)
 
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description='公众号爆款封面数据查询工具')
-    parser.add_argument('--keyword', required=True, help='搜索关键词')
-    parser.add_argument('--max-items', type=int, default=10,
-                       help='每类爆款内容最多展示数量（默认10条）')
-    parser.add_argument('--output-format', choices=['text', 'json', 'markdown'],
-                       default='json', help='输出格式：text（文本表格）、json（JSON格式，默认）或 markdown（Markdown格式）')
-    parser.add_argument('--output-file', type=str, default=None,
-                       help='输出文件路径')
-    parser.add_argument('--start-date', type=str, default=None,
-                       help='开始日期，格式 yyyy-MM-dd（默认最近30天）')
-    parser.add_argument('--debug', action='store_true', help='启用调试模式')
-    parser.add_argument('--max-retries', type=int, default=3,
-                       help='最大重试次数（默认3次）')
+    parser = argparse.ArgumentParser(description="公众号爆款封面数据查询工具")
+    parser.add_argument("--keyword", required=True, help="搜索关键词（多个用逗号分隔，空字符串查全站热门）")
+    parser.add_argument(
+        "--max-items",
+        type=int,
+        default=20,
+        help="最多展示文章数量（默认20条）",
+    )
+    parser.add_argument(
+        "--output-format",
+        choices=["text", "json", "markdown"],
+        default="json",
+        help="输出格式：text / json（默认）/ markdown",
+    )
+    parser.add_argument("--output-file", type=str, default=None, help="输出文件路径")
+    parser.add_argument("--start-date", type=str, default=None, help="开始日期，格式 yyyy-MM-dd（默认不传，接口自行决定）")
+    parser.add_argument("--end-date", type=str, default=None, help="结束日期，格式 yyyy-MM-dd（默认不传，接口自行决定）")
+    parser.add_argument("--debug", action="store_true", help="启用调试模式")
 
     args = parser.parse_args()
 
     try:
-        data = fetch_wx_covers(args.keyword, debug=args.debug, max_retries=args.max_retries, start_date=args.start_date)
+        data = fetch_wx_covers(
+            args.keyword,
+            debug=args.debug,
+            start_date=args.start_date,
+            end_date=args.end_date,
+        )
 
         # 生成输出内容
-        if args.output_format == 'json':
+        if args.output_format == "json":
             output_content = json.dumps(data, ensure_ascii=False, indent=2)
-        elif args.output_format == 'markdown':
-            # Markdown 格式添加标题
+        elif args.output_format == "markdown":
             markdown_header = f"# 公众号爆款数据分析报告\n\n**关键词**：{args.keyword}\n\n"
             output_content = markdown_header + format_output(data, max_items=args.max_items, start_date=args.start_date)
         else:
             output_content = format_output(data, max_items=args.max_items, start_date=args.start_date)
 
-        # 确定输出文件路径（默认不输出文件，只输出到控制台）
         output_file = args.output_file
 
-        # 输出到文件或控制台
         if output_file:
-            with open(output_file, 'w', encoding='utf-8') as f:
+            with open(output_file, "w", encoding="utf-8") as f:
                 f.write(output_content)
             print(f"✓ 结果已保存到: {output_file}", file=sys.stderr)
             print(f"✓ 关键词: {args.keyword}", file=sys.stderr)
-            # 统计数据
-            total_items = (
-                len(data.get('low_fan_explosive', [])) +
-                len(data.get('ten_w_reading', [])) +
-                len(data.get('original_rank', []))
-            )
-            print(f"✓ 总计: {total_items} 条数据", file=sys.stderr)
-            # 显示每类数据量
-            print(f"  - 低粉爆文榜: {len(data.get('low_fan_explosive', []))} 条", file=sys.stderr)
-            print(f"  - 10w+阅读榜: {len(data.get('ten_w_reading', []))} 条", file=sys.stderr)
-            print(f"  - 原创榜: {len(data.get('original_rank', []))} 条", file=sys.stderr)
-            # 输出封面图URL供后续分析
-            cover_urls = get_cover_urls(data, max_per_category=3)
+            total = len(data.get("articles", []))
+            print(f"✓ 总计: {total} 条数据", file=sys.stderr)
+            cover_urls = get_cover_urls(data, max_items=3)
             if cover_urls:
                 print(f"\n=== 封面图URL（用于风格分析）===", file=sys.stderr)
                 for i, item in enumerate(cover_urls, 1):
-                    print(f"{i}. [{item['category']}] {item['title']}: {item['cover_url']}", file=sys.stderr)
+                    print(f"{i}. {item['title']}: {item['cover_url']}", file=sys.stderr)
+            else:
+                print("\n⚠️ 接口未返回 imageUrl/coverUrl 字段，无法提取封面图URL", file=sys.stderr)
         else:
             print(output_content)
-            # 统计数据输出到 stderr
             print(f"\n✓ 关键词: {args.keyword}", file=sys.stderr)
+            total = len(data.get("articles", []))
+            print(f"✓ 总计: {total} 条数据", file=sys.stderr)
 
         print(f"\n另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可发送邮件至 redfoxdata@proton.me 对接咨洵")
 

@@ -79,7 +79,8 @@ python3 scripts/fetch_explosive_covers.py --keyword ""
 ```
 
 - 最多5个关键词，总长度≤200字符
-- 默认近30天（不传 startDate）；用户指定"近N天"时 startDate = 今天 - (N-1)天
+- 关键词整体一次传入接口，不做拆分循环调用
+- 时间参数默认不传（接口自行决定默认范围）；用户指定"近N天"时 startDate = 今天 - (N-1)天
 
 ### 步骤3：智能匹配筛选
 
@@ -92,10 +93,10 @@ python3 scripts/fetch_explosive_covers.py --keyword ""
 
 ### 步骤4：AI图像分析与特征提取
 
-1. 解析脚本返回的JSON数据（含 `low_fan_explosive`、`ten_w_reading`、`original_rank` 三个数组）
-2. 提取 `coverUrl` 字段合并为封面候选池——**直接使用原始值，不做任何修改**
+1. 解析脚本返回的JSON数据（含 `articles` 文章数组，以及 `latestHotArticles`、`hotTopics`、`relatedSearches` 辅助数据）
+2. 提取 `imageUrl` 字段合并为封面候选池——**直接使用原始值，不做任何修改**（新接口字段名为 `imageUrl`，旧接口为 `coverUrl`，脚本已做兑容）
 3. 按互动量从高到低取前20条
-4. **逐张分析封面图**（使用原生图片理解能力，直接访问coverUrl）
+4. **逐张分析封面图**（使用原生图片理解能力，直接访问 imageUrl）
 
 **7维度分析**：
 
@@ -118,19 +119,29 @@ python3 scripts/fetch_explosive_covers.py --keyword ""
 
 ### 步骤5：输出HTML分析报告与设计方案
 
-必须使用 `references/report_template.md` 模板，禁止自行编写HTML。
+使用 `references/report_template.html`（JS渲染型模板），只需注入 JSON 数据，禁止在输出时临时生成完整 HTML。
 
-1. 读取模板 → 填充数据 → 写入 `./爆款封面分析报告_{关键词}.html`
-2. 生成后必须立即读取并展示HTML内容
+1. 复制模板到输出文件：`cp references/report_template.html ./爆款封面分析报告_{关键词}.html`
+2. 将分析结果组装为 JSON 对象（格式见 `references/report_template.md`）
+3. 用 SearchReplace 在**输出文件**（非模板原文件）中将 `__REPORT_DATA__` 的默认空值替换为实际 JSON
+4. 执行 `open ./爆款封面分析报告_{关键词}.html` 在浏览器中打开
+
+**JSON 结构**（只需填充以下字段，无需生成任何 HTML）：
+```json
+{
+  "keyword": "用户关键词",
+  "analysisCount": 20,
+  "styles": [{ "name": "", "count": 0, "coreVisual": "", "features": "", "covers": [] }],
+  "plans": [{ "name": "", "coreVisual": "", "case": { "imageUrl": "", "url": "", "title": "", "author": "", "reads": "" }, "prompt": "" }]
+}
+```
 
 | 要求 | 说明 |
 |------|------|
-| 模板 | 读取 `references/report_template.md` |
-| 结构 | 分析报告+设计方案合并在同一个HTML文件中 |
-| 防盗链 | `<meta name="referrer" content="no-referrer">` |
+| 模板 | `references/report_template.html`（JS 渲染型，样式/防盗链已内置） |
+| 数据格式 | 详见 `references/report_template.md` JSON 数据结构章节 |
 | 封面展示 | 按风格类型分类，每类最多5张 |
-| 案例参考 | coverUrl原始值 + 标题(oriUrl链接) + 作者 + 仅阅读数 |
-| 样式 | 所有样式内联，禁止hover效果 |
+| 案例参考 | imageUrl 原始值 + 标题(url链接) + 作者 + 仅阅读数 |
 | 生图提示词 | 严格遵循 2.35:1 横版比例 |
 
 ### 步骤6：用户选择方案并生成封面图
@@ -151,7 +162,7 @@ python3 scripts/fetch_explosive_covers.py --keyword ""
 |--------|------|
 | 风格类型 | 每类有：名称、频次、核心视觉、关键特征、封面示例 |
 | 三个方案 | 各有风格名称、核心视觉、案例参考（不重复）、生图提示词 |
-| 封面图链接 | coverUrl使用原始值 |
+- 封面图链接使用 imageUrl 字段原始值
 | 图片过滤 | 无空白图片、无小尺寸图片 |
 | 用户交互 | 已询问方案选择并等待回复 |
 
@@ -160,5 +171,5 @@ python3 scripts/fetch_explosive_covers.py --keyword ""
 - 封面图容器比例 2.35:1 (900x383)，使用 `object-fit: cover` + `object-position: center` 自适应截取
 - HTML添加防盗链 meta 标签 `<meta name="referrer" content="no-referrer">`
 - 案例参考仅保留阅读数（clicksCount），删除点赞和在看
-- 封面图用 `<a>` 标签包裹可点击跳转大图，方案标题用 oriUrl 链接
+- 封面图用 `<a>` 标签包裹可点击跳转大图，方案标题用 url 字段链接
 - 图像分析使用原生图片理解能力，直接访问封面URL，逐张分析
