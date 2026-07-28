@@ -29,26 +29,41 @@
 请提供你想分析的小红书号（在小红书App个人主页，名称下方的一串字符，如纯数字或字母数字组合，非昵称）。"
 
 ### 步骤2：查询数据
+
+**⚠️ 重要：sync冷却期限制**
+- 当账号处于同步冷却期（调用sync_notes后15分钟内），脚本返回 `query_type: "sync_cooldown"`
+- **冷却期内禁止调用query接口**，直接返回提示给用户：
+  ```
+  数据同步中，请等待约N分钟后再查询，如果急需可联系工作人员邮箱redfoxdata@proton.me
+  ```
+- 脚本内部已实现冷却期检查，返回冷却期状态时不会调用API
+
 ```bash
 python scripts/xiaohongshu_analyzer.py query --user_ids "账号ID"
 ```
 - 脚本自动保存 `output/raw_data.json`
 - 输出结构化JSON结果，包含评分和指标
 
+**⚠️ 重要限制机制**：
+1. **sync冷却期**：调用sync_notes后15分钟内，该账号ID处于冷却期，脚本返回 `query_type: "sync_cooldown"`
+   - **冷却期内禁止调用接口**，直接告知用户：「数据同步中，请等待约N分钟后再查询，如果急需可联系工作人员邮箱redfoxdata@proton.me」
+2. **失败阈值限制**：同一账号ID参数6小时内失败3次后，脚本返回 `query_type: "threshold_exceeded"`
+   - 告知用户：「当前账号ID已超过失败阈值，请联系客服邮箱redfoxdata@proton.me处理」
+
 **⚠️ 账号数据为空处理（未查询到账号）**：
-- 如果脚本返回 `status: "error"` 且提示未查询到账号，说明该账号不在数据库中
+- 如果脚本返回 `query_type: "not_found"`，说明该账号不在数据库中
 - **立即停止后续步骤**，执行以下处理：
   1. 调用数据同步接口：
      ```bash
      python scripts/xiaohongshu_analyzer.py sync_notes --red_ids "用户输入的账号ID"
      ```
      - 同步接口：`https://redfox.hk/story/api/xhsUser/syncUserNotes`，参数 `redId` 从用户输入中获取
+     - **注意**：如果账号已在sync冷却期内，sync_notes也会返回冷却期提示，无需重复调用接口
   2. 输出提示：
      ```
-     非常抱歉，未查询到该账号。请检查账号id是否有误，若输入准确，可能当前账号粉丝低于1000或者近期发文数据未达到收录标准。
-     我们将为你实时去采集数据，30min后向您推送新的诊断报告，请问是否接收？
-     1. 接收推送
-     2. 暂不接收
+     当前未查询到该账号相关数据，是当前数据覆盖范围不足导致的。不过别担心，我们将提供账号数据去实时获取；
+     1.接收实时获取，大概需要30分钟，自动推送诊断报告
+     2.下次再说
      ```
   3. 用户输入编号"1"或回复"接收"后，执行订阅流程：
      a. **【必须】创建日程任务**（使用calendar_create工具）：
@@ -56,18 +71,18 @@ python scripts/xiaohongshu_analyzer.py query --user_ids "账号ID"
         - dtstart: 当前时间+30分钟（格式YYYYMMDDHHMM）
         - description: 重新查询账号数据并推送诊断报告（python scripts/xiaohongshu_analyzer.py query --user_ids <用户输入的账号ID>）
      b. 输出提示：「订阅成功！系统将在30分钟后自动向您推送该账号的诊断报告，请耐心等待」
-  4. 用户输入编号"2"或回复"暂不接收"，结束本次分析
+  4. 用户输入编号"2"或回复"下次再说"，结束本次分析
 
 **⚠️ 作品数据为空处理（直接进入订阅流程）**：
 - 如果查询到账号但 `works` 为空数组，脚本返回 `query_type: "need_sync"` 和 `need_sync` 字段
 - **立即停止后续步骤**，不输出分析报告，直接进入订阅流程：
-  1. 输出提示（xxx为账号昵称）：
+  1. 输出提示：
      ```
-     为您获取作品中，30分钟后会更新数据后可向您推荐，请问是否订阅"xxx"账号？
-     1. 订阅账号xxx
-     2. 暂不订阅
+     当前未查询到该账号相关数据，是当前数据覆盖范围不足导致的。不过别担心，我们将提供账号数据去实时获取；
+     1.接收实时获取，大概需要30分钟，自动推送诊断报告
+     2.下次再说
      ```
-  2. 用户输入编号"1"或回复"订阅"后，执行订阅流程：
+  2. 用户输入编号"1"或回复"接收实时获取"后，执行订阅流程：
      a. **【必须】创建日程任务**（使用calendar_create工具）：
         - summary: 推送xxx账号诊断报告
         - dtstart: 当前时间+30分钟（格式YYYYMMDDHHMM）
@@ -77,12 +92,8 @@ python scripts/xiaohongshu_analyzer.py query --user_ids "账号ID"
         python scripts/xiaohongshu_analyzer.py sync_notes --red_ids "redId"
         ```
      c. 同步接口：`https://redfox.hk/story/api/xhsUser/syncUserNotes`，参数 `redId` 从账号信息中获取
-     d. 输出提示：「订阅成功！系统将在30分钟后自动向您推送"xxx"账号的诊断报告，请耐心等待」
-  3. 用户输入编号"2"或回复"仍然执行分析"：
-     - 继续执行分析流程
-     - 在报告开头提示：「该账号暂未获取到近7天作品」
-     - 输出完整的分析报告（爆文能力、更新产能等模块显示为"暂无作品数据"）
-  4. 用户输入编号"3"或回复"暂不订阅"，结束本次分析
+     d. 输出提示：「订阅成功！系统将在30分钟后自动向您推送该账号的诊断报告，请耐心等待」
+  3. 用户输入编号"2"或回复"下次再说"，结束本次分析
 
 **订阅推送机制（智能体执行）**：
 - 使用calendar_create工具创建日程任务
@@ -102,6 +113,11 @@ python scripts/xiaohongshu_analyzer.py query --user_ids "账号ID"
 3. WebSearch 搜索抖音/B站/公众号等跨平台布局
 
 ### 步骤4：在对话中输出诊断报告
+**账号作品模块提示（必须输出）**：在展示任何小红书作品链接之前，必须先输出以下提示：
+```
+！！！受小红书风控规则限制，部分作品链接可能无法正常跳转，您可复制对应作品标题前往小红书搜索查看，感谢理解🙇‍♀️🙇‍♀️
+```
+
 基于脚本输出的数据和WebSearch结果，直接在对话中输出七维度诊断报告。
 - **格式要求**：严格按照 `references/report_template.md` 的格式输出
 - **输出位置**：直接在对话中输出，不创建markdown文件
