@@ -16,6 +16,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from collections import Counter, defaultdict
@@ -29,12 +30,17 @@ except ImportError:
     HAS_REQUESTS = False
 
 # ─── 配置 ─────────────────────────────────────────────────────────────────────────
-API_URL = "https://redfox.hk/story/api/dyData/searchWorkList"
+API_URL = "https://redfox.hk/story/api/dy/data/listWorkByAccount"
 ENV_KEY = "REDFOX_API_KEY"
-SOURCE = "抖音账号订阅-GitHub"
 
 SUBSCRIPTIONS_FILE = Path.home() / ".qoder" / "douyin_subscriptions.json"
 MAX_SUBSCRIPTIONS = 20
+
+# 失败计数文件（规则3：同一参数 6h 内 3 次失败后拒绝调用）
+FAILURES_FILE = Path.home() / ".qoder" / "douyin_subscribe_failures.json"
+SUPPORT_EMAIL = "redfoxdata@proton.me"
+RATE_LIMIT_MAX_FAILURES = 3
+RATE_LIMIT_WINDOW_HOURS = 6
 
 DEFAULT_CATEGORIES = ["竞对账号", "同类账号", "关注账号"]
 
@@ -208,32 +214,132 @@ def list_subscriptions():
 
 
 # ─── 数据获取 ──────────────────────────────────────────────────────────────────────
+# ─── 失败计数 / 频率限制（规则 3）───────────────────────────────────────────────
+def _load_failures():
+    """加载失败记录"""
+    if FAILURES_FILE.exists():
+        try:
+            return json.loads(FAILURES_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+
+def _save_failures(failures):
+    """保存失败记录"""
+    FAILURES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    FAILURES_FILE.write_text(json.dumps(failures, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _check_rate_limit(account_id):
+    """检查是否超过失败阈值（6h 内 3 次失败），返回 (blocked: bool, message: str)"""
+    failures = _load_failures()
+    key = account_id.strip().lower()
+    record = failures.get(key)
+    if not record:
+        return False, ""
+
+    last_fail_time = record.get("lastFailTime", 0)
+    fail_count = record.get("count", 0)
+
+    # 距上次失败超过 6 小时，计数归零
+    if time.time() - last_fail_time > RATE_LIMIT_WINDOW_HOURS * 3600:
+        del failures[key]
+        _save_failures(failures)
+        return False, ""
+
+    # 6h 内失败 >= 3 次，拒绝调用
+    if fail_count >= RATE_LIMIT_MAX_FAILURES:
+        return True, f"当前账号「{account_id}」订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理"
+
+    return False, ""
+
+
+def _record_failure(account_id):
+    """记录一次失败"""
+    failures = _load_failures()
+    key = account_id.strip().lower()
+    record = failures.get(key, {"count": 0, "lastFailTime": 0})
+
+    # 距上次失败超过 6 小时，重置计数
+    if time.time() - record.get("lastFailTime", 0) > RATE_LIMIT_WINDOW_HOURS * 3600:
+        record = {"count": 0, "lastFailTime": 0}
+
+    record["count"] += 1
+    record["lastFailTime"] = time.time()
+    failures[key] = record
+    _save_failures(failures)
+
+
+def _record_success(account_id):
+    """成功后计数归零"""
+    failures = _load_failures()
+    key = account_id.strip().lower()
+    if key in failures:
+        del failures[key]
+        _save_failures(failures)
+
+
+def _filter_works_by_date(works, date_str=None, date_start=None, date_end=None):
+    """客户端按发布时间过滤作品（新 API 不支持服务端日期过滤）"""
+    if not date_str and not (date_start and date_end):
+        return works
+
+    filtered = []
+    for w in works:
+        pub = w.get("publishTime") or ""
+        if not pub:
+            continue
+        pub_date = pub[:10]  # YYYY-MM-DD
+        if date_start and date_end:
+            if date_start <= pub_date <= date_end:
+                filtered.append(w)
+        elif date_str:
+            if pub_date == date_str:
+                filtered.append(w)
+    return filtered
+
+
+def _map_work_fields(work):
+    """将新 API 字段映射为脚本内部统一字段名，保持下游逻辑不变"""
+    work["title"] = work.get("content") or work.get("title") or ""
+    work["workUrl"] = work.get("opusUrl") or work.get("workUrl") or ""
+    work["accountName"] = work.get("authorName") or work.get("accountName") or ""
+    work["secUid"] = work.get("authorSecUid") or work.get("secUid") or ""
+    work["followerCount"] = work.get("authorFansCount") or work.get("followerCount")
+    return work
+
+
 def fetch_account_works(session, account_id, date_str=None, date_start=None, date_end=None):
-    """获取单个抖音账号的作品列表 — 仅通过 accountId 查询"""
+    """获取单个抖音账号的作品列表 — 通过广域库 API（listWorkByAccount）"""
+    if not account_id:
+        warn("无效的抖音号: 空")
+        return []
+
+    # 规则3：检查频率限制
+    blocked, block_msg = _check_rate_limit(account_id)
+    if blocked:
+        warn(block_msg)
+        return "__rate_limited__"
+
     payload = {
-        "accountId": account_id,
-        "accountName": "",
-        "offset": 0,
-        "sortType": "_2",
-        "publishTimeStart": "",
-        "publishTimeEnd": "",
-        "source": SOURCE,
+        "uniqueName": account_id,
+        "userId": "",
+        "shortId": "",
+        "pageNum": 1,
+        "pageSize": 10,
     }
-    if date_start and date_end:
-        payload["publishTimeStart"] = f"{date_start} 00:00:00"
-        payload["publishTimeEnd"] = f"{date_end} 23:59:59"
-    elif date_str:
-        payload["publishTimeStart"] = f"{date_str} 00:00:00"
-        payload["publishTimeEnd"] = f"{date_str} 23:59:59"
 
     try:
         resp = session.post(API_URL, json=payload, timeout=20)
         result = resp.json()
     except requests.exceptions.Timeout:
         warn(f"请求超时: 抖音号 {account_id}")
+        _record_failure(account_id)
         return []
     except Exception as e:
         warn(f"请求失败: 抖音号 {account_id}: {e}")
+        _record_failure(account_id)
         return []
 
     code = result.get("code")
@@ -245,6 +351,7 @@ def fetch_account_works(session, account_id, date_str=None, date_start=None, dat
             result = resp.json()
             code = result.get("code")
         except Exception:
+            _record_failure(account_id)
             return []
 
     if code not in (200, 2000):
@@ -252,15 +359,15 @@ def fetch_account_works(session, account_id, date_str=None, date_start=None, dat
             error(f"API Key 错误 (code {code}): {result.get('msg', '')}")
         elif code:
             warn(f"API 返回错误 (code {code}): {result.get('msg', '')} — 抖音号 {account_id}")
+        _record_failure(account_id)
         return []
+
+    # 规则3：查询成功，计数归零
+    _record_success(account_id)
 
     data_raw = result.get("data", {})
     if not data_raw:
         return []
-
-    # type=1 表示该账号未在数据库中收录
-    if isinstance(data_raw, dict) and data_raw.get("type") == 1:
-        return None
 
     if isinstance(data_raw, list):
         works = data_raw
@@ -269,6 +376,14 @@ def fetch_account_works(session, account_id, date_str=None, date_start=None, dat
     else:
         works = []
 
+    # 映射新 API 字段为统一字段名
+    for work in works:
+        _map_work_fields(work)
+
+    # 客户端日期过滤（新 API 不支持服务端日期过滤）
+    if date_str or (date_start and date_end):
+        works = _filter_works_by_date(works, date_str, date_start, date_end)
+
     for work in works[:10]:
         work["_accountId"] = account_id
 
@@ -276,10 +391,10 @@ def fetch_account_works(session, account_id, date_str=None, date_start=None, dat
 
 
 def fetch_all_works(session, subscriptions, date_str=None, date_start=None, date_end=None):
-    """拉取所有订阅账号的作品 — 返回 (works, empty_accounts, not_found_accounts)"""
+    """拉取所有订阅账号的作品 — 返回 (works, empty_accounts, rate_limited_accounts)"""
     all_works = []
     empty_accounts = []
-    not_found_accounts = []
+    rate_limited_accounts = []
     total = len(subscriptions)
 
     for i, sub in enumerate(subscriptions, 1):
@@ -289,12 +404,12 @@ def fetch_all_works(session, subscriptions, date_str=None, date_start=None, date
             warn(f"跳过无抖音号的订阅: {name}")
             continue
 
-        print(f"\r  {CYAN}[\u2192]{RESET} 拉取: {name} ({aid}) ({i}/{total})", end="", flush=True)
+        print(f"\r  {CYAN}[→]{RESET} 拉取: {name} ({aid}) ({i}/{total})", end="", flush=True)
 
         works = fetch_account_works(session, aid, date_str, date_start, date_end)
-        if works is None:
-            # 账号未在数据库中收录
-            not_found_accounts.append(name)
+        if works == "__rate_limited__":
+            # 规则3：被频率限制拒绝
+            rate_limited_accounts.append(name)
         elif works:
             # 优先使用 API 返回的真实 accountName（而非传入的 ID）
             real_name = works[0].get("accountName") or name
@@ -309,7 +424,7 @@ def fetch_all_works(session, subscriptions, date_str=None, date_start=None, date
             time.sleep(0.3)
 
     print()
-    return all_works, empty_accounts, not_found_accounts
+    return all_works, empty_accounts, rate_limited_accounts
 
 
 # ─── 数字格式化 ────────────────────────────────────────────────────────────────────
@@ -661,7 +776,21 @@ def generate_html_report(works, subscriptions, date_label, empty_accounts, outpu
             out_dir = Path(skill_dir) / 'report'
         else:
             out_dir = Path(__file__).resolve().parent.parent / 'report'
-        html_file = out_dir / f'douyin_report_{today}.html'
+        # 从作品数据提取账号名称，用于文件名
+        account_names = list(dict.fromkeys(
+            w.get("accountName") or w.get("_account_id", "unknown") for w in works
+        ))
+        if len(account_names) == 1:
+            name_part = account_names[0]
+        elif len(account_names) > 1:
+            name_part = "_".join(account_names[:3])
+            if len(account_names) > 3:
+                name_part += f"_等{len(account_names)}账号"
+        else:
+            name_part = "抖音订阅"
+        # 文件名安全处理：替换非法字符
+        safe_name = re.sub(r'[\\/:*?"<>|]', '_', name_part)
+        html_file = out_dir / f'{safe_name}_{today}_report.html'
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # 分组数据
@@ -882,9 +1011,7 @@ def generate_html_report(works, subscriptions, date_label, empty_accounts, outpu
                 if len(pub_time) > 16:
                     pub_time = pub_time[:16]
 
-                title_display = title
-                if len(title) > 50:
-                    title_display = title[:48] + ".."
+                title_display = title.replace("\n", " ")
 
                 html += f"""          <tr>
             <td class="title"><a href="{video_url}" target="_blank">{title_display}</a></td>
@@ -978,8 +1105,6 @@ def print_markdown_table(works):
                 title = work.get("title") or "无标题"
                 work_url = work.get("workUrl") or work.get("videoUrl") or ""
                 title_safe = title.replace("|", "\\|").replace("\n", " ")
-                if len(title_safe) > 40:
-                    title_safe = title_safe[:38] + ".."
                 if work_url:
                     title_d = f"[{title_safe}]({work_url})"
                 else:
@@ -1087,6 +1212,8 @@ Examples:
     if args.command == "fetch":
         # ── 获取账号列表：优先 --accounts 参数，其次 JSON 文件 ──
         accounts_arg = getattr(args, 'accounts', '') or ''
+        is_adhoc_query = bool(accounts_arg)  # 区分规则1/2的关键标志
+
         if accounts_arg:
             # 直接从命令行参数构建订阅列表（无需文件存储）
             raw_ids = [aid.strip() for aid in accounts_arg.split(",") if aid.strip()]
@@ -1108,7 +1235,7 @@ Examples:
         session.verify = True
         session.headers.update({
             "Content-Type": "application/json",
-            "X-API-KEY": api_key,
+            "REDFOX_API_KEY": api_key,
         })
 
         date_str = args.date or ""
@@ -1116,49 +1243,77 @@ Examples:
         date_end = getattr(args, 'date_end', '') or ''
         user_specified_date = bool(date_str or date_start or date_end)
 
-        # 默认查前一天（T-1）
+        # ── 规则 1 & 2：根据是否已订阅，决定默认查询策略 ──
         if not user_specified_date:
-            yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-            date_str = yesterday
-
-        if date_start and date_end:
-            date_label = f"（日期范围: {date_start} 至 {date_end}）"
-        elif date_str:
-            date_label = f"（日期: {date_str}）"
+            if is_adhoc_query:
+                # 规则1：未订阅账号，默认查近 30 天
+                fallback_start = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+                fallback_end = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+                date_label = f"（近 30 天: {fallback_start} 至 {fallback_end}）"
+            else:
+                # 规则2：已订阅账号，默认查 T-1
+                yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+                date_str = yesterday
+                date_label = f"（日期: {date_str}）"
         else:
-            date_label = "（最新数据）"
+            if date_start and date_end:
+                date_label = f"（日期范围: {date_start} 至 {date_end}）"
+            elif date_str:
+                date_label = f"（日期: {date_str}）"
+            else:
+                date_label = "（最新数据）"
+
         step(f"从 {len(subscriptions)} 个抖音账号拉取作品{date_label}...")
         print()
 
-        works, empty_accounts, not_found_accounts = fetch_all_works(
-            session, subscriptions,
-            date_str or None,
-            date_start or None,
-            date_end or None
-        )
+        if is_adhoc_query and not user_specified_date:
+            # 规则1：查近 30 天
+            works, empty_accounts, rate_limited_accounts = fetch_all_works(
+                session, subscriptions, None, fallback_start, fallback_end
+            )
+        else:
+            works, empty_accounts, rate_limited_accounts = fetch_all_works(
+                session, subscriptions,
+                date_str or None,
+                date_start or None,
+                date_end or None
+            )
 
-        # 默认查询无数据时，自动回溯近 7 天（仅当用户未指定日期时，且不包含未收录账号）
-        if not works and not user_specified_date:
-            info(f"{date_str} 无更新作品，自动回溯近 7 天...")
+        # ── 规则 1：近 30 天无数据，自动回溯近半年 ──
+        if is_adhoc_query and not works and not user_specified_date and not rate_limited_accounts:
+            info("近 30 天无更新作品，自动回溯近半年...")
             print()
-            fallback_start = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-            fallback_end = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-            date_label = f"（回溯日期范围: {fallback_start} 至 {fallback_end}）"
+            half_year_start = (datetime.now() - timedelta(days=180)).strftime('%Y-%m-%d')
+            half_year_end = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+            date_label = f"（回溯半年: {half_year_start} 至 {half_year_end}）"
             step(f"从 {len(subscriptions)} 个抖音账号拉取作品{date_label}...")
             print()
-            works, empty_accounts, not_found_accounts = fetch_all_works(
-                session, subscriptions,
-                None,
-                fallback_start,
-                fallback_end
+            works, empty_accounts, rate_limited_accounts = fetch_all_works(
+                session, subscriptions, None, half_year_start, half_year_end
             )
             date_str = ""
-            date_start = fallback_start
-            date_end = fallback_end
+            date_start = half_year_start
+            date_end = half_year_end
 
-        if not works and not empty_accounts and not not_found_accounts:
+        # ── 规则 2：已订阅账号 T-1 无数据时的提示 ──
+        if not is_adhoc_query and not works and not user_specified_date:
+            for name in empty_accounts:
+                print(f"\n  {YELLOW}[!]{RESET} 「{name}」昨日暂未发布作品")
+            print(f"\n  {CYAN}💡 如需数据核查可联系工作人员邮箱 {SUPPORT_EMAIL} 处理{RESET}")
+
+        # ── 规则 3：被频率限制拒绝的账号提示 ──
+        for name in rate_limited_accounts:
+            print(f"\n  {RED}[✗]{RESET} 「{name}」当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
+
+        if not works and not empty_accounts and not rate_limited_accounts:
             warn("未获取到任何作品，可能是账号暂无数据或 API 暂时不可用")
             sys.exit(1)
+
+        # ── 规则 1：未订阅账号近半年无数据的最终提示 ──
+        if is_adhoc_query and not works and not rate_limited_accounts:
+            for name in empty_accounts:
+                print(f"\n  {YELLOW}[!]{RESET} 抱歉您订阅的「{name}」账号近半年都未发布过作品")
+            print(f"\n  {CYAN}💡 如果需要数据核查可联系工作人员邮箱 {SUPPORT_EMAIL} 处理{RESET}")
 
         if works:
             info(f"拉取完成: 共 {len(works)} 条作品")
@@ -1187,13 +1342,19 @@ Examples:
                 raw = Path(html_file).read_text(encoding="utf-8")
                 raw = raw.replace("<!-- SUMMARY_PLACEHOLDER -->", summary_html)
                 Path(html_file).write_text(raw, encoding="utf-8")
+                # ── 自动打开 HTML 报告 ──
+                try:
+                    import subprocess
+                    subprocess.Popen(["open", str(html_file)])
+                except Exception:
+                    pass
                 info(f"HTML 报告已生成: {html_file}")
                 # ── 输出 Markdown 表格（带链接，供 Agent 对话展示）──
                 print_markdown_table(works)
                 for name in empty_accounts:
                     warn(f"「{name}」该时间段内无更新作品")
-                for name in not_found_accounts:
-                    print(f"\n**{name}**：{NOT_FOUND_MSG}")
+                for name in rate_limited_accounts:
+                    print(f"\n**{name}**：当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
                 # ── 输出纯文本总结（供 Agent 对话展示，与 HTML 内容一致）──
                 if summary_text:
                     print(f"\n{GREEN}=== 作品总结（与 HTML 报告一致）==={RESET}")
@@ -1203,8 +1364,8 @@ Examples:
             # 仍然输出提示信息
             for name in empty_accounts:
                 warn(f"「{name}」该时间段内无更新作品")
-            for name in not_found_accounts:
-                print(f"\n**{name}**：{NOT_FOUND_MSG}")
+            for name in rate_limited_accounts:
+                print(f"\n**{name}**：当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
         elif getattr(args, 'markdown', False):
             if works:
                 print_markdown_table(works)
@@ -1215,16 +1376,16 @@ Examples:
                     print(summary_text)
             for name in empty_accounts:
                 print(f"\n**{name}**：该时间段内无更新作品")
-            for name in not_found_accounts:
-                print(f"\n**{name}**：{NOT_FOUND_MSG}")
+            for name in rate_limited_accounts:
+                print(f"\n**{name}**：当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
             print(f"\n订阅账号: {len(subscriptions)} 个 | 作品总数: {len(works)} 条")
         else:
             if works:
                 print_terminal_table(works)
             for name in empty_accounts:
                 warn(f"「{name}」该时间段内无更新作品")
-            for name in not_found_accounts:
-                warn(f"「{name}」{NOT_FOUND_MSG}")
+            for name in rate_limited_accounts:
+                warn(f"「{name}」当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
             print(f"\n{GREEN}{BOLD}✓ 完成!{RESET}")
             print(f"  订阅账号: {len(subscriptions)} 个")
             print(f"  作品总数: {len(works)} 条")

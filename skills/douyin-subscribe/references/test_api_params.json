@@ -1,0 +1,50 @@
+{
+  "test_cases": [
+    {
+      "name": "罗永浩（uniqueName）",
+      "payload": {
+        "uniqueName": "luoyonghao",
+        "pageNum": 1,
+        "pageSize": 10
+      }
+    },
+    {
+      "name": "罗永浩（userId）",
+      "payload": {
+        "userId": "3822358551859599",
+        "pageNum": 1,
+        "pageSize": 10
+      }
+    },
+    {
+      "name": "纯数字抖音号（userId模式）",
+      "payload": {
+        "userId": "3822358551859599",
+        "pageNum": 1,
+        "pageSize": 10
+      }
+    }
+  ],
+  "api": {
+    "url": "https://redfox.hk/story/api/dy/data/listWorkByAccount",
+    "method": "POST",
+    "headers": {
+      "REDFOX_API_KEY": "ak_xxx",
+      "Content-Type": "application/json"
+    }
+  },
+  "field_mapping": {
+    "旧→新": {
+      "title": "content",
+      "workUrl": "opusUrl",
+      "accountName": "authorName",
+      "secUid": "authorSecUid",
+      "followerCount": "（缺失）"
+    },
+    "新API新增字段": [
+      "videoId", "videoType", "duration", "coverUrl",
+      "tagList", "imageUrlList", "authorUid",
+      "authorShortId", "authorUniqueId", "authorAvatarUrl"
+    ]
+  }
+}
