@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X作品评论分析 - {{TWEET_ID}}</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg-primary: #000000;
+    --bg-secondary: #16181c;
+    --bg-card: #1a1d21;
+    --bg-card-hover: #1d1f23;
+    --text-primary: #e7e9ea;
+    --text-secondary: #71767b;
+    --text-muted: #555a5f;
+    --accent: #1d9bf0;
+    --accent-light: #1d9bf0;
+    --accent-glow: rgba(29, 155, 240, 0.15);
+    --accent-border: rgba(29, 155, 240, 0.3);
+    --border: rgba(255, 255, 255, 0.08);
+
+    --positive: #00ba7c;
+    --negative: #f91880;
+    --demand: #1d9bf0;
+    --competitor: #ffd700;
+    --verified: #1d9bf0;
+    --retweet-green: #00ba7c;
+
+    --font-display: 'Inter', -apple-system, sans-serif;
+    --font-body: 'Inter', -apple-system, sans-serif;
+
+    --radius: 16px;
+    --radius-sm: 12px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* ── Header ── */
+.report-header {
+    text-align: center;
+    padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(1rem, 2vw, 1.5rem);
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.report-header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+    color: var(--text-primary);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.3rem;
+}
+
+.report-header h1 span {
+    color: var(--accent);
+}
+
+.report-header .subtitle {
+    font-size: clamp(0.85rem, 1.3vw, 1rem);
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* ── Tweet Card ── */
+.tweet-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: clamp(1.2rem, 2vw, 1.8rem);
+    max-width: 700px;
+    margin: 0 auto clamp(1.5rem, 3vw, 2rem);
+}
+
+.tweet-author {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.tweet-author-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bg-card);
+    flex-shrink: 0;
+}
+
+.tweet-author-info {
+    min-width: 0;
+}
+
+.tweet-author-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-decoration: none;
+}
+
+.tweet-author-name:hover {
+    text-decoration: underline;
+}
+
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: var(--verified);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.tweet-handle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.tweet-content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.tweet-media {
+    border-radius: var(--radius-sm);
+    max-width: 100%;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border);
+}
+
+.tweet-time {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.tweet-stats {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.tweet-stats span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: default;
+}
+
+.tweet-stats .stat-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.tweet-link {
+    margin-top: 0.5rem;
+    font-size: 0.82rem;
+}
+
+.tweet-link a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.tweet-link a:hover {
+    text-decoration: underline;
+}
+
+/* ── Stats Bar ── */
+.stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: clamp(0.6rem, 1.5vw, 1.5rem);
+    padding: clamp(0.8rem, 2vw, 1.2rem) clamp(0.8rem, 2vw, 1.5rem);
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    max-width: 900px;
+    margin: 0 auto clamp(1.5rem, 3vw, 2.5rem);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+.stat-item { text-align: center; flex: 1; min-width: 55px; }
+
+.stat-value {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.6rem);
+    color: var(--accent);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+}
+
+/* ── Summary Cards ── */
+.summary-section {
+    max-width: 1000px;
+    margin: 0 auto clamp(2rem, 3vw, 2.5rem);
+}
+
+.summary-section h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-left: 0.75rem;
+    border-left: 3px solid var(--accent);
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
+    gap: 1rem;
+}
+
+.summary-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.4rem;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent-border);
+}
+
+.summary-card .card-icon {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+}
+
+.summary-card .card-title {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.3rem;
+}
+
+.summary-card .card-ratio {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.6rem;
+}
+
+.summary-card .card-content {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.7;
+}
+
+.summary-card .card-content ul {
+    list-style: none;
+    padding: 0;
+}
+
+.summary-card .card-content li {
+    padding: 0.2rem 0;
+    position: relative;
+    padding-left: 1rem;
+}
+
+.summary-card .card-content li::before {
+    content: "\00B7";
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+.summary-card.positive { border-left: 3px solid var(--positive); }
+.summary-card.positive .card-icon,
+.summary-card.positive .card-title,
+.summary-card.positive .card-ratio { color: var(--positive); }
+
+.summary-card.negative { border-left: 3px solid var(--negative); }
+.summary-card.negative .card-icon,
+.summary-card.negative .card-title,
+.summary-card.negative .card-ratio { color: var(--negative); }
+
+.summary-card.demand { border-left: 3px solid var(--demand); }
+.summary-card.demand .card-icon,
+.summary-card.demand .card-title,
+.summary-card.demand .card-ratio { color: var(--demand); }
+
+.summary-card.competitor { border-left: 3px solid var(--competitor); }
+.summary-card.competitor .card-icon,
+.summary-card.competitor .card-title,
+.summary-card.competitor .card-ratio { color: var(--competitor); }
+
+/* ── Comment Table ── */
+.table-section {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.table-section h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-left: 0.75rem;
+    border-left: 3px solid var(--accent);
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+}
+
+.comment-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 750px;
+}
+
+.comment-table thead {
+    background: var(--bg-card);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.comment-table th {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.comment-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.comment-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.comment-table tbody tr:hover {
+    background: var(--bg-card-hover);
+}
+
+.comment-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ── User cell ── */
+.user-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 130px;
+}
+
+.user-name {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.user-name:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+.user-name .verified-badge {
+    width: 15px;
+    height: 15px;
+    font-size: 0.5rem;
+}
+
+.user-handle {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+/* ── Content cell ── */
+.content-cell {
+    max-width: 450px;
+    word-break: break-word;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.comment-link {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.comment-link:hover {
+    color: var(--accent);
+}
+
+/* ── Number cells ── */
+.num-cell {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+}
+
+.time-cell {
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+/* ── Footer ── */
+.report-footer {
+    text-align: center;
+    padding: clamp(2rem, 4vw, 3rem) 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.report-footer .powered {
+    margin-top: 0.5rem;
+    color: var(--text-secondary);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-bar {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
+
+    .stat-item {
+        flex: 0 1 auto;
+        min-width: 50px;
+    }
+
+    .comment-table {
+        font-size: 0.78rem;
+    }
+
+    .comment-table th,
+    .comment-table td {
+        padding: 0.5rem 0.6rem;
+    }
+
+    .content-cell {
+        max-width: 200px;
+    }
+}
+</style>
+</head>
+<body>
+
+<header class="report-header">
+    <h1>X<span>作品评论分析</span></h1>
+    <p class="subtitle">推文 {{TWEET_ID}} · 共 {{TOTAL_COMMENTS}} 条评论</p>
+    <p class="subtitle" style="font-size: 0.8rem; margin-top: 0.3rem;">{{DATE}}</p>
+</header>
+
+<!-- Tweet Card -->
+<div class="tweet-card">
+    <div class="tweet-author">
+        <img src="{{AUTHOR_AVATAR}}" class="tweet-author-avatar" alt="" onerror="this.style.display='none'" referrerpolicy="no-referrer">
+        <div class="tweet-author-info">
+            <a href="https://x.com/{{AUTHOR_USERNAME}}" target="_blank" class="tweet-author-name">
+                {{AUTHOR_NAME}}
+            </a>
+            <a href="https://x.com/{{AUTHOR_USERNAME}}" target="_blank" class="tweet-handle">@{{AUTHOR_USERNAME}}</a>
+        </div>
+    </div>
+    <div class="tweet-content">{{CONTENT}}</div>
+    <div class="tweet-time">{{CREATED_AT}}</div>
+    <div class="tweet-stats">
+        <span><span class="stat-value">{{REPLY_COUNT}}</span> 回复</span>
+        <span><span class="stat-value">{{RETWEET_COUNT}}</span> 转发</span>
+        <span><span class="stat-value">{{QUOTE_COUNT}}</span> 引用</span>
+        <span><span class="stat-value">{{LIKE_COUNT}}</span> 喜欢</span>
+        <span><span class="stat-value">{{BOOKMARK_COUNT}}</span> 收藏</span>
+        <span><span class="stat-value">{{VIEW_COUNT}}</span> 查看</span>
+    </div>
+    <div class="tweet-link"><a href="{{TWEET_URL}}" target="_blank">查看原文 →</a></div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <div class="stat-value">{{TOTAL_COMMENTS}}</div>
+        <div class="stat-label">评论总数</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--accent);">{{TOTAL_LIKES}}</div>
+        <div class="stat-label">总点赞</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--positive);">{{POSITIVE_RATIO}}%</div>
+        <div class="stat-label">积极评价</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--negative);">{{NEGATIVE_RATIO}}%</div>
+        <div class="stat-label">负面评价</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--demand);">{{DEMAND_RATIO}}%</div>
+        <div class="stat-label">用户需求</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--competitor);">{{COMPETITOR_RATIO}}%</div>
+        <div class="stat-label">竞品对比</div>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-section">
+    <h2>评论总结</h2>
+    <div class="summary-grid">
+        <div class="summary-card positive">
+            <div class="card-icon">✅</div>
+            <div class="card-title">积极评价</div>
+            <div class="card-ratio">{{POSITIVE_RATIO}}%</div>
+            <div class="card-content">{{SUMMARY_POSITIVE}}</div>
+        </div>
+        <div class="summary-card negative">
+            <div class="card-icon">⚠️</div>
+            <div class="card-title">负面评价</div>
+            <div class="card-ratio">{{NEGATIVE_RATIO}}%</div>
+            <div class="card-content">{{SUMMARY_NEGATIVE}}</div>
+        </div>
+        <div class="summary-card demand">
+            <div class="card-icon">💡</div>
+            <div class="card-title">用户需求</div>
+            <div class="card-ratio">{{DEMAND_RATIO}}%</div>
+            <div class="card-content">{{SUMMARY_DEMAND}}</div>
+        </div>
+        <div class="summary-card competitor">
+            <div class="card-icon">🔍</div>
+            <div class="card-title">竞品对比舆情</div>
+            <div class="card-ratio">{{COMPETITOR_RATIO}}%</div>
+            <div class="card-content">{{SUMMARY_COMPETITOR}}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Comment Table -->
+<div class="table-section">
+    <h2>评论列表 TOP 10</h2>
+    <div class="table-wrapper">
+        <table class="comment-table">
+            <thead>
+                <tr>
+                    <th style="width: 150px;">用户</th>
+                    <th>评论内容</th>
+                    <th style="width: 60px; text-align: right;">❤️</th>
+                    <th style="width: 60px; text-align: right;">🔄</th>
+                    <th style="width: 60px; text-align: right;">💬</th>
+                    <th style="width: 100px;">时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{COMMENT_ROWS}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<footer class="report-footer">
+    <p>Generated at {{TIMESTAMP}}</p>
+    <p class="powered">Powered by X作品评论分析 Skill</p>
+</footer>
+
+</body>
+</html>
