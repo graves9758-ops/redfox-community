@@ -2,32 +2,12 @@
 
 ## 接口基础信息
 
-| 字段         | 值                                                     |
-| ------------ | ------------------------------------------------------ |
-| 接口地址     | `https://redfox.hk/story/api/xhsData/query`            |
-| 请求方式     | POST                                                   |
-| Content-Type | `application/json`                                     |
-| 认证方式     | `X-API-KEY` Header（从环境变量 `REDFOX_API_KEY` 获取） |
-
-### 鉴权
-
-#### 获取 API Key
-
-请前往 [红狐hub](https://redfox.hk/settings/api-keys?source=github) 获取API KEY
-
-#### 配置 API Key
-
-方案1: 以OpenClaw为例，将REDFOX_API_KEY添加到~/.openclaw/openclaw.json中，部分内容如下：
-
-```bash
-{ "env": { "REDFOX_API_KEY": "ak_xxxx..." } }
-```
-
-方案2: 终端配置
-
-```bash
-export REDFOX_API_KEY="ak_xxxx..."
-```
+| 字段 | 值 |
+|------|-----|
+| 接口地址 | `https://onetotenvip.com/story/xhsData/query` |
+| 请求方式 | POST |
+| Content-Type | `application/json` |
+| 认证方式 | 无（公开接口） |
 
 ---
 
@@ -35,25 +15,18 @@ export REDFOX_API_KEY="ak_xxxx..."
 
 ```json
 {
-  "dateType": 1, // 榜单日期类型：1=日榜  2=周榜  3=月榜（必填）
+  "dateType": 1,            // 榜单日期类型：1=日榜  2=周榜  3=月榜（必填）
   "rankDate": "2026-04-28", // 榜单日期 yyyy-MM-dd（必填）
-  //   日榜：填当日日期，如 2026-04-28
-  //   周榜：填该周**周一**日期，如 2026-04-20
-  //   月榜：填该月第一天，如 2026-03-01
-  "type": "体育锻炼", // 赛道分类，默认"综合全部"（必填）
-  "source": "小红书指数榜" // 固定值（必填）
+                            //   日榜：填当日日期，如 2026-04-28
+                            //   周榜：填该周**周一**日期，如 2026-04-20
+                            //   月榜：填该月第一天，如 2026-03-01
+  "type": "体育锻炼",        // 赛道分类，默认"综合全部"（必填）
+  "source": "小红书指数榜"   // 固定值（必填）
 }
 ```
 
-### 请求头
-
-| Header       | 值                 | 说明                                   |
-| ------------ | ------------------ | -------------------------------------- |
-| Content-Type | `application/json` | 必填                                   |
-| X-API-KEY    | `ak_xxxxxxxx`      | 从环境变量 `REDFOX_API_KEY` 获取，必填 |
-
 > ⚠️ **重要**：`source` 必须为 `"小红书指数榜"`，使用其他值会导致接口返回空数据！
->
+> 
 > ⚠️ 注意：`page`/`pageSize` 参数无效，接口每次固定返回 50 条数据。
 
 ---
@@ -65,54 +38,54 @@ export REDFOX_API_KEY="ak_xxxx..."
   "code": 2000,
   "data": [
     {
-      "accountLink": "https://www.xiaohongshu.com/user/profile/...",
-      "accountName": "恋与深空",
+      "accountLink":    "https://www.xiaohongshu.com/user/profile/...",
+      "accountName":    "恋与深空",
       "accountRanking": 1,
-      "category": "数码科技",
-      "fansCount": "254.06w",
-      "fansGrowth": "6919",
-      "likedGrowth": "24.64w",
+      "category":       "数码科技",
+      "fansCount":      "254.06w",
+      "fansGrowth":     "6919",
+      "likedGrowth":    "24.64w",
       "commentsGrowth": "6.68w",
-      "collectedGrowth": "2.53w",
-      "sharedGrowth": "13.39w",
-      "newNoteCount": null,
-      "dataFetchTime": "2026-04-29 19:00:01",
-      "rankDate": "2026-04-28",
-      "rankPeriod": "日榜"
+      "collectedGrowth":"2.53w",
+      "sharedGrowth":   "13.39w",
+      "newNoteCount":   null,
+      "dataFetchTime":  "2026-04-29 19:00:01",
+      "rankDate":       "2026-04-28",
+      "rankPeriod":     "日榜"
     }
   ]
 }
 ```
 
-> ⚠️ 注意：新接口**不返回** `comprehensiveScore`（综合评分）字段；
+> ⚠️ 注意：新接口**不返回** `comprehensiveScore`（综合评分）字段；  
 > 互动数各字段均为**字符串格式**，如 `"6.68w"`、`"1245"`。
 
 ---
 
 ## 错误码
 
-| code | 含义                                     |
-| ---- | ---------------------------------------- |
+| code | 含义 |
+|------|------|
 | 2000 | **成功**（注意：成功码是 2000 不是 0！） |
-| 其他 | 错误，data 为空数组                      |
+| 其他 | 错误，data 为空数组 |
 
 ---
 
 ## 字段映射（fetch_rank.py normalized JSON）
 
-| 接口原始字段      | normalized 字段 | 含义       |
-| ----------------- | --------------- | ---------- |
-| `accountRanking`  | `rank`          | 排名       |
-| `accountName`     | `accountName`   | 账号名     |
-| `category`        | `category`      | 赛道       |
-| `fansCount`       | `followers`     | 总粉丝数   |
-| `newNoteCount`    | `newNoteCount`  | 新增笔记数 |
-| `fansGrowth`      | `newFans`       | 新增粉丝   |
-| `likedGrowth`     | `newLikes`      | 新增点赞   |
-| `commentsGrowth`  | `newComments`   | 新增评论   |
-| `collectedGrowth` | `newCollects`   | 新增收藏   |
-| `sharedGrowth`    | `newShares`     | 新增分享   |
-| `accountLink`     | `profileUrl`    | 主页链接   |
+| 接口原始字段 | normalized 字段 | 含义 |
+|------------|----------------|------|
+| `accountRanking` | `rank` | 排名 |
+| `accountName` | `accountName` | 账号名 |
+| `category` | `category` | 赛道 |
+| `fansCount` | `followers` | 总粉丝数 |
+| `newNoteCount` | `newNoteCount` | 新增笔记数 |
+| `fansGrowth` | `newFans` | 新增粉丝 |
+| `likedGrowth` | `newLikes` | 新增点赞 |
+| `commentsGrowth` | `newComments` | 新增评论 |
+| `collectedGrowth` | `newCollects` | 新增收藏 |
+| `sharedGrowth` | `newShares` | 新增分享 |
+| `accountLink` | `profileUrl` | 主页链接 |
 
 ---
 
@@ -140,23 +113,23 @@ export REDFOX_API_KEY="ak_xxxx..."
 
 ## 榜单更新规则
 
-| 榜单类型 | 更新时间         | 统计范围 | rankDate 填写规则  | 示例         |
-| -------- | ---------------- | -------- | ------------------ | ------------ |
-| 日榜     | 每日 19:00       | 前一天   | 填当天日期         | "2026-04-28" |
-| 周榜     | 每周一 15:00     | 上周     | 填该周**周一**日期 | "2026-04-20" |
-| 月榜     | 每月2号 上午9:00 | 上月     | 填该月**2号**      | "2026-04-02" |
+| 榜单类型 | 更新时间 | 统计范围 | rankDate 填写规则 | 示例 |
+|---------|---------|---------|-----------------|------|
+| 日榜 | 每日 19:00 | 前一天 | 填当天日期 | "2026-04-28" |
+| 周榜 | 每周一 15:00 | 上周 | 填该周**周一**日期 | "2026-04-20" |
+| 月榜 | 每月1日 上午9:00 | 上月 | 填该月**1日** | "2026-04-01" |
 
 ### 日期回退计算
 
 根据当前时间判断取第几期数据：
 
-| 榜单类型             | 当前时间 < 更新时间 | 当前时间 >= 更新时间 |
-| -------------------- | ------------------- | -------------------- |
-| 日榜 (19:00更新)     | offset=2 (前2天)    | offset=1 (前1天)     |
-| 周榜 (周一15:00更新) | offset=2 (前2周)    | offset=1 (前1周)     |
-| 月榜 (2号09:00更新)  | offset=2 (前2月)    | offset=1 (前1月)     |
+| 榜单类型 | 当前时间 < 更新时间 | 当前时间 >= 更新时间 |
+|---------|-------------------|-------------------|
+| 日榜 (19:00更新) | offset=2 (前2天) | offset=1 (前1天) |
+| 周榜 (周一15:00更新) | offset=2 (前2周) | offset=1 (前1周) |
+| 月榜 (2号09:00更新) | offset=2 (前2月) | offset=1 (前1月) |
 
-> ⚠️ **月榜必须用每月2号**，实测用月末最后一天（如 "2026-03-31"）返回空数据！
+> ⚠️ **月榜必须用每月1日**，实测用月末最后一天（如 "2026-03-31"）返回空数据！
 
 > ⚠️ **周榜用周一日期**，实测用周日日期（如 "2026-04-20" 周日）会返回空数据！
 
@@ -167,7 +140,6 @@ export REDFOX_API_KEY="ak_xxxx..."
 ### 1. 体育锻炼分类数据为空
 
 部分分类（如体育锻炼）在某些日期可能返回空数据。需要自动回退日期尝试：
-
 ```
 2026-04-29: 0条 → 回退
 2026-04-28: 50条 ✓
@@ -176,7 +148,6 @@ export REDFOX_API_KEY="ak_xxxx..."
 ### 2. 互动数据计算
 
 最高互动需要自行计算：
-
 ```python
 def parse_num(s):
     s = str(s).replace('w', '').replace('W', '')
@@ -197,18 +168,10 @@ interaction = parse_num(item['newLikes']) + \
 ## Python 调用示例
 
 ```python
-import json
-import os
-from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
+import requests
 from datetime import date, timedelta
 
-url = "https://redfox.hk/story/api/xhsData/query"
-
-# 从环境变量获取 API Key
-api_key = os.environ.get("REDFOX_API_KEY", "")
-if not api_key:
-    raise RuntimeError("请设置 REDFOX_API_KEY 环境变量")
+url = "https://onetotenvip.com/story/xhsData/query"
 
 # 日榜示例（体育锻炼）
 payload_day = {
@@ -229,26 +192,13 @@ payload_week = {
 # 月榜示例
 payload_month = {
     "dateType": 3,
-    "rankDate": "2026-04-02",  # 上月2号
+    "rankDate": "2026-04-01",  # 上月1日
     "type": "综合全部",
     "source": "小红书指数榜"
 }
 
-payload_bytes = json.dumps(payload_day).encode("utf-8")
-headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-    "X-API-KEY": api_key,
-}
-
-req = Request(url, data=payload_bytes, headers=headers, method="POST")
-try:
-    resp = urlopen(req, timeout=15)
-    data = json.loads(resp.read().decode("utf-8"))
-except HTTPError as e:
-    print(f"HTTP {e.code}: {e.reason}")
-except URLError as e:
-    print(f"网络请求失败: {e.reason}")
+resp = requests.post(url, json=payload_day, timeout=15)
+data = resp.json()
 
 if data["code"] == 2000:        # 注意：成功码是 2000
     print(f"获取到 {len(data['data'])} 条数据")

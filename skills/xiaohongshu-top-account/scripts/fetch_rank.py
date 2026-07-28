@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 小红书账号榜单数据抓取脚本 v3
 用法：
@@ -63,6 +64,7 @@ def _http_post(url: str, payload: dict, timeout: int = 15) -> dict:
     except TimeoutError:
         print("[ERROR] 请求超时，请检查网络后重试", file=sys.stderr)
         sys.exit(2)
+
 
 # ─────────────────────────────────────────────────────────
 # 赛道映射：关键词 → 接口 type 参数
@@ -147,7 +149,7 @@ def _parse_period_keyword(text: str) -> str | None:
     masked = re.sub(r"\d{4}[年\-\/]\d{1,2}[月\-\/]\d{1,2}", "____", text)   # 2026年5月10号
     masked = re.sub(r"\d{1,2}月\d{1,2}(日|号)?", "____", masked)                  # 5月10日/5月10号
     masked = re.sub(r"\d{1,2}[日号](?!榜)", "____", masked)                         # 10日（排除日榜）
-
+    
     # 优先：长字符串子串匹配（不易误匹配）
     for p, aliases in LONG_ALIASES.items():
         for a in aliases:
@@ -166,34 +168,48 @@ def _parse_period_keyword(text: str) -> str | None:
 UPDATE_RULES = {
     1: {"label": "日榜", "update_time": "每日19:00", "window_days": 7},
     2: {"label": "周榜", "update_time": "每周一15:00", "window_days": 21},
-    3: {"label": "月榜", "update_time": "每月2号9:00", "window_days": 90},
+    3: {"label": "月榜", "update_time": "每月1日9:00", "window_days": 90},
 }
 
 
 def _get_latest_date(period: str, offset: int = 1) -> date:
     """
-    获取指定周期的目标日期。
+    获取指定周期的目标日期，根据当前时间和更新时间动态调整。
     period: day / week / month
     offset: 往前回溯的期数，默认 1（上一期）
-
-    周榜：返回指定期数的周一
-    月榜：返回指定期数的2号
-    日榜：返回指定期数的前一天
+    
+    时序规则（T+1）：
+    - 日榜：昨天的数据，今天19:00后才能查。19:00前查"最新" → 取前天(offset=2)
+    - 周榜：上周的数据，本周一15:00后才能查。周一15:00前查"最新" → 取上上周(offset=2)
+    - 月榜：上月的数据，本月1日9:00后才能查。1日9:00前查"最新" → 取上上月(offset=2)
     """
     today = date.today()
+    now = datetime.now()
+    current_time = now.time()
+    
     if period == "day":
+        # 日榜：昨天数据今天19:00后才能查
+        # 19:00前查"最新"(offset=1)，需要取前天(offset=2)
+        if offset == 1 and current_time.hour < 19:
+            offset = 2
         return today - timedelta(days=offset)
     elif period == "week":
-        # 周榜：取 offset 期前的周一
-        # 周一=0，周二=1，...，周日=6
-        # 本周一：today - weekday() 天
+        # 周榜：上周数据本周一15:00后才能查
+        # 本周一
         days_since_monday = today.weekday()
         this_monday = today - timedelta(days=days_since_monday)
-        # offset=1 → 上周一 = 本周一 - 7天
-        # offset=2 → 上上周一 = 本周一 - 14天
+        
+        # 周一15:00前查"最新"(offset=1)，需要取上上周(offset=2)
+        if offset == 1 and now.weekday() == 0 and current_time.hour < 15:
+            offset = 2
+        
         return this_monday - timedelta(weeks=offset)
     elif period == "month":
-        # 月榜：取 offset 期前的2号
+        # 月榜：上月数据本月1日9:00后才能查
+        # 1日9:00前查"最新"(offset=1)，需要取上上月(offset=2)
+        if offset == 1 and now.day == 1 and current_time.hour < 9:
+            offset = 2
+        
         month_offset = offset - 1
         year = today.year
         month = today.month - month_offset
@@ -204,18 +220,70 @@ def _get_latest_date(period: str, offset: int = 1) -> date:
     return today - timedelta(days=offset)
 
 
+def _get_monday_of_week(d: date) -> date:
+    """
+    获取指定日期所在周的周一
+    周一=0，周二=1，...，周日=6
+    """
+    days_since_monday = d.weekday()
+    return d - timedelta(days=days_since_monday)
+
+
+def _get_2nd_of_month(d: date) -> date:
+    """
+    获取指定日期所在月的1号
+    """
+    return date(d.year, d.month, 1)
+
+
 def _is_within_window(target_date: date, period: str) -> bool:
+    """
+    检查目标日期是否在可查询窗口内，同时确保数据已更新。
+    
+    T+1时序规则：
+    - 日榜：昨天数据，今天19:00后才能查
+    - 周榜：上周数据，本周一15:00后才能查
+    - 月榜：上月数据，本月1日9:00后才能查
+    """
     today = date.today()
+    now = datetime.now()
+    current_time = now.time()
+    
+    # 计算日期差
     diff = (today - target_date).days
     window = UPDATE_RULES[PERIOD_MAP[period]]["window_days"]
-    return 1 <= diff <= window
+    
+    # 基本窗口检查（diff=0表示当天，不允许查当天数据）
+    if not (1 <= diff <= window):
+        return False
+    
+    # T+1时序检查：确保数据已更新
+    if period == "day":
+        # 查昨天(diff=1)的数据，必须今天19:00后
+        if diff == 1 and current_time.hour < 19:
+            return False
+    elif period == "week":
+        # 查上周的数据，必须本周一15:00后
+        this_monday = today - timedelta(days=today.weekday())
+        last_monday = this_monday - timedelta(weeks=1)
+        if target_date == last_monday:
+            if now.weekday() == 0 and current_time.hour < 15:
+                return False
+    elif period == "month":
+        # 查上月数据，必须本月1日9:00后
+        last_month_1st = date(today.year, today.month - 1, 1) if today.month > 1 else date(today.year - 1, 12, 1)
+        if target_date == last_month_1st:
+            if now.day == 1 and current_time.hour < 9:
+                return False
+    
+    return True
 
 
 def _is_data_updated(period: str) -> bool:
     """
     判断当前时间是否已更新最新一期的数据。
     返回 True 表示已更新（可取上一期），False 表示未更新（需取上上期）。
-
+    
     更新规则：
     - 日榜：每日 19:00 更新
     - 周榜：每周一 15:00 后更新
@@ -223,7 +291,7 @@ def _is_data_updated(period: str) -> bool:
     """
     now = datetime.now()
     current_time = now.time()
-
+    
     if period == "day":
         # 每日 19:00 更新
         return current_time.hour >= 19
@@ -235,13 +303,11 @@ def _is_data_updated(period: str) -> bool:
             # 不是周一，如果已过周一15:00则已更新
             return True
     elif period == "month":
-        # 每月 2号 9:00 更新
-        if now.day == 2:
+        # 每月 1日 9:00 更新
+        if now.day == 1:
             return current_time.hour >= 9
-        elif now.day == 1:
-            return False  # 1号，尚未到2号9点
         else:
-            # 已过2号9:00，已更新
+            # 已过1日9:00，已更新
             return True
     return True
 
@@ -253,7 +319,7 @@ def _parse_date_from_text(text: str, explicit_period: str | None = None) -> tupl
     从文本中解析日期。
     若 explicit_period 已明确（如用户说了"周榜"），则不通过"最新/今日"等
     模糊关键词来推断 period，避免覆盖已识别出的明确周期。
-
+    
     "最新"关键词会根据更新时间判断：
     - 已更新 → 取上一期
     - 未更新 → 取上上期
@@ -266,7 +332,7 @@ def _parse_date_from_text(text: str, explicit_period: str | None = None) -> tupl
             return date(int(m.group(1)), int(m.group(2)), int(m.group(3))), None
         except Exception:
             pass
-
+    
     # MM月DD日 / MM-DD 格式（不带年份）
     m2 = re.search(r"(\d{1,2})月(\d{1,2})(日|号)?", text)
     if m2:
@@ -278,7 +344,18 @@ def _parse_date_from_text(text: str, explicit_period: str | None = None) -> tupl
             return date(year, month, day), None
         except Exception:
             pass
-
+    
+    # M.D / M.D日 格式（如 6.5、6.5日）
+    m3 = re.search(r"(\d{1,2})\.(\d{1,2})(日|号)?", text)
+    if m3:
+        try:
+            month = int(m3.group(1))
+            day = int(m3.group(2))
+            year = date.today().year
+            return date(year, month, day), None
+        except Exception:
+            pass
+    
     # 纯日期关键词（只取日期，不推断 period）
     for kw, delta, require_period in [
         ("最新", None, True),   # delta=None 表示需要根据更新时间动态判断
@@ -287,7 +364,7 @@ def _parse_date_from_text(text: str, explicit_period: str | None = None) -> tupl
     ]:
         if kw in text:
             base_period = explicit_period or "day"
-
+            
             # 动态计算 delta
             if delta is None:
                 # "最新"：根据更新时间判断
@@ -295,7 +372,7 @@ def _parse_date_from_text(text: str, explicit_period: str | None = None) -> tupl
                     delta = 1  # 已更新，取上一期
                 else:
                     delta = 2  # 未更新，取上上期
-
+            
             d = _get_latest_date(base_period, offset=delta)
             return d, explicit_period  # 仅返回日期，period 以 explicit_period 为准
     return None, None
@@ -348,7 +425,7 @@ def _normalize_by_max(values: list, base: float = 100) -> list:
 def calculate_scores_batch(items: list) -> list:
     """
     批量计算评分并返回归一化后的分数
-
+    
     评分规则（满分100）：使用对数归一化 ln(x)/ln(max)
     - 总粉丝数：20%
     - 新增粉丝：20%
@@ -358,7 +435,7 @@ def calculate_scores_batch(items: list) -> list:
     - 新增评论：15%
     """
     import math
-
+    
     # 提取所有数据
     followers_list = [_parse_num(i.get("followers") or i.get("fansCount") or i.get("fans")) for i in items]
     fans_list = [_parse_num(i.get("newFans") or i.get("fansGrowth")) for i in items]
@@ -366,7 +443,7 @@ def calculate_scores_batch(items: list) -> list:
     collects_list = [_parse_num(i.get("newCollects") or i.get("collectedGrowth")) for i in items]
     shares_list = [_parse_num(i.get("newShares") or i.get("sharedGrowth")) for i in items]
     comments_list = [_parse_num(i.get("newComments") or i.get("commentsGrowth")) for i in items]
-
+    
     # 获取最大值
     max_followers = max(followers_list) if followers_list else 1
     max_fans = max(fans_list) if fans_list else 1
@@ -374,7 +451,7 @@ def calculate_scores_batch(items: list) -> list:
     max_collects = max(collects_list) if collects_list else 1
     max_shares = max(shares_list) if shares_list else 1
     max_comments = max(comments_list) if comments_list else 1
-
+    
     results = []
     for item in items:
         followers = _parse_num(item.get("followers") or item.get("fansCount") or item.get("fans"))
@@ -383,20 +460,20 @@ def calculate_scores_batch(items: list) -> list:
         collects_growth = _parse_num(item.get("newCollects") or item.get("collectedGrowth"))
         shares_growth = _parse_num(item.get("newShares") or item.get("sharedGrowth"))
         comments_growth = _parse_num(item.get("newComments") or item.get("commentsGrowth"))
-
+        
         # 对数归一化：ln(x+1)/ln(max+1)
         def log_norm(val, max_val):
             if val <= 0 or max_val <= 1:
                 return 0
             return math.log(val + 1) / math.log(max_val + 1) * 100
-
+        
         norm_followers = log_norm(followers, max_followers)
         norm_fans = log_norm(fans_growth, max_fans)
         norm_likes = log_norm(likes_growth, max_likes)
         norm_collects = log_norm(collects_growth, max_collects)
         norm_shares = log_norm(shares_growth, max_shares)
         norm_comments = log_norm(comments_growth, max_comments)
-
+        
         # 加权求和
         score = (
             norm_followers * 0.20 +
@@ -406,9 +483,9 @@ def calculate_scores_batch(items: list) -> list:
             norm_shares * 0.15 +
             norm_comments * 0.15
         )
-
+        
         item["comprehensiveScore"] = int(score)  # 保留整数
-
+    
     return items
 # ─────────────────────────────────────────────────────────
 def fetch(period: str, rank_date: str, category: str, is_latest: bool = False) -> tuple[list[dict], str, str]:
@@ -418,23 +495,23 @@ def fetch(period: str, rank_date: str, category: str, is_latest: bool = False) -
     返回: (数据列表, 实际查询的日期, 提示信息)
     """
     from datetime import datetime, timedelta
-
+    
     # 更新时间提示
     update_time_hint = {
         "day": "每日19:00",
         "week": "每周一15:00",
-        "month": "每月2号9:00",
+        "month": "每月1日9:00",
     }
-
+    
     current_date = rank_date
     original_date = rank_date
     fallback_hint = ""
-
+    
     payload = {
         "dateType": PERIOD_MAP[period],
         "rankDate": current_date,
         "type": category if category else "综合全部",
-        "source": "小红书最夯账号-GitHub",
+        "source": "小红书最夯账号",
     }
     result = _http_post(API_URL, payload, timeout=15)
 
@@ -442,72 +519,83 @@ def fetch(period: str, rank_date: str, category: str, is_latest: bool = False) -
         data = result.get("data", [])
         if data:
             return data, current_date, ""
-
+    
+    # 回退策略：根据周期类型回退到正确的日期
+    def get_fallback_date(current: str, period_type: str) -> str:
+        """根据周期类型计算回退日期"""
+        d = datetime.strptime(current, "%Y-%m-%d").date()
+        if period_type == "day":
+            # 日榜：回退前一天
+            d -= timedelta(days=1)
+        elif period_type == "week":
+            # 周榜：回退到上一个周一
+            d = _get_monday_of_week(d) - timedelta(weeks=1)
+        elif period_type == "month":
+            # 月榜：回退到上一个月1日
+            if d.month == 1:
+                d = date(d.year - 1, 12, 1)
+            else:
+                d = date(d.year, d.month - 1, 1)
+        return d.strftime("%Y-%m-%d")
+    
     # 当天无数据
     if is_latest:
-        # 查询最新数据但当天无数据，告知更新时间并回退前一天
+        # 查询最新数据但当天无数据，告知更新时间并回退
         ut = update_time_hint.get(period, "")
-        fallback_hint = f"{current_date} 暂无数据（{PERIOD_LABEL_MAP.get(period, '日榜')}{ut}更新），已为您查询前一天的数据"
-        # 回退一天
-        try:
-            d = datetime.strptime(current_date, "%Y-%m-%d")
-            d -= timedelta(days=1)
-            current_date = d.strftime("%Y-%m-%d")
-        except ValueError:
-            print("[ERROR] 日期格式错误", file=sys.stderr)
-            sys.exit(3)
-
+        fallback_hint = f"{current_date} 暂无数据（{PERIOD_LABEL_MAP.get(period, '日榜')}{ut}更新），已为您查询上一期的数据"
+        current_date = get_fallback_date(current_date, period)
+        
         payload["rankDate"] = current_date
-        result = _http_post(API_URL, payload, timeout=15)
-
+        try:
+            result = _http_post(API_URL, payload, timeout=15)
+        except Exception:
+            print("[ERROR] 回退查询失败", file=sys.stderr)
+            sys.exit(2)
+        
         if result.get("code") == 2000:
             data = result.get("data", [])
             if data:
                 return data, current_date, fallback_hint
-
-        # 前一天也无数据，继续回退最多7天
-        for i in range(2, 8):
-            try:
-                d = datetime.strptime(current_date, "%Y-%m-%d")
-                d -= timedelta(days=1)
-                current_date = d.strftime("%Y-%m-%d")
-            except ValueError:
-                break
-
+        
+        # 上一期也无数据，继续回退最多3期
+        max_fallback = {"day": 7, "week": 3, "month": 3}.get(period, 3)
+        for i in range(2, max_fallback + 1):
+            current_date = get_fallback_date(current_date, period)
             payload["rankDate"] = current_date
-            result = _http_post(API_URL, payload, timeout=15)
-
+            try:
+                result = _http_post(API_URL, payload, timeout=15)
+            except Exception:
+                continue
+            
             if result.get("code") == 2000:
                 data = result.get("data", [])
                 if data:
                     fallback_hint = f"{original_date} 暂无数据，已为您查询 {current_date} 的数据"
                     return data, current_date, fallback_hint
-
-        print(f"[ERROR] 近7天均无数据", file=sys.stderr)
+        
+        print(f"[ERROR] 近{max_fallback}期均无数据", file=sys.stderr)
         sys.exit(3)
     else:
-        # 用户指定具体日期但无数据，告知更新时间并自动回退前一天
+        # 用户指定具体日期但无数据，告知更新时间并自动回退
         ut = update_time_hint.get(period, "")
-        fallback_hint = f"{current_date} 暂无数据（{PERIOD_LABEL_MAP.get(period, '日榜')}{ut}更新），已为您查询前一天的数据"
-        try:
-            d = datetime.strptime(current_date, "%Y-%m-%d")
-            d -= timedelta(days=1)
-            current_date = d.strftime("%Y-%m-%d")
-        except ValueError:
-            print("[ERROR] 日期格式错误", file=sys.stderr)
-            sys.exit(3)
-
+        fallback_hint = f"{current_date} 暂无数据（{PERIOD_LABEL_MAP.get(period, '日榜')}{ut}更新），已为您查询上一期的数据"
+        current_date = get_fallback_date(current_date, period)
+        
         payload["rankDate"] = current_date
-        result = _http_post(API_URL, payload, timeout=15)
-
+        try:
+            result = _http_post(API_URL, payload, timeout=15)
+        except Exception:
+            print("[ERROR] 回退查询失败", file=sys.stderr)
+            sys.exit(2)
+        
         if result.get("code") == 2000:
             data = result.get("data", [])
             if data:
                 return data, current_date, fallback_hint
-
-        print(f"[ERROR] {original_date} 及前一天均暂无数据", file=sys.stderr)
+        
+        print(f"[ERROR] {original_date} 及上一期均暂无数据", file=sys.stderr)
         sys.exit(3)
-
+    
     return [], current_date, ""
 
 
@@ -531,7 +619,7 @@ def _fmt_num(val) -> str:
 def build_markdown_table(items: list, period_label: str, date_str: str,
                           cat_display: str, fetch_time: str, total: int,
                           fuzzy_flag: bool = False) -> str:
-    update_time_map = {1: "每日19:00", 2: "每周一15:00", 3: "每月2号9:00"}
+    update_time_map = {1: "每日19:00", 2: "每周一15:00", 3: "每月1日9:00"}
     period_key = {"日榜": "day", "周榜": "week", "月榜": "month"}.get(period_label, "day")
     ut = update_time_map.get(PERIOD_MAP.get(period_key, 1), "")
 
@@ -549,12 +637,12 @@ def build_markdown_table(items: list, period_label: str, date_str: str,
     lines.append("----\t------\t----\t----------\t--------\t--------\t--------\t--------\t--------\t--------")
 
     is_all_category = (cat_display == "全品类" or cat_display == "综合全部")
-
+    
     for item in items:
         account_name = item.get('accountName', '')
         account_link = item.get('accountLink', item.get('profileUrl', ''))
         track = (item.get('category') or cat_display)
-
+        
         # 全品类时账号名后加"·赛道"
         if is_all_category and track:
             account_display = f"[{account_name}·{track}]({account_link})" if account_link else f"{account_name}·{track}"
@@ -614,7 +702,7 @@ def to_normalized_json(items: list, period: str, date_str: str,
 
     # 批量计算评分并按评分降序排序
     scored_items = calculate_scores_batch(items)
-
+    
     normalized_list = []
     for item in scored_items:
         score = item.get("comprehensiveScore", 0)
@@ -637,10 +725,10 @@ def to_normalized_json(items: list, period: str, date_str: str,
             "newInteraction": parse_inter(item.get("newInteractionCount", "0")),
             "profileUrl":    item.get("accountLink") or item.get("profileUrl", ""),
         })
-
+    
     # 按综合评分降序排序
     normalized_list.sort(key=lambda x: x.get("comprehensiveScore", 0), reverse=True)
-
+    
     # 更新排序后的排名
     for i, item in enumerate(normalized_list):
         item["rank"] = i + 1
@@ -695,7 +783,25 @@ def parse_natural_query(query: str) -> dict:
         result["period"] = period if period else "day"
         # is_latest=True 时，日期由 fetch 函数自动回退
 
-    # 3. 回溯范围校验
+    # 4. 根据周期类型自动纠正日期
+    # 周榜：必须传入周一日期
+    # 月榜：必须传入每月1日
+    if result["date"] and result["period"] in ("week", "month"):
+        parsed_date = date.fromisoformat(result["date"])
+        if result["period"] == "week":
+            corrected_date = _get_monday_of_week(parsed_date)
+            if corrected_date != parsed_date:
+                result["date"] = str(corrected_date)
+                result["date_corrected"] = True
+                result["date_correction_msg"] = f"周榜已自动纠正为该周周一：{corrected_date}"
+        elif result["period"] == "month":
+            corrected_date = _get_2nd_of_month(parsed_date)
+            if corrected_date != parsed_date:
+                result["date"] = str(corrected_date)
+                result["date_corrected"] = True
+                result["date_correction_msg"] = f"月榜已自动纠正为当月1日：{corrected_date}"
+
+    # 5. 回溯范围校验
     target_date = date.fromisoformat(result["date"])
     if not _is_within_window(target_date, result["period"]):
         window = UPDATE_RULES[PERIOD_MAP[result["period"]]]["window_days"]
@@ -708,7 +814,7 @@ def parse_natural_query(query: str) -> dict:
         result["date"] = str(best_date)
         result["date_fallback"] = True
 
-    # 4. 赛道匹配（去除周期/日期关键词后）
+    # 6. 赛道匹配（去除周期/日期关键词后）
     exclude = r"[\d年月日周榜周排名本月本月度今日最近最新"
     exclude += r"小红书榜单排名账号排行榜最夯给我查询看看想要要看]"
     kw = re.sub(exclude, "", text)
@@ -808,7 +914,7 @@ def main():
         display = normalized_all["list"][:limit]
         print(build_markdown_table(display, period_label, rank_date,
                                     cat_display, fetch_time, total, category_fuzzy))
-
+    
     # 生成 HTML 报告文件
     if args.html:
         from generate_report import generate_html

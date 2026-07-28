@@ -75,7 +75,7 @@ python scripts/xiaohongshu_analyzer.py query --user_ids "id1,id2"
 
 ### 操作流程（严格按顺序执行）
 
-**步骤 1：开场白引导** -- 输出欢迎语，引导用户输入小红书号。明确说明：请输入小红书号（纯数字或字母数字组合，非中文昵称）。若用户输入中文昵称，提示用户提供小红书号而非昵称。
+**步骤 1：开场白引导** -- 输出 `references/workflow_guide.md` 中的标准开场白，引导用户输入小红书号。明确说明：请输入小红书号（纯数字或字母数字组合，非中文昵称）。若用户输入中文昵称，提示用户提供小红书号而非昵称。
 
 **步骤 2：输入识别与数据获取** -- 识别用户输入（纯数字或字母数字组合识别为小红书号）并调用接口查询。
 
@@ -84,14 +84,16 @@ python scripts/xiaohongshu_analyzer.py query --user_ids "id1,id2"
 - 搜索「昵称 + 采访/报道」寻找媒体报道
 - 搜索抖音 / B 站 / 公众号等跨平台布局
 
-**步骤 4：查询结果处理** -- 根据查询类型输出对应响应：
+**步骤 4：查询结果处理** -- 参考 `references/workflow_guide.md` 处理场景：
 
-- **未查询到账号**：调用数据同步接口 `python scripts/xiaohongshu_analyzer.py sync_notes --red_ids "用户输入的账号ID"`，输出提示并引导订阅推送（30 分钟后），使用 `calendar_create` 创建日程。
+- **sync冷却期限制**：当账号处于同步冷却期（调用sync_notes后15分钟内），脚本返回 `query_type: "sync_cooldown"`，**禁止调用接口**，告知用户：数据同步中，请等待约N分钟后再查询。
+- **失败阈值限制**：若返回 `query_type: "threshold_exceeded"`，告知用户：当前账号ID已超过失败阈值，请联系客服邮箱redfoxdata@proton.me处理。
+- **未查询到账号**：调用数据同步接口 `python scripts/xiaohongshu_analyzer.py sync_notes --red_ids "用户输入的账号ID"`，输出提示并引导订阅推送（30 分钟后），使用 `schedule` 创建定时任务。
 - **查询到唯一账号**：继续生成单账号报告（步骤 5-7）。
 - **查询到多个账号**：进入多账号对比流程（步骤 5M-7M）。
 - **查询到账号但无作品**：直接进入订阅流程，用户可选择订阅、仍执行分析或暂不订阅。
 
-**步骤 5：诊断报告生成** -- 智能体严格按照 `references/report_template.md` 模板格式在对话中输出诊断报告。报告结构按 7 个评分维度展开：
+**步骤 5：诊断报告生成** -- 智能体严格按照 `references/report_template.md` 模板格式在对话中输出诊断报告。在展示任何小红书作品链接之前，必须先输出风控提示。报告结构按 7 个评分维度展开：
 
 - 账号定位（10分）：TA 是谁、心智占位、核心身份、价值观锚点、吸引力类型、差异化优势
 - 粉丝画像与需求（10分）：粉丝构成、核心需求反推、付费意愿评估
@@ -188,12 +190,12 @@ xiaohongshu-account-analyzer/
 
 ### 技术栈
 
-| 技术 | 用途 |
-| ---- | ---- |
-| Python 标准库 | HTTP 请求与数据解析 |
-| 红狐 API | 小红书账号数据来源 |
-| WebSearch | 博主背景信息补全 |
-| HTML / CSS | 可视化诊断报告渲染 |
+| 技术 | 用途 | 依赖 |
+| ---- | ---- | ---- |
+| Python 标准库 | HTTP 请求与数据解析 | ssl、urllib.request、json |
+| 红狐 API | 小红书账号数据来源 | REDFOX_API_KEY 环境变量 |
+| WebSearch | 博主背景信息补全 | 智能体内置能力 |
+| HTML / CSS | 可视化诊断报告渲染 | 无 |
 
 ### 核心模块说明
 
@@ -203,18 +205,18 @@ xiaohongshu-account-analyzer/
 
 ### 资源索引
 
-| 文件 | 用途 |
-| ---- | ---- |
-| [scripts/xiaohongshu_analyzer.py](scripts/xiaohongshu_analyzer.py) | query查询数据保存raw_data.json，build_report_data生成report_data.json模板，generate_html生成HTML报告 |
-| [scripts/html_generator.py](scripts/html_generator.py) | HTML报告生成逻辑 |
-| [scripts/html_checker.py](scripts/html_checker.py) | HTML数据完整性检查与修复 |
-| [references/report_template.md](references/report_template.md) | 生成报告前必须先读取此模板 |
-| [references/api_guide.md](references/api_guide.md) | 理解接口字段和评分逻辑时读取 |
-| [references/workflow_guide.md](references/workflow_guide.md) | 处理开场白、查询结果、相似账号展示、评分体系和数据填写时读取 |
-| [assets/report_template.html](assets/report_template.html) | 单账号HTML格式报告模板 |
-| [assets/report_data_template.json](assets/report_data_template.json) | 单账号报告数据模板 |
-| [assets/multi_report_template.html](assets/multi_report_template.html) | 多账号对比HTML格式报告模板 |
-| [assets/multi_report_data_template.json](assets/multi_report_data_template.json) | 多账号报告数据模板 |
+| 文件 | 用途 | 读取时机 |
+| ---- | ---- | -------- |
+| [scripts/xiaohongshu_analyzer.py](scripts/xiaohongshu_analyzer.py) | query查询数据保存raw_data.json，build_report_data生成report_data.json模板，generate_html生成HTML报告 | 执行查询/生成报告时 |
+| [scripts/html_generator.py](scripts/html_generator.py) | HTML报告生成逻辑 | 生成HTML报告时 |
+| [scripts/html_checker.py](scripts/html_checker.py) | HTML数据完整性检查与修复 | 生成HTML报告时 |
+| [references/report_template.md](references/report_template.md) | 诊断报告输出模板 | 生成报告前必须先读取 |
+| [references/api_guide.md](references/api_guide.md) | 接口字段和评分逻辑说明 | 理解接口字段和评分逻辑时 |
+| [references/workflow_guide.md](references/workflow_guide.md) | 开场白、查询结果、相似账号展示、评分体系和数据填写指南 | 处理查询结果和填写报告时 |
+| [assets/report_template.html](assets/report_template.html) | 单账号HTML格式报告模板 | 生成HTML报告时 |
+| [assets/report_data_template.json](assets/report_data_template.json) | 单账号报告数据模板 | build_report_data命令时 |
+| [assets/multi_report_template.html](assets/multi_report_template.html) | 多账号对比HTML格式报告模板 | 生成多账号HTML报告时 |
+| [assets/multi_report_data_template.json](assets/multi_report_data_template.json) | 多账号报告数据模板 | build_multi_report_data命令时 |
 
 ---
 
@@ -252,3 +254,19 @@ A: 步骤 7 填充 `report_data.json` 时，AI 分析内容必须与对话中输
 
 **Q: 报告格式不正确？**
 A: 诊断报告必须严格按照 `references/report_template.md` 格式输出。空值字段直接隐藏对应模块，不展示 "暂无"。
+
+## 注意事项
+
+- 分析基于近30天数据，确保数据时效性
+- 脚本输出 JSON 格式，智能体负责内容解析与报告呈现
+- **格式要求**：诊断报告必须在对话中直接输出，不得生成md文件；必须严格按照 `references/report_template.md` 格式输出
+- 无作品数据时需提示用户等待更新并引导订阅提醒
+- 所有动态生成内容必须基于接口返回数据+WebSearch结果，禁止虚构
+- **输出顺序**：对话输出诊断报告 → 直接展示相似账号 → **立即生成HTML报告并展示（不可跳过）**
+- **空值处理**：数据字段为空时直接隐藏对应模块，不展示"暂无"
+- **数据模板一致性**：步骤7填充report_data.json时，AI分析内容必须与对话中输出的诊断报告完全一致
+- **⚠️ HTML报告是强制交付物**：每次诊断必须生成HTML报告，这是用户的核心产出物。未生成HTML等于任务未完成。输出文字报告后必须立即执行步骤7，不得因上下文长度而省略
+- **上下文预算控制**：步骤5文字报告输出时，各维度分析控制在2-3句话以内，为后续HTML生成预留充足的上下文空间。宁可文字报告精简，也不可省略HTML报告
+- 用户回复序号选择相似账号时，获取该账号userId并走完整诊断流程
+- **多账号对比总结**：核心差异和发展建议按账号分别展示
+- **反空话规则**：禁止出现无具体动作、无数据支撑的表述，所有结论必须满足数据支撑+落地动作
