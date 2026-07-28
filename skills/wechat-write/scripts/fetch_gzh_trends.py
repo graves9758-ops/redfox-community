@@ -102,7 +102,7 @@ def fetch_gzh_trends(keyword: str, start_date: str = None, debug: bool = False, 
         - 最多5个关键词
         - 总长度不超过200字符
     """
-    base_url = "https://redfox.hk/story/api/gzh/search/hotArticle"
+    base_url = "https://redfox.hk/story/api/gzh/search/hotArticleNew"
     api_key = os.environ.get("REDFOX_API_KEY", "")
     if not api_key:
         raise Exception("缺少API Key：请设置环境变量 REDFOX_API_KEY。获取方式：https://redfox.hk/settings/api-keys?source=github")
