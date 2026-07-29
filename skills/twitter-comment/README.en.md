@@ -1,23 +1,26 @@
-# X(Twitter) Comment Analysis / twitter-comment
+# X Comment Analyzer / x-comment-analyzer
 
 ---
 
 ## Overview
 
-X(Twitter) Comment Analysis is an intelligent comment insight tool. Simply paste a tweet link or tweet ID to instantly retrieve comment data and gain quick insight into user feedback through four-dimensional sentiment analysis.
+X Comment Analyzer is an intelligent comment insight tool that fetches comment data and performs four-dimensional sentiment analysis with a single tweet link, helping you quickly grasp the full picture of user feedback under any tweet.
 
 **Core Value**
 
-- **One-click retrieval**: Paste a tweet link to fetch all first-level comment data, with batch query support for multiple tweets
-- **Smart analysis**: Automatically performs four-dimensional sentiment analysis (positive/negative/demand/competitor), with multi-language contextual understanding
-- **Visual reports**: Generates an interactive HTML report with X dark theme, supporting offline saving and sharing
+- 💬 **One-Click Comment Fetching**：Paste a tweet link or tweet ID to automatically pull first-level comment data — no more scrolling through comments manually
+- 🤖 **Four-Dimensional Sentiment Insights**：Positive / Negative / Demand / Competitor sentiment analysis, each dimension with proportion and representative opinion quotes
+- 📊 **Complete Tweet Data Overview**：Author info, tweet content, engagement metrics (likes / retweets / quotes / replies / bookmarks / views) all in one view
+- 🔄 **Cursor Pagination**：Support for fetching more comments via pagination to expand your analysis sample
 
-**Intended Users**
+**Target Users**
 
-- 📊 **Brand operators** — Quickly gauge public sentiment and respond to feedback in a timely manner
-- 🏢 **Marketing planners** — Analyze competitor tweet comments to identify differentiation opportunities
-- ✍️ **Social media managers** — Review content performance and understand real audience feedback
-- 🔍 **Product managers** — Discover user needs within trending topics to guide product iteration
+- 👤 Brand Operators — Stay on top of public sentiment trends and reduce PR risks
+- 📱 Social Media Managers — Analyze tweet performance and drive content strategy with data
+- 🏢 Marketing Planners — Analyze competitor tweet feedback and identify differentiation opportunities
+- 🎯 Product Managers — Discover real user needs to guide product decisions
+- ✍️ Content Creators — Review audience feedback on your tweets and improve engagement
+- 🏷️ MCN Agencies — Evaluate account content performance at scale
 
 ---
 
@@ -25,60 +28,44 @@ X(Twitter) Comment Analysis is an intelligent comment insight tool. Simply paste
 
 ### Core Capabilities
 
-- **Comment retrieval**: Paste a tweet link or tweet ID to pull comment data, with batch support for multiple links
-- **Multi-language support**: Supports tweet comments in all languages, with context-aware analysis
-- **Four-dimensional sentiment analysis**: Positive/negative/demand/competitor analysis with representative comment excerpts for each dimension
-- **Tweet detail display**: Full display of author info, tweet content, and engagement data (likes/retweets/quotes/replies/bookmarks/views)
-- **HTML report generation**: Interactive report with X dark theme, supporting offline saving and sharing
-- **Smart credit reminder**: Proactive credit consumption notification before multi-link queries, execution only after confirmation
+- 💬 **Comment Fetching**：Paste a tweet link or tweet ID to pull first-level comment data, with support for multi-link batch queries
+- 📄 **Cursor Pagination**：Approximately 30–40 first-level comments per page, with cursor-based pagination for more pages
+- 🤖 **Four-Dimensional AI Analysis**：Positive / Negative / Demand / Competitor sentiment analysis, each dimension with proportion and representative comment quotes
+- 📊 **Tweet Details Display**：Author info, tweet content, engagement metrics (likes / retweets / quotes / replies / bookmarks / views) fully displayed
+- 🌐 **Multi-Language Support**：Supports tweets and comments in various languages, with AI analysis based on original context
+- 🛡️ **Credit Protection**：Proactive credit consumption prompts before multi-link queries and pagination, only executing after confirmation
 
 ---
 
 ## Usage Guide
 
-Simply describe your need in natural language with a tweet link or tweet ID — no fixed commands to memorize.
-
-### How to Get a Tweet ID
-
-Tweet IDs can be extracted directly from tweet links. For example:
-
-- Tweet link: `https://x.com/jiroucaigou/status/2080273986794184815`
-- Tweet ID: `2080273986794184815` (the numeric part after `/status/` in the URL)
-
-Both `x.com` and `twitter.com` domain formats are supported.
+Simply describe your needs in natural language — no commands to memorize.
 
 ### Quick Reference
 
 | Intent | Example Phrase | Result |
-|------|---------|------|
-| View tweet comments | "Check comments for tweet 2076962843841470561" | Get tweet details + all comments + AI analysis |
-| Query via link | Paste `https://x.com/username/status/2076962843841470561` | Auto-extract tweet ID and fetch comments |
-| Batch query | Paste multiple links at once | Credit confirmation prompt, then fetch and analyze each independently |
-| Generate report | "Generate" "Create HTML" | Generate interactive HTML visualization report |
-
-### Multi-link Query
-
-Submit multiple tweet links at once. When multiple links are detected, the tool will first notify you of the required credits for this query. Execution only proceeds after your confirmation. Each tweet is independently displayed with comment data and four-dimensional analysis results.
+|--------|---------------|--------|
+| View tweet comments | "Query https://x.com/user/status/xxx" | Tweet details + current page comments + four-dimensional analysis |
+| Query by tweet ID | "View comments for tweet 2076962843841470561" | Auto-identify ID and fetch comments |
+| Continue pagination | "Next page" | Fetch next page of comments (with confirmation prompt) |
+| Batch query | Paste multiple links at once | Fetch and analyze each independently |
 
 ### Output Example
 
-After completing the query, you will receive the following in sequence:
+Query results are output in a fixed 4-section structure:
 
-1. **Tweet details** (table format: author info with clickable profile link, tweet content, post link, engagement data)
-2. **Query scope** (total comment count and number of comments fetched)
-3. **Comment list TOP 10** (top 10 comments sorted by popularity, table with user link, content, engagement data, timestamp)
-4. **Four-dimensional sentiment analysis** (positive/negative/demand/competitor dimensions, table with ratios and analysis)
-5. **Prompt to generate HTML report**
+> **Tweet Details** → Author, content, publish time, engagement metrics
+> **Query Scope** → Total comment count and number fetched this round
+> **Comment List (N total)** → User comment table sorted by likes descending
+> **Four-Dimensional Sentiment Analysis** → Positive / Negative / Demand / Competitor proportions with representative opinions
 
 ---
 
 ## Use Cases
 
-| Scenario | Role | Example Question | Benefit |
-|------|------|---------|------|
-| Sentiment monitoring | Brand operator | "Analyze the sentiment of user comments on this tweet" | Quickly understand public opinion and respond in time |
-| Competitive analysis | Marketing planner | "Check the comment feedback on this competitor's tweet" | Identify competitor strengths/weaknesses and differentiation |
-| Content review | Social media manager | "How are the comments on this tweet doing?" | Understand audience feedback and optimize content strategy |
-| Market research | Product manager | "See what users need on this topic" | Discover real needs to guide product iteration |
-
----
+| Scenario | Role | Example Query | Benefit |
+|----------|------|--------------|---------|
+| Brand Sentiment Monitoring | Brand Operator | "Analyze comments on XX brand's latest tweet" | Stay on top of sentiment trends and reduce PR risks |
+| Competitor Analysis | Marketing Planner | "Compare user feedback on XX and YY tweets" | Understand competitor strengths and uncover unmet needs |
+| Content Review | Content Creator | "Analyze comments on my tweet" | Data-driven content iteration to boost engagement |
+| Market Research | Product Manager | "Analyze comments on trending tweets about XX topic" | Low-cost access to firsthand user insights for product decisions |

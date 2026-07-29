@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 X(Twitter)作品评论分析脚本
-调用 Redfox API 获取X(Twitter)推文评论数据，同步生成 HTML 报告
-用法: python3 tweet_comment_search.py "<tweetId>" [--output-dir ~/Downloads/QoderReports]
+调用 Redfox API 获取X(Twitter)推文评论数据，默认不生成 HTML 报告，结果仅输出到 stdout，不落盘缓存
+用法: python3 tweet_comment_search.py "<tweetId>" [--cursor CURSOR] [--html] [--output-dir ~/Downloads/QoderReports]
 """
 
 import sys
@@ -12,7 +12,7 @@ import json
 import argparse
 import urllib.request
 import urllib.error
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 TWEET_COMMENTS_API = "https://redfox.hk/story/api/x/tweetComments"
 
@@ -89,6 +89,25 @@ def _safe_str(val, default=""):
     return str(val)
 
 
+def _parse_time(val) -> str:
+    """解析时间：支持 Twitter 原生格式/Unix 时间戳，统一转为北京时间字符串"""
+    beijing = timezone(timedelta(hours=8))
+    if isinstance(val, (int, float)) and val > 1000000000:
+        try:
+            dt = datetime.fromtimestamp(int(val), tz=timezone.utc)
+            return dt.astimezone(beijing).strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return str(val)
+    s = str(val or "").strip()
+    if not s:
+        return ""
+    try:
+        dt = datetime.strptime(s, "%a %b %d %H:%M:%S %z %Y")
+        return dt.astimezone(beijing).strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return s
+
+
 def format_comment(raw: dict) -> dict:
     """将 API 返回的评论格式化为统一结构"""
     author = raw.get("author") or {}
@@ -112,12 +131,7 @@ def format_comment(raw: dict) -> dict:
 
     tweet_id = _safe_str(raw.get("tweetId"))
 
-    create_time = raw.get("createdAt") or raw.get("createTime") or ""
-    if isinstance(create_time, (int, float)) and create_time > 1000000000:
-        try:
-            create_time = datetime.fromtimestamp(int(create_time)).strftime("%Y-%m-%d %H:%M:%S")
-        except Exception:
-            create_time = str(create_time)
+    create_time = _parse_time(raw.get("createdAt") or raw.get("createTime") or "")
 
     return {
         "user_name": user_name,
@@ -142,12 +156,7 @@ def parse_work_detail(data: dict) -> dict:
     """解析推文详情（顶层 data，不含 threadReplies）"""
     author = data.get("author") or {}
 
-    create_time = data.get("createdAt") or ""
-    if isinstance(create_time, (int, float)) and create_time > 1000000000:
-        try:
-            create_time = datetime.fromtimestamp(int(create_time)).strftime("%Y-%m-%d %H:%M:%S")
-        except Exception:
-            create_time = str(create_time)
+    create_time = _parse_time(data.get("createdAt") or "")
 
     return {
         "tweet_id": _safe_str(data.get("tweetId")),
@@ -172,9 +181,13 @@ def parse_work_detail(data: dict) -> dict:
     }
 
 
-def fetch_tweet_data(tweet_id: str, api_key: str) -> tuple:
-    """调用推文评论API，返回 (work_detail, comments_list, total_reply_count)"""
-    data = api_request(TWEET_COMMENTS_API, {"tweetId": tweet_id, "source": "X(Twitter)作品评论分析-GitHub"}, api_key)
+def fetch_tweet_data(tweet_id: str, api_key: str, cursor: str = None) -> tuple:
+    """调用推文评论API，返回 (work_detail, comments_list, total_reply_count, next_cursor)"""
+    payload = {"tweetId": tweet_id, "source": "X(Twitter)作品评论分析-GitHub"}
+    if cursor:
+        payload["cursor"] = cursor
+
+    data = api_request(TWEET_COMMENTS_API, payload, api_key)
 
     work_detail = parse_work_detail(data)
 
@@ -185,8 +198,9 @@ def fetch_tweet_data(tweet_id: str, api_key: str) -> tuple:
     all_comments = [format_comment(c) for c in raw_replies]
 
     total_reply_count = work_detail.get("reply_count", 0)
+    next_cursor = work_detail.get("cursor") or ""
 
-    return work_detail, all_comments, total_reply_count
+    return work_detail, all_comments, total_reply_count, next_cursor
 
 
 def escape_html(text: str) -> str:
@@ -315,7 +329,8 @@ def generate_html_report(tweet_id: str, comments: list, work_detail: dict = None
 def main():
     parser = argparse.ArgumentParser(description="X(Twitter)作品评论查询")
     parser.add_argument("tweet_id", help="推文ID 或推文链接")
-    parser.add_argument("--no-html", dest="no_html", action="store_true", help="跳过 HTML 报告生成")
+    parser.add_argument("--cursor", dest="cursor", type=str, default=None, help="翻页游标，从上一次返回结果中的 cursor 字段获取")
+    parser.add_argument("--html", dest="html", action="store_true", help="同步生成 HTML 报告（默认不生成）")
     parser.add_argument("--output-dir", dest="output_dir", type=str, default=None, help="HTML 输出目录（默认 ~/Downloads/QoderReports）")
 
     args = parser.parse_args()
@@ -326,7 +341,7 @@ def main():
         sys.exit(1)
 
     api_key = get_api_key()
-    work_detail, comments, total_reply_count = fetch_tweet_data(tweet_id, api_key)
+    work_detail, comments, total_reply_count, next_cursor = fetch_tweet_data(tweet_id, api_key, cursor=args.cursor)
 
     total = len(comments)
 
@@ -334,11 +349,12 @@ def main():
         "work_detail": work_detail,
         "total_count": total_reply_count,
         "total_fetched": total,
-        "has_next": False,
+        "has_next": bool(next_cursor),
+        "cursor": next_cursor,
         "comments": comments,
     }
 
-    if not args.no_html:
+    if args.html:
         html_path = generate_html_report(
             tweet_id=tweet_id,
             comments=comments,
