@@ -37,7 +37,7 @@ PLATFORMS = {
     },
 }
 
-SOURCE_TAG = "品牌GEO分析"
+SOURCE_TAG = "品牌GEO分析-GitHub"
 
 
 def _get_headers():
