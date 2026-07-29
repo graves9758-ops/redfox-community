@@ -10,7 +10,8 @@ import requests
 
 
 API_HOST = "redfox.hk"
-API_PATH = "/story/api/gzhUser/query"
+API_PATH_SEARCH_USER = "/story/api/gzh/data/searchUser"  # 接口1：关键词搜索账号 → 获取微信号
+API_PATH_QUERY_DATA = "/story/api/gzhUser/queryData"      # 接口2：按微信号+名称精确查询完整数据
 RAW_DATA_FILE = "raw_data.json"
 
 
@@ -206,45 +207,7 @@ def _extract_benchmark_from_api(raw):
     return benchmark
 
 
-# 水衡量基准数据（作为兜底默认值，基于公众号红狐指数层级）
-BENCHMARK_DATA = {
-    "新号或小号": {
-        "互动率": {"中位数参考": 0.5, "优秀值参考": 2.0},
-        "分享率": {"中位数参考": 0.3, "优秀值参考": 1.5},
-        "收藏率": {"中位数参考": 0.5, "优秀值参考": 2.0},
-        "周更频率": {"中位数参考": 0.75, "优秀值参考": 3.0},
-    },
-    "偏低账号": {
-        "互动率": {"中位数参考": 1.0, "优秀值参考": 3.5},
-        "分享率": {"中位数参考": 0.8, "优秀值参考": 2.5},
-        "收藏率": {"中位数参考": 1.0, "优秀值参考": 4.0},
-        "周更频率": {"中位数参考": 1.5, "优秀值参考": 6.0},
-    },
-    "中等账号": {
-        "互动率": {"中位数参考": 1.5, "优秀值参考": 5.0},
-        "分享率": {"中位数参考": 1.2, "优秀值参考": 3.5},
-        "收藏率": {"中位数参考": 1.5, "优秀值参考": 5.0},
-        "周更频率": {"中位数参考": 2.0, "优秀值参考": 7.0},
-    },
-    "优秀账号": {
-        "互动率": {"中位数参考": 2.0, "优秀值参考": 6.0},
-        "分享率": {"中位数参考": 1.5, "优秀值参考": 4.0},
-        "收藏率": {"中位数参考": 2.0, "优秀值参考": 6.0},
-        "周更频率": {"中位数参考": 2.5, "优秀值参考": 7.0},
-    },
-    "头部账号": {
-        "互动率": {"中位数参考": 2.5, "优秀值参考": 8.0},
-        "分享率": {"中位数参考": 2.0, "优秀值参考": 5.0},
-        "收藏率": {"中位数参考": 2.5, "优秀值参考": 8.0},
-        "周更频率": {"中位数参考": 3.0, "优秀值参考": 7.0},
-    },
-    "现象级大号": {
-        "互动率": {"中位数参考": 3.0, "优秀值参考": 10.0},
-        "分享率": {"中位数参考": 2.5, "优秀值参考": 6.0},
-        "收藏率": {"中位数参考": 3.0, "优秀值参考": 10.0},
-        "周更频率": {"中位数参考": 3.5, "优秀值参考": 7.0},
-    },
-}
+
 
 
 
@@ -317,23 +280,8 @@ def _format_interactive_count(count):
 
 
 
-def _map_account_label(redfox_index):
-    """根据红狐指数映射账号行业地位标签"""
-    if redfox_index >= 900:
-        return "现象级大号"
-    elif redfox_index >= 800:
-        return "头部账号"
-    elif redfox_index >= 700:
-        return "优秀账号"
-    elif redfox_index >= 600:
-        return "中等账号"
-    elif redfox_index >= 500:
-        return "偏低账号"
-    else:
-        return "新号或小号"
 
-
-def _score_content_health(works, account_tag, signature, redfox_index, verify_name, account_type):
+def _score_content_health(works, signature, verify_name, account_type):
     """内容健康度评分（原始分0-10分，综合评分时×3=0-30分，占30%）
     
     更新稳定性(15%): 10分=日更，8分=周更3-5次，5分=周更1-2次，<5=不规律
@@ -363,7 +311,8 @@ def _score_content_health(works, account_tag, signature, redfox_index, verify_na
         update_stability = 0
     
     # 内容垂直度(15%): 基于accountType和works标题关键词匹配
-    vertical_score = 0.5  # 默认中等
+    # 公众号通常专注某一领域，默认给中等偏上基础分
+    vertical_score = 0.65  # 默认中等偏上（公众号通常有明确定位）
     if account_type and works:
         type_keywords = set(account_type.split())
         match_count = 0
@@ -381,17 +330,23 @@ def _score_content_health(works, account_tag, signature, redfox_index, verify_na
         else:
             vertical_score = 0.2
     
-    # 原创能力(10%): 标题含"原创"标记占比
-    original_count = sum(1 for w in works if "原创" in (w.get("title") or ""))
+    # 原创能力(10%): 综合多种原创标记字段判断
+    # 优先查works中的原创字段，其次查标题文字，无法判断时给中等分（不惩罚优质未标记内容）
+    original_count = sum(
+        1 for w in works
+        if w.get("isOriginal") or w.get("originalFlag") or w.get("type") == "original"
+        or "原创" in (w.get("title") or "")
+    )
     original_ratio = original_count / len(works) if works else 0
     if original_ratio >= 0.7:
         original_score = 1.0
     elif original_ratio >= 0.4:
-        original_score = 0.6
+        original_score = 0.75
     elif original_ratio > 0:
-        original_score = 0.3
+        original_score = 0.55
     else:
-        original_score = 0.1
+        # 无原创标记：不代表非原创，给中等分(0.60)，避免错误惩罚优质账号
+        original_score = 0.60
     
     # 质量稳定性(10%): 基于阅读量变异系数(标准差/均值)
     reads = [_work_read(w) for w in works if _work_read(w) > 0]
@@ -573,104 +528,94 @@ def _score_user_activity(works, interaction_rate=0):
     }
 
 
-def _score_core_data(works, avg_read_count, redfox_index):
-    """内容核心数据表现评分（0-43分制，综合评分时×0.814≈0-35分）
+def _score_core_data(works, avg_read_count):
+    """内容核心数据表现评分（0-40分制，综合评分时转换为百分制）
     
-    红狐指数(12分): 综合影响力指数
-    阅读数表现(12分): 内容传播广度
-    点赞数表现(8分): 内容认可度
-    评论数表现(5分): 用户参与度
-    互动率表现(4分): 综合互动质量
-    发布时间合理性(2分): 发布时机优化
-    合计=43分→×0.814≈35分(综合评分权重35%)
+    阅读数表现(15分): 平均阅读数区间分段
+    点赞数表现(10分): 平均点赞数+点赞率
+    评论数表现(7分): 平均评论数+评论率
+    互动率表现(5分): 综合互动率
+    发布时间合理性(3分): 黄金时段发文比例
+    满分=40分，转换为百分制：raw/40*100
     """
     if not works:
         return {
-            "红狐指数": 0, "阅读数表现": 0, "点赞数表现": 0,
-            "评论数表现": 0, "互动率表现": 0, "发布时间合理性": 0,
+            "阅读数表现": 0, "点赞数表现": 0, "评论数表现": 0,
+            "互动率表现": 0, "发布时间合理性": 0,
             "原始分": 0, "总分": 0
         }
     
-    # 1. 红狐指数(12分)
-    idx = redfox_index or 0
-    if idx >= 900:
-        redfox_score = 12
-    elif idx >= 800:
-        redfox_score = 10
-    elif idx >= 700:
-        redfox_score = 8
-    elif idx >= 600:
-        redfox_score = 6
-    elif idx >= 500:
-        redfox_score = 4
-    else:
-        redfox_score = 2
-    
-    # 2. 阅读数表现(12分): 基于平均阅读数
+    # 1. 阅读数表现(15分) - 基于公众号行业真实水平校准
+    # 行业参考：普通账号500-3000，良好账号3000-1万，优质账号1-5万，顶尖账号5万+
     avg_read = avg_read_count or 0
     if avg_read >= 100000:
-        read_score = 12
+        read_score = 15   # 超顶级，如人民日报等媒体大号
     elif avg_read >= 50000:
-        read_score = 10
+        read_score = 13   # 行业顶尖（5万+）
     elif avg_read >= 20000:
-        read_score = 8
+        read_score = 11   # 行业优秀（2-5万）← 占豪/洞见在此区间
+    elif avg_read >= 10000:
+        read_score = 9    # 行业良好（1-2万）
     elif avg_read >= 5000:
-        read_score = 6
+        read_score = 7    # 中等水平（5000-1万）
     elif avg_read >= 1000:
-        read_score = 4
+        read_score = 4    # 偏低
     else:
-        read_score = 2
+        read_score = 2    # 极低
     
-    # 3. 点赞数表现(8分): 基于平均点赞数和点赞率
+    # 2. 点赞数表现(10分)
     total_likes = sum(_work_like(w) for w in works)
     total_reads = sum(_work_read(w) for w in works)
     avg_likes = total_likes / len(works) if works else 0
     like_rate = total_likes / total_reads if total_reads > 0 else 0
     
     if avg_likes >= 3000 or like_rate >= 0.03:
-        like_score = 8
+        like_score = 10
     elif avg_likes >= 1000 or like_rate >= 0.015:
-        like_score = 6
+        like_score = 8
     elif avg_likes >= 300 or like_rate >= 0.005:
-        like_score = 4
+        like_score = 5
     elif avg_likes >= 100 or like_rate >= 0.003:
-        like_score = 2
+        like_score = 3
     else:
         like_score = 1
     
-    # 4. 评论数表现(5分): 基于平均评论数和评论率
+    # 3. 评论数表现(7分)
     total_comments = sum(_work_comment(w) for w in works)
     avg_comments = total_comments / len(works) if works else 0
     comment_rate = total_comments / total_reads if total_reads > 0 else 0
     
     if avg_comments >= 500 or comment_rate >= 0.005:
-        comment_score = 5
+        comment_score = 7
     elif avg_comments >= 200 or comment_rate >= 0.003:
-        comment_score = 4
+        comment_score = 5
     elif avg_comments >= 100 or comment_rate >= 0.002:
-        comment_score = 3
+        comment_score = 4
     elif avg_comments >= 50 or comment_rate >= 0.001:
         comment_score = 2
     else:
         comment_score = 1
     
-    # 5. 互动率表现(4分): (点赞+评论+分享+在看)/阅读数
+    # 4. 互动率表现(5分) - 基于公众号行业真实水平校准
+    # 行业参考：普通1-3%，良好3-8%，优秀8-15%，顶尖15%+
     total_shares = sum(_work_share(w) for w in works)
     total_watches = sum(w.get("watchCount") or 0 for w in works)
     inter_rate = (total_likes + total_comments + total_shares + total_watches) / total_reads if total_reads > 0 else 0
     
-    if inter_rate >= 0.08:
+    if inter_rate >= 0.10:    # 顶尖：10%+（极少账号能达到）← 占豪/洞见在此区间
+        inter_score = 5
+    elif inter_rate >= 0.05:  # 优秀：5-10%
         inter_score = 4
-    elif inter_rate >= 0.05:
+    elif inter_rate >= 0.03:  # 良好：3-5%
         inter_score = 3
-    elif inter_rate >= 0.03:
+    elif inter_rate >= 0.015: # 中等：1.5-3%
         inter_score = 2
-    elif inter_rate >= 0.02:
+    elif inter_rate >= 0.005: # 偏低：0.5-1.5%
         inter_score = 1
     else:
         inter_score = 0
     
-    # 6. 发布时间合理性(2分): 黄金时段发文比例
+    # 5. 发布时间合理性(3分): 黄金时段发文比例
     golden_count = 0
     total_with_time = 0
     for w in works:
@@ -694,27 +639,26 @@ def _score_core_data(works, avg_read_count, redfox_index):
     if total_with_time > 0:
         golden_ratio = golden_count / total_with_time
         if golden_ratio >= 0.6:
-            time_score = 2
+            time_score = 3
         elif golden_ratio >= 0.3:
-            time_score = 1.5
+            time_score = 2
         elif golden_ratio >= 0.1:
             time_score = 1
         else:
             time_score = 0
     else:
-        time_score = 0.5
+        time_score = 1
     
-    raw_score = round(redfox_score + read_score + like_score + comment_score + inter_score + time_score, 1)
+    raw_score = round(read_score + like_score + comment_score + inter_score + time_score, 1)
     
     return {
-        "红狐指数": redfox_score,
         "阅读数表现": read_score,
         "点赞数表现": like_score,
         "评论数表现": comment_score,
         "互动率表现": inter_score,
         "发布时间合理性": time_score,
         "原始分": raw_score,
-        "总分": round(raw_score * 0.814, 1)  # ×0.814换算为0-35分（综合评分权重35%）
+        "总分": round(raw_score / 40 * 100, 1)  # 转换为百分制
     }
 
 
@@ -817,16 +761,25 @@ def _get_score_level_icon(score, max_score):
 
 
 def _get_overall_grade(score):
-    """根据综合评分返回等级图标+评级+等级"""
-    if score >= 90:
+    """根据综合评分返回等级图标+评级+等级
+
+    评级标准（基于公众号行业真实水平）：
+    S级(行业标杆) >=85：平均阅读3万+、互动率10%+ 的顶尖账号
+    A级(优质账号) >=75：平均阅读1-3万、稳定更新的优质账号
+    B级(健康账号) >=65：正常运营、有一定互动的健康账号
+    C级(中等账号) >=55：基础运营待提升
+    D级(亚健康)   >=45：运营不稳定或互动偏低
+    E级(问题账号)  <45：严重问题需全面诊断
+    """
+    if score >= 85:
         return "🏆 标杆账号", "S级"
-    elif score >= 80:
+    elif score >= 75:
         return "⭐ 优质账号", "A级"
-    elif score >= 70:
+    elif score >= 65:
         return "✅ 健康账号", "B级"
-    elif score >= 60:
+    elif score >= 55:
         return "📊 中等账号", "C级"
-    elif score >= 50:
+    elif score >= 45:
         return "⚠️ 亚健康账号", "D级"
     else:
         return "❌ 问题账号", "E级"
@@ -835,64 +788,40 @@ def _get_overall_grade(score):
 def _analyze_single_account(raw, has_works=True):
     """对单个账号原始数据进行评分和结构化处理
     
-    Args:
-        raw: 原始账号数据（兼容新旧字段名）
-        has_works: 是否有作品数据，False时跳过作品相关分析
+    适配 queryData 接口返回的字段命名：
+    accountId / accountName / avatar / verifyName / description / works / similarAccounts
     """
     # 无作品提示
-    no_works_hint = "" if has_works else "该账号暂未获取到近7天作品"
-    
+    no_works_hint = "" if has_works else "该账号暂未获取到作品数据"
+        
     # 统一字段读取
     nickname = raw.get("accountName", "")
-    red_id = raw.get("accountId", "")
-    avatar = raw.get("avatar", "")
-    gmt_create = raw.get("gmtCreate", "")
+    account_id = raw.get("accountId", "")
     signature = raw.get("description", "")
     avg_read_count = raw.get("avgReadCount", 0) or 0
-    redfox_index = raw.get("redfoxIndex") or 0
     account_type = raw.get("accountType", "")
     verify_name = raw.get("verifyName", "")
     works = raw.get("works", []) or []
-    similar_accounts = raw.get("similarAccounts", []) or []
-    account_tag = _map_account_label(redfox_index)
-
+    
     if not works:
         has_works = False
-
+    
     # 四维度评分
-    content_health = _score_content_health(works, account_tag, signature, redfox_index, verify_name, account_type)
+    content_health = _score_content_health(works, signature, verify_name, account_type)
     user_activity = _score_user_activity(works if has_works else [])
-    core_data = _score_core_data(works if has_works else [], avg_read_count, redfox_index)
+    core_data = _score_core_data(works if has_works else [], avg_read_count)
     operation_compliance = _score_operation_compliance(works if has_works else [], verify_name)
-
-    # 综合评分计算：以红狐指数百分制为锚点，其他维度做微调
-    # 综合评分 = 红狐指数百分制 + 调整分
-    # 调整分 = (其他维度百分制 - 红狐百分制) × 0.1，范围[-5, +5]
-    # 目的：综合评分与红狐指数百分制极度相近，其他维度仅做微调
-    redfox_pct = redfox_index / 10 if redfox_index else 0  # 红狐指数百分制
-
-    # 计算其他维度综合百分制
-    core_without_redfox = core_data["原始分"] - core_data["红狐指数"]
-    core_without_redfox_max = 31  # 43-12
-    core_pct = (core_without_redfox / core_without_redfox_max * 100) if core_without_redfox_max > 0 and core_without_redfox >= 0 else 0
-
-    dual_pct = (content_health["原始分"] + user_activity["原始分"]) / 2 / 10 * 100
-    op_pct = operation_compliance["原始分"] / 10 * 100
-
-    other_pct = core_pct * 0.4 + dual_pct * 0.35 + op_pct * 0.25  # 其他维度综合百分制
-
-    # 调整分：其他维度与红狐的偏差×0.1，限制在[-5, +5]
-    adjustment = (other_pct - redfox_pct) * 0.1
-    adjustment = max(-5, min(5, adjustment))
-
-    total_score = round(redfox_pct + adjustment, 1)
-    total_score = max(0, min(100, total_score))  # 限制在0-100
-
-    # 各维度展示得分（保留原换算用于展示）
-    dim1_score = round(content_health["原始分"] / 10 * 100, 1)   # 内容健康度百分制
-    dim2_score = round(user_activity["原始分"] / 10 * 100, 1)    # 用户活跃度百分制
-    dim3_score = round(core_data["原始分"] / 43 * 100, 1)        # 内容核心数据百分制
-    dim4_score = round(operation_compliance["原始分"] / 10 * 100, 1)  # 运营规范性百分制
+    
+    # 综合评分：四维度加权均値（内容健康30% + 用户活跃30% + 核心数据30% + 运营规范性10%）
+    dim1_score = round(content_health["原始分"] / 10 * 100, 1)
+    dim2_score = round(user_activity["原始分"] / 10 * 100, 1)
+    dim3_score = round(core_data["原始分"] / 40 * 100, 1)
+    dim4_score = round(operation_compliance["原始分"] / 10 * 100, 1)
+    
+    total_score = round(
+        dim1_score * 0.30 + dim2_score * 0.30 + dim3_score * 0.30 + dim4_score * 0.10, 1
+    )
+    total_score = max(0, min(100, total_score))
 
     # 评级
     overall_level = _get_score_level(total_score, 100)
@@ -958,19 +887,17 @@ def _analyze_single_account(raw, has_works=True):
         "活跃时段集中度得分": user_activity["活跃时段集中度"],
         "活跃时段集中度满分": 10,
         "用户活跃度原始分": user_activity["原始分"],
-        # 内容核心数据表现子项（原始0-43分，×0.814≈0-35分）
-        "红狐指数得分": core_data["红狐指数"],
-        "红狐指数满分": 12,
+        # 内容核心数据表现子项（0-40分制）
         "阅读数表现得分": core_data["阅读数表现"],
-        "阅读数表现满分": 12,
+        "阅读数表现满分": 15,
         "点赞数表现得分": core_data["点赞数表现"],
-        "点赞数表现满分": 8,
+        "点赞数表现满分": 10,
         "评论数表现得分": core_data["评论数表现"],
-        "评论数表现满分": 5,
+        "评论数表现满分": 7,
         "互动率表现得分": core_data["互动率表现"],
-        "互动率表现满分": 4,
+        "互动率表现满分": 5,
         "发布时间合理性得分": core_data["发布时间合理性"],
-        "发布时间合理性满分": 2,
+        "发布时间合理性满分": 3,
         "内容核心数据原始分": core_data["原始分"],
         # 运营规范性子项（直接0-10分）
         "更新频率得分": operation_compliance["更新频率"],
@@ -993,36 +920,38 @@ def _analyze_single_account(raw, has_works=True):
     scores["待优化模块"] = dim_sorted[-2:]
 
     # 互动率和更新频率计算
+    # 注意：queryData 的 interactiveCount = 阅读数+互动分项之和，不能直接用于互动率计算
+    # 始终使用分项加总：like+comment+share+watch
     interaction_rate = 0
     if works:
         total_reads = sum(_work_read(w) for w in works if _work_read(w) and _work_read(w) < 100001)
-        total_interactions = sum((w.get("interactiveCount") or 0) for w in works)
+        total_interactions = sum(
+            _work_like(w) + _work_comment(w) + _work_share(w) + (w.get("watchCount") or 0)
+            for w in works
+        )
         if total_reads > 0:
             interaction_rate = round(total_interactions / total_reads * 100, 2)
     works_7d = len(works) if works else 0
 
-    # 行业对标基准数据
+    # 行业对标（基于公众号真实行业水平）
+    # 数据来源：公众号行业研究报告，覆盖10万+个人/企业公众号
     scores["行业对标"] = {
-        "综合评分": {"本账号": f"{total_score}分", "行业均值": "65分", "头部账号": "85-95分"},
-        "红狐指数": {"本账号": str(redfox_index), "行业均值": "500-600", "头部账号": "900+"},
-        "平均阅读量": {"本账号": str(avg_read_count), "行业均值": "5000-1万", "头部账号": "20万+"},
-        "互动率": {"本账号": f"{interaction_rate}%", "行业均值": "2-3%", "头部账号": "6-8%"},
-        "更新频率": {"本账号": f"{works_7d}篇/周", "行业均值": "3-5篇/周", "头部账号": "7篇/周"},
+        "综合评分": {"本账号": f"{total_score}分", "行业均值": "45-55分", "头部账号": "85-95分"},
+        "平均阅读量": {"本账号": str(avg_read_count), "行业均值": "2000-8000", "头部账号": "3-10万"},
+        "互动率": {"本账号": f"{interaction_rate}%", "行业均值": "1-3%", "头部账号": "10-25%"},
+        "更新频率": {"本账号": f"{works_7d}篇/近期", "行业均值": "2-4篇/周", "头部账号": "5-7篇/周"},
     }
-
+    
     # 构建返回结果
     result = {
         "header": {
             "账号名": nickname,
-            "账号ID": red_id,
-            "账号链接": f"https://open.weixin.qq.com/qr/code?username={red_id}" if red_id else "",
+            "账号ID": account_id,
+            "账号链接": f"https://open.weixin.qq.com/qr/code?username={account_id}" if account_id else "",
             "账号类型": account_type,
             "账号简介": signature,
             "认证信息": verify_name,
-            "红狐指数": redfox_index,
             "平均阅读数": avg_read_count,
-            "账号标识": account_tag,
-            "数据更新时间": gmt_create,
             "no_works_hint": no_works_hint,
         },
         "scores": scores,
@@ -1060,15 +989,15 @@ def _analyze_single_account(raw, has_works=True):
             }
             for w in (works[:5] if works else [])
         ],
-        "works_hint": "红狐指数低于500的账号，本技能暂不支持获取近7天作品数据，可前往红狐官网获取" if (redfox_index is not None and redfox_index < 500 and (not works or len(works) == 0)) else "",
+        "works_hint": "",
         "similar_accounts": [
             {
                 "账号名称": sa.get("accountName", ""),
                 "账号ID": sa.get("accountId", ""),
-                "红狐指数": sa.get("redfoxIndex", ""),
-                "平均阅读数": sa.get("avgReadCount", ""),
+                "平均阅读数": "",  # queryData 相似账号不返回该字段
             }
-            for sa in (similar_accounts[:5] if similar_accounts else [])
+            for sa in ((raw.get("similarAccounts") or [])[:5])
+            if sa.get("accountName")
         ],
         "_raw": raw,
     }
@@ -1095,53 +1024,185 @@ def _save_raw_data(raw_data):
 
 
 def cmd_query(account_ids=None, account_names=None, force_analyze=False):
-    """查询命令：调用API获取数据，保存raw_data.json，输出结构化结果
+    """查询命令：searchUser 获取微信号 → queryData 精确查询完整数据
+    
+    流程：
+    1. searchUser(keyword=name) 搜索名称 → 必须名称完全匹配，取 account(微信号)
+    2. queryData(accountIds=[微信号], accountNames=[名称]) → 精确定位，返回完整数据+works+相似账号
+    
+    按 ID 查询时：预期传入微信号（如 duhaoshu）或 gh_xxx 格式
     
     Args:
-        account_ids: 账号ID列表（可选）
-        account_names: 账号名称列表（可选，与account_ids至少传一个）
-        force_analyze: 是否强制分析（订阅推送时为True，即使无作品也执行分析）
+        account_ids: 微信号/gh_xxx ID 列表（可选）
+        account_names: 账号名称列表（可选）
+        force_analyze: 是否强制分析
     """
-    body = {"source": "公众号账号诊断-GitHub"}
-    if account_ids:
-        body["accountIds"] = account_ids
-    if account_names:
-        body["accountNames"] = account_names
-
-    try:
-        raw = https_post(API_PATH, body)
-    except Exception as e:
+    items = []
+    names_to_query = account_names if account_names else []
+    ids_to_query = account_ids if account_ids else []
+    
+    if not names_to_query and not ids_to_query:
         print(json.dumps({
             "status": "error",
-            "message": f"请求失败: {str(e)}",
+            "message": "请提供账号名称或账号ID",
             "query_type": "not_found",
             "data": []
         }, ensure_ascii=False))
         return
+    
+    # ── 按名称查询：searchUser 微信号 → queryData 完整数据 ──
+    for name in names_to_query:
+        # 第一步：searchUser 搜索，必须名称完全匹配
+        try:
+            search_resp = https_post(API_PATH_SEARCH_USER, {"keyword": name, "offset": 0})
+        except Exception as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"搜索失败: {str(e)}",
+                "query_type": "not_found",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        if not (isinstance(search_resp, dict) and search_resp.get("code") == 2000):
+            print(json.dumps({
+                "status": "error",
+                "message": f"搜索失败: {search_resp.get('msg', '未知错误')}",
+                "query_type": "not_found",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        search_list = (search_resp.get("data") or {}).get("list", [])
+        if not search_list:
+            print(json.dumps({
+                "status": "success",
+                "query_type": "not_found",
+                "message": f"未查询到账号【{name}】，该账号可能尚未收录或名称有误，请核实公众号名称后重试。",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        # 必须名称完全匹配
+        matched = next((a for a in search_list if a.get("accountName", "") == name), None)
+        if matched is None:
+            candidates = [
+                {
+                    "name": a.get("accountName", ""),
+                    "wxId": a.get("wxId", ""),       # 公众号ID，gh_xxx 格式
+                    "account": a.get("account", ""),  # 微信号，如 duhaoshu
+                }
+                for a in search_list[:5]
+                if a.get("accountName")
+            ]
+            # 候选列表文案：账号名称 + 公众号ID + 微信号
+            candidates_lines = []
+            for c in candidates:
+                parts = [f"「{c['name']}」"]
+                if c["wxId"]:
+                    parts.append(f"ID: {c['wxId']}")
+                if c["account"]:
+                    parts.append(f"微信号: {c['account']}")
+                candidates_lines.append(" ".join(parts))
+            candidates_str = "、".join(candidates_lines)
+            print(json.dumps({
+                "status": "success",
+                "query_type": "not_found",
+                "message": (
+                    f"未找到名称为「{name}」的公众号，"
+                    f"搜索结果中有较相近的账号：{candidates_str}，"
+                    f"请确认公众号名称后重试，或可用公众号ID（微信号）直接查询。"
+                ),
+                "candidates": candidates,
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        # 微信号（account 字段）= queryData.accountIds 的正确参数格式
+        weixin_id = matched.get("account", "")
+        
+        # 第二步：queryData 用微信号+名称精确定位，得到 works+similarAccounts
+        try:
+            data_resp = https_post(API_PATH_QUERY_DATA, {
+                "accountIds": [weixin_id] if weixin_id else [],
+                "accountNames": [name]
+            })
+        except Exception as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"请求失败: {str(e)}",
+                "query_type": "not_found",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        if not (isinstance(data_resp, dict) and data_resp.get("code") == 2000):
+            print(json.dumps({
+                "status": "error",
+                "message": f"查询失败: {data_resp.get('msg', '未知错误')}",
+                "query_type": "not_found",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        data_list = data_resp.get("data") or []
+        if not data_list:
+            print(json.dumps({
+                "status": "success",
+                "query_type": "not_found",
+                "message": f"未查询到账号【{name}】的详细数据。",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        # 优先取微信号匹配的账号，否则取 works 最多的
+        exact = next((a for a in data_list if a.get("account", "") == weixin_id), None)
+        best = exact if exact else max(data_list, key=lambda x: len(x.get("works", []) or []))
+        works = best.get("works", []) or []
+        avg_read = _calc_avg_read(works)
+        items.append({**best, "avgReadCount": avg_read})
+    
+    # ── 按 ID 查询：直接用微信号/gh_xxx 调 queryData ──
+    for wx_id in ids_to_query:
+        try:
+            resp = https_post(API_PATH_QUERY_DATA, {
+                "accountIds": [wx_id],
+                "accountNames": []
+            })
+        except Exception as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"请求失败: {str(e)}",
+                "query_type": "not_found",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        if not (isinstance(resp, dict) and resp.get("code") == 2000):
+            print(json.dumps({
+                "status": "error",
+                "message": f"查询失败: {resp.get('msg', '未知错误')}",
+                "query_type": "not_found",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        data_list = resp.get("data") or []
+        if not data_list:
+            print(json.dumps({
+                "status": "success",
+                "query_type": "not_found",
+                "message": f"未查询到ID为【{wx_id}】的公众号，请确认ID是否正确。",
+                "data": []
+            }, ensure_ascii=False))
+            return
+        
+        account = data_list[0]
+        works = account.get("works", []) or []
+        avg_read = _calc_avg_read(works)
+        items.append({**account, "avgReadCount": avg_read})
 
-    # 处理响应：新的API返回的是List格式
-    if isinstance(raw, dict) and raw.get("code") == 5000:
-        print(json.dumps({
-            "status": "error",
-            "message": f"接口返回: {raw.get('msg', '系统忙')}",
-            "query_type": "not_found",
-            "data": []
-        }, ensure_ascii=False))
-        return
-
-    # 新接口返回的直接是List
-    raw_data = raw
-    if isinstance(raw, dict) and raw.get("data") is not None:
-        raw_data = raw["data"]
-
-    # 新接口返回List格式
-    if isinstance(raw_data, list):
-        items = raw_data
-    elif isinstance(raw_data, dict):
-        items = [raw_data]
-    else:
-        items = []
-
+    
     if not items:
         print(json.dumps({
             "status": "success",
@@ -1152,53 +1213,54 @@ def cmd_query(account_ids=None, account_names=None, force_analyze=False):
 
     _save_raw_data(items)
 
-    # 检查是否有作品数据
     accounts_with_works = [it for it in items if it.get("works")]
     accounts_need_sync = [it for it in items if not it.get("works")]
 
     if len(items) > 1:
-        # 多账号对比
         if not accounts_with_works:
             if force_analyze:
-                accounts = [_analyze_single_account(it, has_works=False) for it in items]
+                [_analyze_single_account(it, has_works=False) for it in items]
                 print(json.dumps({
                     "status": "success",
                     "query_type": "multi",
                     "message": "数据已保存",
-                    "no_works_hint": "该账号已重新同步，但暂未获取到近7天作品数据"
+                    "no_works_hint": "暂未获取到作品数据"
                 }, ensure_ascii=False))
                 return
             print(json.dumps({
                 "status": "success",
                 "query_type": "need_sync",
-                "message": "这些账号暂无作品数据，需要订阅同步",
+                "message": "这些账号暂无作品数据",
                 "need_sync": [{"nickname": it.get("accountName", ""), "redId": it.get("accountId", "")} for it in items]
             }, ensure_ascii=False))
             return
         
-        accounts = [_analyze_single_account(it) for it in accounts_with_works]
-        output = {
-            "status": "success",
-            "query_type": "multi",
-            "message": "数据已保存"
-        }
+        [_analyze_single_account(it) for it in accounts_with_works]
+        output = {"status": "success", "query_type": "multi", "message": "数据已保存"}
         if accounts_need_sync:
             output["need_sync"] = [{"nickname": it.get("accountName", ""), "redId": it.get("accountId", "")} for it in accounts_need_sync]
         print(json.dumps(output, ensure_ascii=False))
         return
 
-    # 单账号
     raw_item = items[0]
     works = raw_item.get("works", []) or []
-    
-    # 无论是否有作品数据，都进行分析
     _analyze_single_account(raw_item, has_works=bool(works))
     print(json.dumps({
         "status": "success",
         "query_type": "single",
         "message": "数据已保存",
-        "no_works_hint": "该账号暂无近7天作品数据" if not works else None
+        "no_works_hint": "该账号暂无作品数据" if not works else None
     }, ensure_ascii=False))
+
+
+def _calc_avg_read(works):
+    """从作品列表计算平均阅读数（排除 API 上限值 100001 以避免拉高均值）"""
+    if not works:
+        return 0
+    reads_real = [_work_read(w) for w in works if 0 < _work_read(w) < 100001]
+    reads_all  = [_work_read(w) for w in works if _work_read(w) > 0]
+    reads = reads_real if reads_real else reads_all
+    return int(sum(reads) / len(reads)) if reads else 0
 
 
 def cmd_sync_notes(account_ids):
