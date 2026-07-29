@@ -38,7 +38,7 @@ def _http_post(url, body_dict, headers):
 
 def fetch_gzh_trends(keyword, start_date=None, debug=False, auto_expand=True):
     """调用接口获取公众号趋势数据
-    
+
     auto_expand: 当数据不足时，自动拓展时间范围
     - 用户指定了时间：按用户指定时间查询，不自动拓展
     - 用户未指定时间：默认近7天；数据不足时拓展至近30天
@@ -49,9 +49,9 @@ def fetch_gzh_trends(keyword, start_date=None, debug=False, auto_expand=True):
         "Content-Type": "application/json",
         "X-API-Key": api_key
     }
-    
+
     end_date = datetime.now().strftime("%Y-%m-%d")
-    
+
     # 用户指定了时间范围，直接按指定时间查询，不自动拓展
     if start_date:
         result = _do_fetch(keyword, start_date, end_date, headers=default_headers, base_url=base_url, debug=debug)
@@ -59,36 +59,36 @@ def fetch_gzh_trends(keyword, start_date=None, debug=False, auto_expand=True):
         days_diff = (datetime.now() - datetime.strptime(start_date, "%Y-%m-%d")).days
         result["expandedDays"] = days_diff
         return result
-    
+
     # 用户未指定时间，默认近7天
     start_7 = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     result = _do_fetch(keyword, start_7, end_date, headers=default_headers, base_url=base_url, debug=debug)
     articles = result.get("articles", [])
-    
+
     # 近7天数据不足10条且允许自动拓展，拓展至近30天
     if len(articles) < 10 and auto_expand:
         start_30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
         result = _do_fetch(keyword, start_30, end_date, headers=default_headers, base_url=base_url, debug=debug)
         result["expandedDays"] = 30
         result["expandedHint"] = "近7天数据不足，已自动拓展至近30天"
-    
+
     return result
 
 
 def _do_fetch(keyword, start_date, end_date, headers, base_url, debug=False):
     """实际执行接口请求"""
-    
+
     # 多关键词处理（支持空关键词，接口会返回全站热门）
     if keyword and keyword.strip():
         keywords = [k.strip() for k in keyword.split(",") if k.strip()]
     else:
         keywords = [""]  # 空关键词，接口返回全站热门数据
-    
+
     all_articles = []
     all_latest_hot = []
     all_hot_topics = []
     all_related_searches = []
-    
+
     for kw in keywords:
         json_body = {
             "keyword": kw,
@@ -96,12 +96,12 @@ def _do_fetch(keyword, start_date, end_date, headers, base_url, debug=False):
             "endDate": end_date,
             "source": "公众号爆款文章洞察-GitHub"
         }
-        
+
         if debug:
             print(f"正在查询关键词: {kw}")
-        
+
         result = _http_post(base_url, json_body, headers)
-        
+
         if "__http_error__" in result:
             if debug:
                 print(f"HTTP错误: {result['__http_error__']}")
@@ -111,33 +111,33 @@ def _do_fetch(keyword, start_date, end_date, headers, base_url, debug=False):
         else:
             if debug:
                 print(f"状态码: 200")
-            
+
             if result.get("code") == 2000:
                 data = result.get("data", {})
-                
+
                 # 正常文章数据
                 articles = data.get("articles", [])
                 all_articles.extend(articles)
-                
+
                 # 推荐热门文章
                 latest_hot = data.get("latestHotArticles", [])
                 all_latest_hot.extend(latest_hot)
-                
+
                 # 热门话题
                 hot_topics = data.get("hotTopics", [])
                 all_hot_topics.extend(hot_topics)
-                
+
                 # 相关搜索
                 related = data.get("relatedSearches", [])
                 all_related_searches.extend(related)
-                
+
                 if debug:
                     print(f"获取到 {len(articles)} 篇正常文章")
                     print(f"获取到 {len(latest_hot)} 篇相关推荐")
             else:
                 if debug:
                     print(f"接口返回错误: {result.get('msg')}")
-    
+
     # 去重
     seen_ids = set()
     unique_articles = []
@@ -146,14 +146,14 @@ def _do_fetch(keyword, start_date, end_date, headers, base_url, debug=False):
         if article_id and article_id not in seen_ids:
             seen_ids.add(article_id)
             unique_articles.append(article)
-    
+
     unique_latest = []
     for article in all_latest_hot:
         article_id = article.get('id')
         if article_id and article_id not in seen_ids:
             seen_ids.add(article_id)
             unique_latest.append(article)
-    
+
     seen_topics = set()
     unique_topics = []
     for topic in all_hot_topics:
@@ -161,7 +161,7 @@ def _do_fetch(keyword, start_date, end_date, headers, base_url, debug=False):
         if topic_name and topic_name not in seen_topics:
             seen_topics.add(topic_name)
             unique_topics.append(topic)
-    
+
     return {
         "keyword": keyword,
         "articles": unique_articles,
@@ -188,24 +188,24 @@ def generate_recommend_reason(item):
     title = item.get('title', '')
     relevance = item.get('relevanceScore') or 0
     clicks = item.get('clicksCount', 0) or 0
-    
+
     reasons = []
-    
+
     if relevance >= 7:
         reasons.append("与关键词高度相关")
     elif relevance >= 5:
         reasons.append("与关键词较为相关")
-    
+
     if clicks >= 100000:
         reasons.append("阅读量10w+")
     elif clicks >= 50000:
         reasons.append("阅读量较高")
-    
+
     if '技巧' in title or '方法' in title:
         reasons.append("实用性强")
     elif '误区' in title or '陷阱' in title:
         reasons.append("避坑指南")
-    
+
     return "；".join(reasons) if reasons else "综合推荐"
 
 
@@ -215,19 +215,19 @@ def get_card_html(item):
     author = item.get('author', '') or '-'
     pub_time = item.get('publicTime', '')[:10]
     note_link = item.get('url', '')
-    
+
     clicks_count = item.get('clicksCount', 0) or 0
     watch_count = item.get('watchCount', 0) or 0
     relevance = item.get('relevanceScore', 0) or 0
     popularity = item.get('popularityScore', 0) or 0
     recency = item.get('recencyScore', 0) or 0
     total = item.get('totalScore', 0) or 0
-    
+
     reason = generate_recommend_reason(item)
-    
+
     # 截取摘要前100字
     summary = item.get('summary', '')[:100] if item.get('summary') else ''
-    
+
     card = f'''
     <div class="card">
         <div class="card-content">
@@ -264,7 +264,7 @@ def get_empty_html(keyword, hot_topics):
     # 分类建议
     categories = ["AI 前沿", "副业赚钱", "自媒体运营", "工具推荐", "行业案例", "流量增长"]
     category_btns = " ".join([f'<span class="category-btn">{cat}</span>' for cat in categories])
-    
+
     # 热门话题列表
     topics_html = ""
     if hot_topics:
@@ -274,7 +274,7 @@ def get_empty_html(keyword, hot_topics):
             count = topic.get('count', 0) or topic.get('articleCount', 0)
             topics_html += f'<li>· {topic_name}（{count} 篇）</li>\n'
         topics_html += '</ul>\n</div>'
-    
+
     html = f'''
     <div class="empty-result">
         <div class="empty-icon">🔍</div>
@@ -297,11 +297,11 @@ def get_recommend_section_html(articles):
     """生成相关推荐区域HTML"""
     if not articles:
         return ""
-    
+
     cards = []
     for item in articles[:6]:  # 最多展示6条
         cards.append(get_card_html(item))
-    
+
     section = f'''
     <div class="recommend-section">
         <h3 class="section-title">📌 相关推荐</h3>
@@ -317,14 +317,14 @@ def get_topics_section_html(hot_topics):
     """生成热门话题区域HTML"""
     if not hot_topics:
         return ""
-    
+
     topics_html = '<div class="topics-section"><h3>📈 热门话题推荐</h3><div class="topics-grid">'
     for topic in hot_topics[:6]:
         topic_name = topic.get('name', '') or topic.get('topic', '')
         count = topic.get('count', 0) or topic.get('articleCount', 0)
         topics_html += f'<div class="topic-item"><div class="topic-name">{topic_name}</div><div class="topic-count">{count} 篇文章</div></div>'
     topics_html += '</div></div>'
-    
+
     return topics_html
 
 
@@ -577,9 +577,9 @@ def generate_html(keyword, articles, latest_hot, hot_topics, result_status):
 </body>
 </html>
 '''
-    
+
     total = len(articles)
-    
+
     if result_status == "empty":
         # articles为0，展示推荐热门文章
         content_parts = [get_empty_html(keyword, hot_topics)]
@@ -604,7 +604,7 @@ def generate_html(keyword, articles, latest_hot, hot_topics, result_status):
         if latest_hot:
             content_parts.append(get_recommend_section_html(latest_hot))
         content = "\n".join(content_parts)
-    
+
     return html_template.format(keyword=keyword, total=total, content=content)
 
 
@@ -616,7 +616,7 @@ def output_json(keyword, articles, latest_hot, hot_topics, related_searches, res
         "resultStatus": result_status,
         "articles": articles,
     }
-    
+
     # 根据不同状态附加不同数据
     if result_status == "normal":
         # articles >= 10，附加推荐热门文章
@@ -641,7 +641,7 @@ def output_json(keyword, articles, latest_hot, hot_topics, related_searches, res
     if expanded_days and expanded_hint:
         output["expandedDays"] = expanded_days
         output["expandedHint"] = expanded_hint
-    
+
     print(json.dumps(output, ensure_ascii=False, indent=2))
 
 
@@ -653,18 +653,18 @@ def main():
     parser.add_argument("--output-format", choices=["json", "html"], default="json", help="输出格式")
     parser.add_argument("--debug", action="store_true", help="调试模式")
     args = parser.parse_args()
-    
+
     # 获取数据
     data = fetch_gzh_trends(args.keyword, args.start_date, args.debug)
-    
+
     # 按总分排序
     sorted_articles = sort_articles(data["articles"])
     sorted_latest = sort_articles(data["latestHotArticles"])
-    
+
     # 限制数量
     sorted_articles = sorted_articles[:args.max_items]
     sorted_latest = sorted_latest[:10]
-    
+
     # 判断结果状态（基于articles数量）
     total_count = len(data["articles"])
     if total_count == 0:
@@ -673,7 +673,7 @@ def main():
         result_status = "partial"
     else:
         result_status = "normal"
-    
+
     # 输出
     if args.output_format == "json":
         output_json(
