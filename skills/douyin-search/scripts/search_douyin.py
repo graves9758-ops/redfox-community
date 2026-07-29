@@ -11,7 +11,7 @@ import json
 import urllib.request
 import urllib.error
 
-API_URL = "https://redfox.hk/story/api/dy/search/search"
+API_URL = "https://redfox.hk/story/api/dy/data/searchWork"
 
 
 def get_api_key() -> str:
@@ -29,25 +29,29 @@ def format_articles(articles: list) -> list:
     items = []
     for art in articles:
         items.append({
-            "title": art.get("title", "").strip(),
-            "author": art.get("accountName", "").strip(),
+            "title": art.get("content", "").strip(),
+            "author": art.get("authorName", "").strip(),
             "like_count": art.get("likeCount", 0) or 0,
             "comment_count": art.get("commentCount", 0) or 0,
             "share_count": art.get("shareCount", 0) or 0,
             "collect_count": art.get("collectCount", 0) or 0,
-            "work_url": art.get("workUrl", ""),
+            "work_url": art.get("opusUrl", ""),
             "publish_time": art.get("publishTime", ""),
-            "follower_count": art.get("followerCount", 0) or 0,
         })
     # 按点赞数降序排列
     items.sort(key=lambda x: x["like_count"], reverse=True)
     return items
 
 
-def search(keyword: str, start_date: str = "", end_date: str = "") -> dict:
-    """调用搜索接口，返回完整数据（articles, latestHotArticles, hotTopics）"""
+def search(keyword: str, start_date: str = "", end_date: str = "", page_num: int = 1, page_size: int = 50) -> dict:
+    """调用搜索接口，返回完整数据（articles, total, pageNum, pageSize）"""
     api_key = get_api_key()
-    payload_dict = {"keyword": keyword, "source": "抖音作品查询-GitHub"}
+    payload_dict = {
+        "keyword": keyword,
+        "source": "抖音作品查询-GitHub",
+        "pageNum": page_num,
+        "pageSize": page_size,
+    }
     if start_date:
         payload_dict["startDate"] = start_date
     if end_date:
@@ -59,7 +63,7 @@ def search(keyword: str, start_date: str = "", end_date: str = "") -> dict:
         data=payload,
         headers={
             "Content-Type": "application/json",
-            "X-API-Key": api_key,
+            "REDFOX_API_KEY": api_key,
             "User-Agent": "QoderWork/1.0",
         },
         method="POST",
@@ -88,9 +92,10 @@ def search(keyword: str, start_date: str = "", end_date: str = "") -> dict:
     data = result.get("data") or {}
 
     return {
-        "articles": format_articles(data.get("articles") or []),
-        "latestHotArticles": format_articles(data.get("latestHotArticles") or []),
-        "hotTopics": data.get("hotTopics") or [],
+        "articles": format_articles(data.get("list") or []),
+        "total": data.get("total", 0),
+        "pageNum": data.get("pageNum", 1),
+        "pageSize": data.get("pageSize", page_size),
     }
 
 
@@ -101,6 +106,8 @@ def main():
     parser.add_argument("keyword", help="搜索关键词")
     parser.add_argument("--start-date", "-s", default="", help="起始日期，格式 YYYY-MM-DD（默认：空字符串）")
     parser.add_argument("--end-date", "-e", default="", help="结束日期，格式 YYYY-MM-DD（默认：空字符串）")
+    parser.add_argument("--page-num", "-p", type=int, default=1, help="页码，从1开始（默认：1）")
+    parser.add_argument("--page-size", type=int, default=50, help="每页大小（默认：50，最大50）")
     args = parser.parse_args()
 
     keyword = args.keyword.strip()
@@ -108,7 +115,8 @@ def main():
         print("[error] 关键词不能为空", file=sys.stderr)
         sys.exit(1)
 
-    result = search(keyword, start_date=args.start_date, end_date=args.end_date)
+    result = search(keyword, start_date=args.start_date, end_date=args.end_date,
+                     page_num=args.page_num, page_size=args.page_size)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
