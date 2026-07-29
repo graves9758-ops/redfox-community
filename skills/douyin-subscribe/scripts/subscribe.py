@@ -757,10 +757,10 @@ def generate_summary(works):
 
 
 # ─── HTML 报告生成 ─────────────────────────────────────────────────────────────────
-def generate_html_report(works, subscriptions, date_label, empty_accounts, output_path=None, not_found_accounts=None):
+def generate_html_report(works, subscriptions, date_label, empty_accounts, output_path=None, rate_limited_accounts=None):
     """生成 HTML 报告文件，返回 html_file_path"""
-    not_found_accounts = not_found_accounts or []
-    if not works and not empty_accounts and not not_found_accounts:
+    rate_limited_accounts = rate_limited_accounts or []
+    if not works and not empty_accounts and not rate_limited_accounts:
         return None
 
     today = datetime.now().strftime('%Y-%m-%d')
@@ -1035,13 +1035,12 @@ def generate_html_report(works, subscriptions, date_label, empty_accounts, outpu
             html += f'<div class="empty-notice">⚠️ <strong>{name}</strong>：该时间段内无更新作品</div>\n'
         html += '</div>\n'
 
-    # 未收录账号
-    if not_found_accounts:
+    # 被频率限制的账号
+    if rate_limited_accounts:
         html += '<div class="category-section">\n'
-        for name in not_found_accounts:
+        for name in rate_limited_accounts:
             html += (f'<div class="empty-notice" style="border-left-color:#e67e22;">'
-                     f'ℹ️ <strong>{name}</strong>：当前暂未找到该账号信息，可能是数据覆盖范围有限所致。'
-                     f'我们将尽快更新数据，通常10分钟内可查，特殊情况下需1天，您可订阅明日推送。</div>\n')
+                     f'⚠️ <strong>{name}</strong>：该账号订阅已超过失败阈值，请联系客服邮箱处理。</div>\n')
         html += '</div>\n'
 
     # ── 数据总结区块（占位，脚本结束时替换为实际内容）──
@@ -1050,7 +1049,7 @@ def generate_html_report(works, subscriptions, date_label, empty_accounts, outpu
 
     html += f"""
 <div class="footer">
-  订阅账号: {len(subscriptions)} 个 | 作品总数: {len(works)} 条 | 无更新: {len(empty_accounts)} 个 | 未收录: {len(not_found_accounts)} 个<br>
+  订阅账号: {len(subscriptions)} 个 | 作品总数: {len(works)} 条 | 无更新: {len(empty_accounts)} 个 | 限流: {len(rate_limited_accounts)} 个<br>
   由抖音账号订阅追踪自动生成 | redfox.hk
 </div>
 
@@ -1334,7 +1333,7 @@ Examples:
             html_file = generate_html_report(
                 works, subscriptions, date_label, empty_accounts,
                 output_path=html_path_arg or None,
-                not_found_accounts=not_found_accounts
+                rate_limited_accounts=rate_limited_accounts
             )
             if html_file:
                 # ── 生成总结并嵌入 HTML（替换占位符）──

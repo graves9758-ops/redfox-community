@@ -33,10 +33,9 @@ Enter a keyword to search for trending viral content on Douyin, presented in a s
 
 ### Highlights
 
-- **Smart expansion guidance**: When entering broad category terms (e.g., "food," "fashion"), the system automatically generates 10 niche sub-directions for you to choose from, precisely targeting the right track and avoiding skewed search results.
-- **Fallback hot recommendations**: When a keyword returns no matches, trending works and topics are automatically recommended—you'll never leave empty-handed.
-- **One-click subscription**: No extra steps—search, subscribe, and receive daily 10:00 AM push notifications with the latest viral content for that keyword.
-- **Clickable deep links**: Every work title in the table is a clickable hyperlink, taking you directly to the original Douyin page for full content viewing.
+- **Generalization for guaranteed hits**: No need for precise keywords—casual, conversational input still yields effective results, lowering the learning curve.
+- **One-click subscription**: No extra steps—search, subscribe, and receive daily push notifications to stay on top of trend changes.
+- **Clickable data**: Every work title in the table links directly to the original Douyin page for deeper inspection.
 
 ---
 
@@ -59,11 +58,11 @@ Simply describe the content category you want to explore in natural language—n
 
 | Intent                           | Example phrase                                         | Result                                                                |
 | -------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
-| Search viral content by category | "Today's trending food content"                        | Recognized as broad term, suggests 10 niche directions to choose from |
-| Search a specific niche          | "Is low-carb meal content popular on Douyin?"          | Searches the niche term directly, displays results sorted by likes    |
+| Search viral content by category | "Today's trending food content"                        | Auto-generalizes to "food," returns a viral content table             |
+| Check a niche's performance      | "Is travel content popular on Douyin?"                 | Queries "travel," displays results sorted by likes                    |
 | Casual conversational search     | "Funny videos seem hot lately"                         | Auto-extracts "funny," returns trending works                         |
-| Filter by date range             | "Travel content from May 30 to June 2"                 | Parses date range, returns viral works from that period               |
-| No results? No problem           | When a niche keyword finds no matches                  | Auto-displays trending works and hot topic recommendations            |
+| Filter by date range             | "Travel content from May 30 to June 2"                 | Parses date range, returns viral works from that period                |
+| View all results                 | Select "View all" after the table appears              | Continues displaying remaining data (up to 50)                        |
 | Subscribe to daily updates       | Select "Subscribe" after a search                      | Daily push at 10:00 AM with the latest viral content for that keyword |
 
 ### Output Example
@@ -75,7 +74,7 @@ After a search, you'll see a table like this (illustrative):
 | 1   | [Let me show you how to make this dish…](link)   | FoodieA        | 305.2w | 7.1w     | 51.0w  | 14.7w  | 06-01 19:55 |
 | 2   | [Travel vlog: A spontaneous weekend trip…](link) | TravelBloggerB | 158.3w | 3.2w     | 22.1w  | 8.5w   | 05-30 15:30 |
 
-(20 results shown by default; when more than 20, prompted to view all; when no matches found, hot recommendations are shown automatically.)
+(20 results shown by default; when there are more, you'll be prompted to view all.)
 
 ---
 

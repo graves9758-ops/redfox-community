@@ -2,7 +2,7 @@
 """
 Qoder Video Downloader - API 版本
 使用 redfox.hk API 解析并下载无水印视频/图文
-支持：抖音、小红书、快手、B站
+支持：抖音、小红书、快手、视频号、B站、YouTube、Instagram、X、TikTok、Threads、Facebook、Vimeo 等
 
 Usage:
     python3 downloader.py <url> [--api-key <key>] [--output-dir <path>]
@@ -27,6 +27,8 @@ CONFIG_DIR = Path.home() / ".qoder" / "apis"
 CONFIG_FILE = CONFIG_DIR / "redfox.json"
 
 ENV_KEY = "REDFOX_API_KEY"
+PUBLIC_API_KEY = "ak_b45b6a6881f4400fb321428947eb6661"
+
 PLATFORM_MAP = {
     "dy": "抖音",
     "xhs": "小红书",
@@ -77,7 +79,7 @@ def get_api_key(cli_key=None):
         except (json.JSONDecodeError, OSError):
             pass
 
-    return None
+    return PUBLIC_API_KEY
 
 
 def save_api_key(api_key):
@@ -124,6 +126,76 @@ def download_file(session, url, filepath, desc="Downloading"):
         return False
 
 
+def is_valid_share_url(url):
+    """Check if the URL is a valid sharing link from supported platforms.
+    Returns (is_valid: bool, platform_name: str or None).
+    """
+    # Domain -> Platform mapping for known sharing link patterns
+    platform_patterns = [
+        # 抖音 Douyin
+        (r'(https?://)?(www\.)?v\.douyin\.com/', '抖音'),
+        (r'(https?://)?(www\.)?douyin\.com/(video|jingxuan|note)/', '抖音'),
+        (r'(https?://)?(www\.)?douyin\.com\/user\/', '抖音'),
+        # 小红书 Xiaohongshu
+        (r'(https?://)?(www\.)?xhslink\.(com|cn)/', '小红书'),
+        (r'(https?://)?(www\.)?xiaohongshu\.com/', '小红书'),
+        (r'(https?://)?(www\.)?xhslink\.com/', '小红书'),
+        # 快手 Kuaishou
+        (r'(https?://)?(www\.)?v\.kuaishou\.com/', '快手'),
+        (r'(https?://)?(www\.)?kuaishou\.com/', '快手'),
+        # 视频号 WeChat Channels
+        (r'(https?://)?weixin\.qq\.com/sph/', '视频号'),
+        # B站 Bilibili
+        (r'(https?://)?(www\.)?b23\.tv/', 'B站'),
+        (r'(https?://)?(www\.)?bilibili\.com/video/', 'B站'),
+        # YouTube
+        (r'(https?://)?(www\.)?youtu\.be/', 'YouTube'),
+        (r'(https?://)?(www\.)?youtube\.com/watch\?', 'YouTube'),
+        (r'(https?://)?(www\.)?youtube\.com/shorts/', 'YouTube'),
+        # Instagram
+        (r'(https?://)?(www\.)?instagram\.com/p/', 'Instagram'),
+        (r'(https?://)?(www\.)?instagram\.com/reel/', 'Instagram'),
+        # X / Twitter
+        (r'(https?://)?(www\.)?x\.com/\w+/status/', 'X (Twitter)'),
+        (r'(https?://)?(www\.)?twitter\.com/\w+/status/', 'X (Twitter)'),
+        # TikTok
+        (r'(https?://)?(www\.)?tiktok\.com/@', 'TikTok'),
+        # Threads
+        (r'(https?://)?(www\.)?threads\.net/@', 'Threads'),
+        # Facebook
+        (r'(https?://)?(www\.)?facebook\.com/.*/videos/', 'Facebook'),
+        (r'(https?://)?(www\.)?fb\.com/.*/videos/', 'Facebook'),
+        # Vimeo
+        (r'(https?://)?(www\.)?vimeo\.com/\d+', 'Vimeo'),
+    ]
+    for pattern, name in platform_patterns:
+        if re.search(pattern, url, re.IGNORECASE):
+            return True, name
+    return False, None
+
+
+def show_url_guide():
+    """Show supported platform URL formats."""
+    print(f"\n{YELLOW}╔══════════════════════════════════════════════════════════╗{RESET}")
+    print(f"{YELLOW}║  链接格式不支持或无法识别，请检查是否传入了正确的分享链接  ║{RESET}")
+    print(f"{YELLOW}╠══════════════════════════════════════════════════════════╣{RESET}")
+    print(f"{YELLOW}║  支持的链接格式：                                       ║{RESET}")
+    print(f"{YELLOW}║  🎵 抖音     v.douyin.com/xxx                           ║{RESET}")
+    print(f"{YELLOW}║  📕 小红书   xhslink.com/xxx 或 xhslink.cn/xxx           ║{RESET}")
+    print(f"{YELLOW}║  📱 快手     v.kuaishou.com/xxx                         ║{RESET}")
+    print(f"{YELLOW}║  📺 视频号   weixin.qq.com/sph/xxx                      ║{RESET}")
+    print(f"{YELLOW}║  📺 B站      b23.tv/xxx 或 bilibili.com/video/xxx        ║{RESET}")
+    print(f"{YELLOW}║  ▶️ YouTube  youtu.be/xxx 或 youtube.com/watch?v=xxx     ║{RESET}")
+    print(f"{YELLOW}║  📷 Instagram instagram.com/p/xxx                       ║{RESET}")
+    print(f"{YELLOW}║  🐦 X/Twitter  x.com/xxx/status/xxx                     ║{RESET}")
+    print(f"{YELLOW}║  🎵 TikTok   tiktok.com/@xxx/video/xxx                  ║{RESET}")
+    print(f"{YELLOW}║  🧵 Threads  threads.net/@xxx/post/xxx                  ║{RESET}")
+    print(f"{YELLOW}║  📘 Facebook  facebook.com/xxx/videos/xxx               ║{RESET}")
+    print(f"{YELLOW}║  🎬 Vimeo    vimeo.com/xxxxxx                           ║{RESET}")
+    print(f"{YELLOW}╚══════════════════════════════════════════════════════════╝{RESET}")
+    print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="短视频下载器 - 使用 redfox.hk API 下载无水印视频",
@@ -161,10 +233,6 @@ Examples:
 
     # ── API Key ──
     api_key = get_api_key(cli_key=args.api_key)
-    if not api_key:
-        error("未找到 API Key，请设置环境变量 REDFOX_API_KEY 或使用 --api-key 参数")
-        print(f"  获取 Key: https://redfox.hk/settings/api-keys?source=github")
-        sys.exit(1)
 
     # Save key if requested
     if args.save_key:
@@ -177,6 +245,15 @@ Examples:
 
     step(f"URL: {url}")
 
+    # ── URL validation ──
+    is_valid, platform = is_valid_share_url(url)
+    if not is_valid:
+        error("链接格式不支持，无法进行去水印下载")
+        show_url_guide()
+        sys.exit(1)
+
+    info(f"检测到平台: {platform}")
+
     # ── Call API ──
     step("Calling redfox.hk API...")
 
@@ -187,7 +264,7 @@ Examples:
     })
 
     try:
-        resp = session.post(API_URL, json={"url": url, "source": "短视频下载器-GitHub"}, timeout=30)
+        resp = session.post(API_URL, json={"url": url, "source": "短视频下载器-SkillHub"}, timeout=30)
         result = resp.json()
     except requests.exceptions.RequestException as e:
         error(f"API request failed: {e}")
