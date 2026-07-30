@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海外跨平台热文搜索 - {{KEYWORD}} | {{DATE}}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0e14;--bg-card:#151b26;--bg-card-hover:#1c2432;--text:#e8edf5;
+--text2:#8b95a8;--text3:#5a6478;--accent:#4f8ff7;--accent-glow:rgba(79,143,247,0.12);
+--accent-border:rgba(79,143,247,0.3);--border:rgba(255,255,255,0.06);
+--font:'Space Grotesk',-apple-system,'PingFang SC',sans-serif;--radius:12px;--radius-sm:8px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+.main-header{text-align:center;padding:2.5rem 1.5rem 1rem;max-width:960px;margin:0 auto}
+.main-header h1{font-size:1.6rem;font-weight:700;color:var(--accent)}
+.main-header .subtitle{color:var(--text2);font-size:0.85rem;margin-top:0.35rem}
+.main-header .status{color:var(--text3);font-size:0.75rem;margin-top:0.3rem}
+.toolbar{position:sticky;top:0;z-index:100;background:linear-gradient(180deg,var(--bg) 85%,transparent);
+padding:1rem 1.5rem 1.2rem;backdrop-filter:blur(12px)}
+.toolbar-inner{max-width:960px;margin:0 auto;display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center}
+.search-input{flex:1;min-width:220px;padding:0.7rem 1.1rem;border:1.5px solid var(--border);border-radius:var(--radius);
+background:#101623;color:var(--text);font-size:0.92rem;font-family:var(--font);outline:none;transition:all 0.2s}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.pf-filters{display:flex;gap:0.4rem}
+.pf-chip{padding:0.45rem 0.95rem;border:1.5px solid var(--border);border-radius:999px;background:var(--bg-card);
+color:var(--text2);font-size:0.8rem;cursor:pointer;transition:all 0.15s;user-select:none}
+.pf-chip.active{border-color:var(--accent-border);color:var(--accent);background:var(--accent-glow)}
+.view-switch{display:flex;gap:0.4rem}
+.table-wrap{overflow-x:auto;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.data-table{width:100%;border-collapse:collapse;font-size:0.8rem;min-width:860px}
+.data-table th{background:#101623;color:var(--text2);text-align:left;padding:0.6rem 0.7rem;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border)}
+.data-table td{padding:0.55rem 0.7rem;border-bottom:1px solid var(--border);vertical-align:top}
+.data-table tbody tr:last-child td{border-bottom:none}
+.data-table tbody tr:hover td{background:var(--bg-card-hover)}
+.data-table .num{text-align:right;white-space:nowrap}
+.td-title{max-width:260px;line-height:1.45}
+.td-author{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7ab3ff}
+.td-time{white-space:nowrap;color:var(--text3)}
+.td-link a{color:var(--accent);text-decoration:none;white-space:nowrap}
+.td-link a:hover{text-decoration:underline}
+.results-container{max-width:960px;margin:0 auto;padding:0.3rem 1.5rem 2rem}
+.results-grid{display:flex;flex-direction:column;gap:0.55rem}
+.item-card{display:flex;flex-direction:column;gap:0.45rem;padding:0.95rem 1.1rem;background:var(--bg-card);
+border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;text-decoration:none;color:inherit;transition:all 0.15s}
+.item-card:hover{background:var(--bg-card-hover);border-color:var(--accent-border);transform:translateX(2px)}
+.card-top{display:flex;align-items:center;gap:0.55rem}
+.pf-badge{display:inline-block;padding:0.12rem 0.5rem;border-radius:5px;font-size:0.68rem;font-weight:700;letter-spacing:0.02em}
+.pf-x{background:rgba(29,155,240,0.15);color:#1d9bf0;border:1px solid rgba(29,155,240,0.35)}
+.pf-tiktok{background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.35)}
+.pf-youtube{background:rgba(255,0,0,0.15);color:#ff4d4d;border:1px solid rgba(255,0,0,0.35)}
+.kw-tag{font-size:0.7rem;color:var(--text3)}
+.card-title{font-size:0.92rem;font-weight:500;line-height:1.5;
+display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem 1rem;font-size:0.76rem;color:var(--text2)}
+.card-meta .author{color:#7ab3ff;font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-meta .pub-time{color:var(--text3);margin-left:auto}
+.empty-msg{text-align:center;padding:3rem 1rem;color:var(--text2);font-size:0.9rem}
+.footer{text-align:center;padding:2rem 1rem;color:var(--text3);font-size:0.72rem;border-top:1px solid var(--border);max-width:960px;margin:0 auto}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="main-header">
+  <h1>海外跨平台热文搜索</h1>
+  <p class="subtitle">{{DATE}} · 关键词：{{KEYWORD}} · 共 {{TOTAL_COUNT}} 条</p>
+  <p class="status">{{PLATFORM_STATUS}}</p>
+</div>
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <input type="text" class="search-input" id="filterInput" placeholder="在结果中筛选标题 / 作者...">
+    <div class="pf-filters" id="pfFilters"></div>
+    <div class="view-switch">
+      <span class="pf-chip view-chip active" data-view="cards">卡片</span>
+      <span class="pf-chip view-chip" data-view="table">表格</span>
+    </div>
+  </div>
+</div>
+<main class="results-container">
+  <div class="results-grid" id="resultsGrid"></div>
+  <div class="table-wrap" id="tableWrap" style="display:none">
+    <table class="data-table">
+      <thead><tr>
+        <th>平台</th><th>标题</th><th>作者</th>
+        <th class="num">播放</th><th class="num">点赞</th><th class="num">评论</th><th class="num">分享</th>
+        <th>发布时间</th><th>链接</th>
+      </tr></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <div class="empty-msg" id="emptyMsg" style="display:none">无匹配结果</div>
+</main>
+<footer class="footer">Generated at {{TIMESTAMP}} by Overseas Trending Search | Powered by redfox.hk</footer>
+<script>
+const INITIAL_DATA = {{INITIAL_DATA}};
+const resultsGrid = document.getElementById('resultsGrid');
+const tableWrap = document.getElementById('tableWrap');
+const tableBody = document.getElementById('tableBody');
+const emptyMsg = document.getElementById('emptyMsg');
+const filterInput = document.getElementById('filterInput');
+const pfFilters = document.getElementById('pfFilters');
+let activePf = 'all';
+let view = 'cards';
+
+function fmt(n){n=Number(n)||0;if(n>=10000)return(n/10000).toFixed(1)+'w';if(n>=1000)return(n/1000).toFixed(1)+'k';return String(n)}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function safeUrl(u){u=String(u||'');return /^https?:\/\//i.test(u)?u.replace(/["'<>\s]/g,''):''}
+
+const platforms = [...new Set(INITIAL_DATA.map(e=>e.platform))];
+['all',...platforms].forEach(pf=>{
+  const chip=document.createElement('span');
+  chip.className='pf-chip'+(pf==='all'?' active':'');
+  chip.textContent=pf==='all'?'全部':pf;
+  chip.onclick=()=>{activePf=pf;document.querySelectorAll('#pfFilters .pf-chip').forEach(c=>c.classList.remove('active'));chip.classList.add('active');render()};
+  pfFilters.appendChild(chip);
+});
+
+document.querySelectorAll('.view-chip').forEach(chip=>{
+  chip.onclick=()=>{view=chip.dataset.view;document.querySelectorAll('.view-chip').forEach(c=>c.classList.remove('active'));chip.classList.add('active');render()};
+});
+
+function renderCards(list){
+  resultsGrid.innerHTML='';
+  list.forEach(e=>{
+    const c=document.createElement('a');
+    c.className='item-card';c.href=e.url||'#';c.target='_blank';c.rel='noopener noreferrer';
+    c.innerHTML=`<div class="card-top"><span class="pf-badge pf-${esc(e.platform)}">${esc(e.platform_name||e.platform)}</span>`+
+      (e.keyword?`<span class="kw-tag"># ${esc(e.keyword)}</span>`:'')+`</div>`+
+      `<div class="card-title">${esc(e.title)}</div>`+
+      `<div class="card-meta"><span class="author">${esc(e.author)}</span>`+
+      `<span>👍 ${e.likes?fmt(e.likes):'-'}</span><span>💬 ${e.comments?fmt(e.comments):'-'}</span>`+
+      (e.views?`<span>👁 ${fmt(e.views)}</span>`:'')+
+      (e.shares?`<span>🔄 ${fmt(e.shares)}</span>`:'')+
+      `<span class="pub-time">${(e.publish_time||'').slice(0,16)}</span></div>`;
+    resultsGrid.appendChild(c);
+  });
+}
+
+function renderTable(list){
+  tableBody.innerHTML='';
+  list.forEach(e=>{
+    const tr=document.createElement('tr');
+    const url=safeUrl(e.url);
+    const t=e.title||'';
+    const short=t.length>20?t.slice(0,20)+'\u2026':t;
+    tr.innerHTML=`<td><span class="pf-badge pf-${esc(e.platform)}">${esc(e.platform_name||e.platform)}</span></td>`+
+      `<td class="td-title" title="${esc(t).replace(/"/g,'&quot;')}">${esc(short)}</td>`+
+      `<td class="td-author">${esc(e.author)}</td>`+
+      `<td class="num">${e.views?fmt(e.views):'-'}</td>`+
+      `<td class="num">${e.likes?fmt(e.likes):'-'}</td><td class="num">${e.comments?fmt(e.comments):'-'}</td>`+
+      `<td class="num">${e.shares?fmt(e.shares):'-'}</td>`+
+      `<td class="td-time">${(e.publish_time||'').slice(0,16)}</td>`+
+      `<td class="td-link">${url?`<a href="${url}" target="_blank" rel="noopener noreferrer">打开</a>`:'-'}</td>`;
+    tableBody.appendChild(tr);
+  });
+}
+
+function render(){
+  const q=filterInput.value.trim().toLowerCase();
+  const list=INITIAL_DATA.filter(e=>{
+    if(activePf!=='all'&&e.platform!==activePf)return false;
+    if(q&&!(e.title||'').toLowerCase().includes(q)&&!(e.author||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  resultsGrid.style.display=view==='cards'?'':'none';
+  tableWrap.style.display=view==='table'?'':'none';
+  if(view==='cards')renderCards(list);else renderTable(list);
+  emptyMsg.style.display=list.length?'none':'block';
+}
+filterInput.addEventListener('input',render);
+render();
+</script>
+</body>
+</html>
