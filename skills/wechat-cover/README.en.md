@@ -35,8 +35,8 @@ Based on daily collected **100K+** article data from across the web, this tool r
 ## API Key Acquisition & Security
 
 - This skill requires the environment variable: `REDFOX_API_KEY`.
-- `REDFOX_API_KEY` is provided by [RedFoxHub](https://redfox.hk/settings/api-keys?souce=github) (`https://redfox.hk`).
-- Please visit [RedFoxHub](https://redfox.hk?souce=github) to register an account and obtain `REDFOX_API_KEY`.
+- `REDFOX_API_KEY` is provided by [RedFoxHub](https://redfox.hk/settings/api-keys?source=github) (`https://redfox.hk`).
+- Please visit [RedFoxHub](https://redfox.hk?source=github) to register an account and obtain `REDFOX_API_KEY`.
 - Configure the environment variable `REDFOX_API_KEY` on your device before using this skill.
 - Before providing a key, please confirm its source, scope of use, validity period, and whether it supports reset/revocation.
 - Never hard-code or expose keys in plain text within code, prompts, logs, or output files.
@@ -49,12 +49,12 @@ Simply describe your niche, content topic, or cover needs in natural language �
 
 ### Quick Reference
 
-| Intent | Example Phrase | Result |
-|--------|----------------|--------|
-| Design by niche | "Design a beauty tutorial cover for me" | Retrieves beauty niche explosive cover data, analyzes styles, generates 3 proposals |
-| Design by content topic | "Autumn whitening skincare tips, want a professional-looking cover" | Parses content intent, matches professional-style cover patterns |
-| Upload reference image | "Design a cover referencing this image" + upload | Analyzes reference image style, combines with explosive data to generate proposals |
-| Select proposal to generate | Reply "Choose proposal 1" | Generates 900×383 cover image per the proposal prompt |
+| Intent                      | Example Phrase                                                      | Result                                                                              |
+| --------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Design by niche             | "Design a beauty tutorial cover for me"                             | Retrieves beauty niche explosive cover data, analyzes styles, generates 3 proposals |
+| Design by content topic     | "Autumn whitening skincare tips, want a professional-looking cover" | Parses content intent, matches professional-style cover patterns                    |
+| Upload reference image      | "Design a cover referencing this image" + upload                    | Analyzes reference image style, combines with explosive data to generate proposals  |
+| Select proposal to generate | Reply "Choose proposal 1"                                           | Generates 900×383 cover image per the proposal prompt                               |
 
 ### Output Example
 
@@ -68,12 +68,12 @@ After analysis, you'll receive a visual cover analysis report (HTML page) contai
 
 ## Use Cases
 
-| Scenario | Role | Example Question | Benefit |
-|----------|------|------------------|---------|
-| New article cover | WeChat creator | "Publishing skincare tips today, help me design a cover" | Generate professional cover proposals based on explosive data |
-| Niche daily updates | Content operator | "Workplace fashion niche, need a set of cover proposals" | Quickly produce multiple style proposals for A/B testing |
-| Custom with reference | Designer | "Design a cover referencing this image" + upload | Combine reference image with explosive patterns |
-| Trend-chasing covers | Media editor | "See what covers are hot in the beauty niche lately" | Get recent explosive cover styles, stay on trend |
+| Scenario              | Role             | Example Question                                         | Benefit                                                       |
+| --------------------- | ---------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| New article cover     | WeChat creator   | "Publishing skincare tips today, help me design a cover" | Generate professional cover proposals based on explosive data |
+| Niche daily updates   | Content operator | "Workplace fashion niche, need a set of cover proposals" | Quickly produce multiple style proposals for A/B testing      |
+| Custom with reference | Designer         | "Design a cover referencing this image" + upload         | Combine reference image with explosive patterns               |
+| Trend-chasing covers  | Media editor     | "See what covers are hot in the beauty niche lately"     | Get recent explosive cover styles, stay on trend              |
 
 ---
 
