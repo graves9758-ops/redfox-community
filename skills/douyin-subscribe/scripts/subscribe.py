@@ -328,6 +328,7 @@ def fetch_account_works(session, account_id, date_str=None, date_start=None, dat
         "shortId": "",
         "pageNum": 1,
         "pageSize": 10,
+        "source": "抖音账号订阅追踪"
     }
 
     try:
