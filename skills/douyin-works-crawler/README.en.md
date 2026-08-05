@@ -11,7 +11,6 @@ A Douyin content data retrieval tool. Enter a Douyin nickname or ID to instantly
 - **One-click works retrieval**: Enter a nickname or Douyin ID to automatically fetch account basic info (followers, total likes, total works, RedFox Index) and recent work lists.
 - **Auto data highlight analysis**: TOP 3 engagement works analysis + account feature summary (posting frequency, content direction, engagement trends, viral patterns)—quickly identify content worth learning from.
 - **Direct work links**: Each work comes with a direct link—click to jump to the original video.
-- **One-click unlisted account submission**: For accounts not yet indexed, reply with the Douyin ID to submit for indexing—data auto-syncs in about 30 minutes.
 
 **Intended Users**
 
@@ -33,7 +32,6 @@ A Douyin content data retrieval tool. Enter a Douyin nickname or ID to instantly
 ### Highlights
 
 - **Smart recognition**: Automatically detects input type (nickname/ID)—Chinese input uses nickname search, non-Chinese uses precise ID search.
-- **Account indexing**: Unlisted accounts support one-click indexing submission—data auto-syncs in about 30 minutes.
 - **Direct links**: Nickname links to account homepage; each work provides a direct video link.
 - **Safe & secure**: Data service-based access—no Douyin account login required.
 
@@ -60,7 +58,6 @@ Simply describe your query needs in natural language—no commands to memorize.
 | ------ | -------------- | ------ |
 | Query account works | "Crawl Douyin works for 周幺姑家常菜" | Fetch account basic info + recent work list + data highlight analysis |
 | Precise query | "Query works for Douyin ID cdjjc028" | Precise ID match, avoiding nickname ambiguity |
-| Submit account indexing | "My account can't be found, Douyin ID is 1212_1234" | Submit indexing request; query again in ~30 minutes |
 | Export data | "Export works data for 周幺姑家常菜" | Get structured works data |
 
 ### Output Example
@@ -78,7 +75,6 @@ After querying, you will receive the following structured results:
 
 ---
 
-(When no data is found, the system guides you to reply with a Douyin ID for indexing—data syncs in ~30 minutes.)
 
 ---
 
@@ -98,7 +94,6 @@ After querying, you will receive the following structured results:
 - The work list shows recent works only—up to 50 items in reverse chronological order, not the account's full historical works.
 - Number formatting: ≥10k displays as `x.xw` (e.g., 3.2w), ≥100M displays as `x.x亿`; <10k uses comma separators.
 - Douyin nicknames are not unique; nickname queries may return fuzzy matches—use Douyin ID for precise lookup.
-- Unlisted accounts can be submitted for indexing; data auto-syncs in about 30 minutes.
 - All data comes exclusively from the data platform; no third-party supplementation or estimation.
 > 💼 另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise)对接咨询
 

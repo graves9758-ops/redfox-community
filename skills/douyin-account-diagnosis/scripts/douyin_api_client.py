@@ -11,14 +11,13 @@ from typing import List, Dict, Optional
 
 
 class DouyinUserAPI:
-    """抖音用户API调用类 - 红狐API /story/api/dyUser/query & /story/api/dyUser/syncUserNotes"""
+    """抖音用户API调用类 - 红狐API /story/api/dyUser/query"""
 
     # API基础地址
     BASE_URL = "https://redfox.hk"
 
     # 接口路径（已验证可用）
     QUERY_ENDPOINT = "/story/api/dyUser/query"
-    SYNC_ENDPOINT = "/story/api/dyUser/syncUserNotes"
 
     # 环境变量名
     ENV_VAR = "REDFOX_API_KEY"
@@ -134,89 +133,6 @@ class DouyinUserAPI:
                 "fallback_needed": True
             }
 
-    def sync_account(
-        self,
-        account_id: str,
-        source: str = "抖音账号诊断宗师-GitHub"
-    ) -> Dict:
-        """
-        调用账号收录接口，将账号加入数据同步队列
-
-        Args:
-            account_id: 抖音账号ID（unique_id、short_id、uid）
-            source: 调用来源标识
-
-        Returns:
-            dict: {
-                "success": bool,
-                "message": str,
-                "error": str or None
-            }
-        """
-        import requests
-
-        url = f"{self.BASE_URL}{self.SYNC_ENDPOINT}"
-        payload = {
-            "accountId": account_id,
-            "source": source
-        }
-
-        print(f"\U0001f517 正在提交账号收录: {account_id}")
-
-        try:
-            response = requests.post(url, json=payload, headers=self.headers, timeout=30)
-            result = response.json()
-
-            code = result.get("code")
-            msg = result.get("msg", "")
-
-            if code == 200:
-                print(f"\u2705 收录申请已成功提交，系统将异步拉取数据")
-                return {
-                    "success": True,
-                    "message": "收录申请已成功提交，约30分钟后可重新诊断",
-                    "error": None
-                }
-            elif code == 400:
-                print(f"\u274c 参数错误: {msg}")
-                return {
-                    "success": False,
-                    "message": "",
-                    "error": f"参数错误: {msg}"
-                }
-            elif code == 500:
-                print(f"\u274c 业务异常: {msg}")
-                return {
-                    "success": False,
-                    "message": "",
-                    "error": f"业务异常: {msg}"
-                }
-            else:
-                print(f"\u274c 未知错误(code={code}): {msg}")
-                return {
-                    "success": False,
-                    "message": "",
-                    "error": f"未知错误(code={code}): {msg}"
-                }
-
-        except requests.exceptions.ConnectionError:
-            return {
-                "success": False,
-                "message": "",
-                "error": "连接失败，请检查网络"
-            }
-        except requests.exceptions.Timeout:
-            return {
-                "success": False,
-                "message": "",
-                "error": "请求超时"
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "message": "",
-                "error": f"收录失败: {e}"
-            }
 
     def diagnose_account(
         self,

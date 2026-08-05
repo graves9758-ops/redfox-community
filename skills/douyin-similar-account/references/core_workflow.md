@@ -95,26 +95,11 @@ API接口：POST https://redfox.hk/story/api/dyUser/querySimilarAccounts
 *红狐指数：每周更新，若统计周期内账号未发布作品，红狐指数可能为0。*
 ```
 
-**账号未找到情况**：
-当API返回"未找到账号"错误时，输出收录提示：
-```
-未查询到当前账号的相关信息，可提交当前抖音账号进行账号收录。
 
-1. 回复抖音号（在抖音个人主页显示的ID，如 {account_id}_1234），即可进行账号收录。30分钟后将自动为您推送相似账号报告~
-2. 下次再说；
-```
-用户确认收录时，调用 `--sync` 参数触发：
-```
-python scripts/douyin_similar_account.py --account_id "oioioi" --sync
-```
-调用 `/dyUser/syncUserNotes` 接口触发账号数据同步收录，输出：
-```
-已触发账号收录，30分钟后将自动为您推送相似账号报告~
-```
 
 **无对标/头部数据情况**（账号已找到但无对标推荐）：
 ```
-当前未查询到相关对标账号数据。可能原因：1) 账号暂未被平台收录；2) 抖音号或名称输入有误。
+当前未查询到相关对标账号数据。可能原因：1) 抖音号或名称输入有误；2) 暂无相关对标数据。
 建议：确认抖音号/名称是否正确后重新查询。
 ```
 
@@ -324,7 +309,6 @@ python scripts/douyin_similar_account.py --account_id "oioioi" --sync
 | 模块 | 职责 |
 | --- | --- |
 | `query_similar_accounts()` | 调用 /dyUser/querySimilarAccounts 接口，支持accountId和accountName两种查询方式，返回currentAccount+benchmarkAccounts+topAccounts |
-| `sync_user_notes()` | 调用 /dyUser/syncUserNotes 接口，触发账号数据同步收录，账号未找到时自动调用 |
 | `format_output()` | 格式化完整文本输出，包含当前账号信息、对标表格、头部表格、深度分析 |
 | `generate_recommendation_reason()` | 基于多维度生成推荐理由，涵盖红狐指数对比、爆品引用、更新节奏、互动率等 |
 | `generate_analysis_summary()` | 基于共通点、差异分析、优化建议三维输出深度分析 |

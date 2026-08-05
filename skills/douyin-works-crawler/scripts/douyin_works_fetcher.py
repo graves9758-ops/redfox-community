@@ -20,7 +20,6 @@ class DouyinWorksFetcher:
 
     BASE_URL = "https://redfox.hk"
     QUERY_ENDPOINT = "/story/api/dyData/queryUserWithWorks"
-    SYNC_ENDPOINT = "/dyUser/syncUserNotes"
     ENV_VAR = "REDFOX_API_KEY"
 
     def __init__(self, api_key: Optional[str] = None):
@@ -150,48 +149,6 @@ class DouyinWorksFetcher:
             "error": f"API错误(code={code}): {msg}"
         }
 
-    def sync_account(self, account_id: str, source: str = "抖音作品抓取-GitHub") -> Dict:
-        """
-        提交账号收录请求（异步同步触发）
-
-        Args:
-            account_id: 抖音账号ID（抖音号/uid）
-            source: 调用来源
-
-        Returns:
-            dict: {"success": bool, "error": str or None}
-        """
-        payload = {"accountId": account_id, "source": source}
-        print(f"📥 正在提交账号收录: {account_id}")
-
-        result = self._make_request(self.SYNC_ENDPOINT, payload)
-        code = result.get("code")
-        msg = result.get("msg", "")
-
-        # 成功码200（该接口成功码为200，无响应体）
-        if code == 200:
-            print(f"✅ 账号收录请求已提交，约30分钟后可查询")
-            return {
-                "success": True,
-                "error": None
-            }
-
-        # 参数错误
-        if code == 400:
-            error_msg = f"账号收录失败（参数错误）: {msg}"
-            print(f"❌ {error_msg}")
-            return {
-                "success": False,
-                "error": error_msg
-            }
-
-        # 其他错误
-        error_msg = f"账号收录失败(code={code}): {msg}"
-        print(f"❌ {error_msg}")
-        return {
-            "success": False,
-            "error": error_msg
-        }
 
     def _extract_account_info(self, data: Dict) -> Dict:
         """提取账号基础信息"""
@@ -213,14 +170,9 @@ class DouyinWorksFetcher:
     def format_markdown(self, result: Dict) -> str:
         """格式化为Markdown输出"""
         if not result["success"]:
-            # 账号未查询到，输出收录提示
+            # 账号未查询到，输出提示信息
             if result.get("need_sync"):
-                lines = []
-                lines.append("未查询到当前账号的相关信息，可提交当前抖音账号进行账号收录。")
-                lines.append("")
-                lines.append("1. 回复抖音号（在抖音个人主页显示的ID，如 1212_1234），即可进行账号收录。30分钟后将自动为您推作品查询报告~")
-                lines.append("2. 下次再说；")
-                return "\n".join(lines)
+                return "未查询到当前账号的相关信息，请检查输入的抖音号或昵称是否正确。建议使用抖音号进行精准查询。"
             return f"❌ 查询失败: {result['error']}"
 
         account = result["account"]
@@ -438,7 +390,6 @@ def main():
     parser = argparse.ArgumentParser(description="抖音作品爬取工具")
     parser.add_argument("--account", required=True, help="抖音昵称或抖音号")
     parser.add_argument("--output", choices=["markdown", "json"], default="markdown", help="输出格式（默认markdown）")
-    parser.add_argument("--sync", help="提交账号收录，传入抖音号")
     args = parser.parse_args()
 
     fetcher = DouyinWorksFetcher()
@@ -450,18 +401,6 @@ def main():
 
     print(f"✅ API Key已配置: {fetcher.api_key[:8]}...")
 
-    # 账号收录模式
-    if args.sync:
-        sync_result = fetcher.sync_account(args.sync)
-        if args.output == "json":
-            print(json.dumps(sync_result, ensure_ascii=False, indent=2))
-        else:
-            if sync_result["success"]:
-                print("\n✅ 已提交账号收录请求，系统正在同步数据，约30分钟后可再次查询该账号的作品数据。")
-            else:
-                print(f"\n❌ {sync_result['error']}")
-        return
-
     # 查询模式
     result = fetcher.query_account(args.account)
 
@@ -470,7 +409,7 @@ def main():
     else:
         print(fetcher.format_markdown(result))
 
-    if not result["success"] and not result.get("need_sync"):
+    if not result["success"]:
         print(f"\n💡 提示：请提供目标账号的抖音号进行精准查询，避免昵称模糊匹配错误。")
 
 
