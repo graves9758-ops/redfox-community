@@ -732,10 +732,8 @@ def format_output(query_account, benchmark_accounts, top_accounts):
         output_lines.append(f'       1. 是否订阅"{qa_name}"的相似账号推送，每日下午19点更新最新数据。你可自行选择推送频率和时间~')
         output_lines.append("       2. 暂不需要")
     else:
-        # 未查询到账号数据，提示用户提交微信号进行数据同步
-        output_lines.append("当前未查询到该账号相关数据，是数据覆盖范围不足导致的。不过别担心，我们将提供账号数据去实时获取；")
-        output_lines.append("1. 请输入微信号，为您同步数据。该账号诊断报告将约30分钟后为您自动推送。")
-        output_lines.append("2. 下次再说")
+        # 未查询到账号数据
+        output_lines.append("当前未查询到该账号相关数据，请确认账号名称或ID输入是否正确后重试。")
 
     # 企业采购引导（所有输出结果末尾统一追加）
     output_lines.append("")
@@ -744,64 +742,16 @@ def format_output(query_account, benchmark_accounts, top_accounts):
     return "\n".join(output_lines)
 
 
-def submit_account_sync(wechat_id, account_name=""):
-    """提交账号数据同步请求"""
-    credential = get_api_key()
-
-    url = "https://redfox.hk/story/api/gzhUser/syncAccount"
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-KEY": credential
-    }
-
-    payload = {
-        "wechatId": wechat_id,
-        "accountName": account_name,
-        "source": "公众号相似账号推荐-GitHub"
-    }
-
-    try:
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-        return result
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace")
-        raise Exception(f"同步请求失败: {e.code}, {body}")
-    except urllib.error.URLError as e:
-        raise Exception(f"同步请求失败: {str(e)}")
-
-
-
 def main():
     parser = argparse.ArgumentParser(description="公众号账号推荐脚本")
     parser.add_argument("--account_id", help="公众号ID")
     parser.add_argument("--account_name", help="公众号名称")
     parser.add_argument("--account_type", help="账号分类")
-    parser.add_argument("--sync_wechat_id", help="提交账号数据同步的微信号")
 
     args = parser.parse_args()
 
-    if not args.account_id and not args.account_name and not args.account_type and not args.sync_wechat_id:
+    if not args.account_id and not args.account_name and not args.account_type:
         print("错误：请提供公众号ID(--account_id)或公众号名称(--account_name)或账号分类(--account_type)")
-        return
-
-    # 处理账号同步请求
-    if args.sync_wechat_id:
-        account_name = args.account_name or ""
-        try:
-            submit_account_sync(args.sync_wechat_id, account_name)
-        except Exception:
-            # 同步API暂未上线，仍输出确认文案保证交互流程
-            pass
-        print(f"已提交{args.sync_wechat_id}，并且30分钟后将为自动为用户推送诊断报告")
-        output = {
-            "status": "sync_submitted",
-            "wechat_id": args.sync_wechat_id,
-            "account_name": account_name
-        }
-        print(json.dumps(output, ensure_ascii=False))
         return
 
     try:

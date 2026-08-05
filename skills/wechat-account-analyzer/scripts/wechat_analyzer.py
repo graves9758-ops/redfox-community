@@ -1078,7 +1078,7 @@ def cmd_query(account_ids=None, account_names=None, force_analyze=False):
             print(json.dumps({
                 "status": "success",
                 "query_type": "not_found",
-                "message": f"未查询到账号【{name}】，该账号可能尚未收录或名称有误，请核实公众号名称后重试。",
+                "message": f"未查询到账号【{name}】，该账号可能名称有误或暂无数据，请核实公众号名称后重试。",
                 "data": []
             }, ensure_ascii=False))
             return
@@ -1213,10 +1213,8 @@ def cmd_query(account_ids=None, account_names=None, force_analyze=False):
 
     _save_raw_data(items)
 
-    accounts_with_works = [it for it in items if it.get("works")]
-    accounts_need_sync = [it for it in items if not it.get("works")]
-
     if len(items) > 1:
+        accounts_with_works = [it for it in items if it.get("works")]
         if not accounts_with_works:
             if force_analyze:
                 [_analyze_single_account(it, has_works=False) for it in items]
@@ -1229,17 +1227,14 @@ def cmd_query(account_ids=None, account_names=None, force_analyze=False):
                 return
             print(json.dumps({
                 "status": "success",
-                "query_type": "need_sync",
+                "query_type": "multi",
                 "message": "这些账号暂无作品数据",
-                "need_sync": [{"nickname": it.get("accountName", ""), "redId": it.get("accountId", "")} for it in items]
+                "no_works_hint": "暂未获取到作品数据"
             }, ensure_ascii=False))
             return
         
         [_analyze_single_account(it) for it in accounts_with_works]
-        output = {"status": "success", "query_type": "multi", "message": "数据已保存"}
-        if accounts_need_sync:
-            output["need_sync"] = [{"nickname": it.get("accountName", ""), "redId": it.get("accountId", "")} for it in accounts_need_sync]
-        print(json.dumps(output, ensure_ascii=False))
+        print(json.dumps({"status": "success", "query_type": "multi", "message": "数据已保存"}, ensure_ascii=False))
         return
 
     raw_item = items[0]
@@ -1261,52 +1256,6 @@ def _calc_avg_read(works):
     reads_all  = [_work_read(w) for w in works if _work_read(w) > 0]
     reads = reads_real if reads_real else reads_all
     return int(sum(reads) / len(reads)) if reads else 0
-
-
-def cmd_sync_notes(account_ids):
-    """订阅命令：调用接口同步账号作品数据
-    
-    参数:
-        account_ids: 公众号账号ID列表
-    """
-    results = []
-    
-    for account_id in account_ids:
-        try:
-            body = {
-                "accountId": account_id,
-                "source": "公众号账号诊断-GitHub"
-            }
-            response = https_post("/story/api/gzhUser/syncUserNotes", body)
-            
-            if isinstance(response, dict) and response.get("code") == 5000:
-                results.append({
-                    "accountId": account_id,
-                    "account_name": f"账号{account_id}",
-                    "status": "success",
-                    "schedule_required": True,
-                    "schedule_time_minutes": 30
-                })
-            else:
-                results.append({
-                    "accountId": account_id,
-                    "account_name": f"账号{account_id}",
-                    "status": "success",
-                    "schedule_required": True,
-                    "schedule_time_minutes": 30
-                })
-        except Exception as e:
-            results.append({
-                "accountId": account_id,
-                "status": "error",
-                "message": f"订阅失败: {str(e)}"
-            })
-    
-    print(json.dumps({
-        "status": "success",
-        "query_type": "sync",
-        "data": {"sync_results": results}
-    }, ensure_ascii=False))
 
 
 REPORT_DATA_FILE = "report_data.json"
@@ -1880,11 +1829,6 @@ def main():
     query_parser.add_argument("--account_names", help="公众号账号名称列表，逗号分隔", required=False)
     query_parser.add_argument("--force_analyze", action="store_true", help="强制执行分析（即使无作品数据）")
 
-    # 同步作品子命令
-    sync_parser = subparsers.add_parser("sync_notes", help="同步账号作品数据")
-    sync_parser.add_argument("--account_id", help="公众号账号ID（单个）", required=True)
-    sync_parser.add_argument("--account_names", help="账号名称列表，逗号分隔（用于提示）", required=False)
-
     # 生成单账号HTML子命令
     html_parser = subparsers.add_parser("generate_html", help="基于report_data.json生成单账号HTML报告")
 
@@ -1905,16 +1849,6 @@ def main():
             sys.exit(1)
 
         cmd_query(account_ids=account_ids or None, account_names=account_names or None, force_analyze=getattr(args, 'force_analyze', False))
-
-    elif args.command == "sync_notes":
-        account_id = args.account_id.strip() if args.account_id else ""
-        if not account_id:
-            print(json.dumps({
-                "status": "error",
-                "message": "请提供账号ID（--account_id）"
-            }, ensure_ascii=False))
-            sys.exit(1)
-        cmd_sync_notes([account_id])
 
     elif args.command == "generate_html":
         cmd_generate_html()

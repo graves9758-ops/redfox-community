@@ -37,63 +37,15 @@ python scripts/wechat_analyzer.py query --account_names "公众号昵称"
 
 **⚠️ 账号数据为空处理（未查询到账号）**：
 - 如果脚本返回 `status: "error"` 且提示未查询到账号，说明该账号不在数据库中
-- **立即停止后续步骤**，执行以下处理：
-  1. 调用数据同步接口：
-     ```bash
-     python scripts/wechat_analyzer.py sync_notes --red_ids "用户输入的账号ID"
-     ```
-     - 同步接口：`https://redfox.hk/story/api/gzh/data/queryWorkList`，参数 `redId` 从用户输入中获取
-  2. 输出提示：
-     ```
-     非常抱歉，未查询到该账号。请检查账号id是否有误，若输入准确，可能当前账号近期发文数据未达到收录标准。
-     我们将为你实时去采集数据，30min后向您推送新的诊断报告，请问是否接收？
-     1. 接收推送
-     2. 暂不接收
-     ```
-  3. 用户输入编号"1"或回复"接收"后，执行订阅流程：
-     a. **【必须】创建日程任务**（使用calendar_create工具）：
-        - summary: 推送xxx账号诊断报告
-        - dtstart: 当前时间+30分钟（格式YYYYMMDDHHMM）
-        - description: 重新查询账号数据并推送诊断报告（python scripts/wechat_analyzer.py query --account_ids <用户输入的账号ID>）
-     b. 输出提示：「订阅成功！系统将在30分钟后自动向您推送该账号的诊断报告，请耐心等待」
-  4. 用户输入编号"2"或回复"暂不接收"，结束本次分析
+- **立即停止后续步骤**，提示用户：
+  ```
+  非常抱歉，未查询到该账号。请检查账号名称或ID是否有误，确认后重试。
+  ```
 
-**⚠️ 作品数据为空处理（直接进入订阅流程）**：
+**⚠️ 作品数据为空处理**：
 - 如果查询到账号但 `works` 为空数组，脚本返回 `query_type: "need_sync"` 和 `need_sync` 字段
-- **立即停止后续步骤**，不输出分析报告，直接进入订阅流程：
-  1. 输出提示（xxx为账号昵称）：
-     ```
-     为您获取作品中，30分钟后会更新数据后可向您推荐，请问是否订阅"xxx"账号？
-     1. 订阅账号xxx
-     2. 暂不订阅
-     ```
-  2. 用户输入编号"1"或回复"订阅"后，执行订阅流程：
-     a. **【必须】创建日程任务**（使用calendar_create工具）：
-        - summary: 推送xxx账号诊断报告
-        - dtstart: 当前时间+30分钟（格式YYYYMMDDHHMM）
-        - description: 重新查询账号数据并推送诊断报告（python scripts/wechat_analyzer.py query --account_ids <redId>）
-     b. 日程创建成功后，调用同步接口：
-        ```bash
-        python scripts/wechat_analyzer.py sync_notes --red_ids "redId"
-        ```
-     c. 同步接口：`https://redfox.hk/story/api/gzh/data/queryWorkList`，参数 `redId` 从账号信息中获取
-     d. 输出提示：「订阅成功！系统将在30分钟后自动向您推送"xxx"账号的诊断报告，请耐心等待」
-  3. 用户输入编号"2"或回复"仍然执行分析"：
-     - 继续执行分析流程
-     - 在报告开头提示：「该账号暂未获取到近7天作品」
-     - 输出完整的分析报告（爆文能力、更新产能等模块显示为"暂无作品数据"）
-  4. 用户输入编号"3"或回复"暂不订阅"，结束本次分析
-
-**订阅推送机制（智能体执行）**：
-- 使用calendar_create工具创建日程任务
-- 日程触发时间：当前时间 + 30分钟（格式YYYYMMDDHHMM）
-- 日程触发后**无论是否有作品数据都执行分析流程**：
-  1. 重新查询账号数据：`python scripts/wechat_analyzer.py query --account_ids <redId>`
-  2. **如果works为空**：
-     - 在报告开头提示：「该账号已重新同步，但暂未获取到近7天作品数据」
-     - 继续执行完整的分析流程，输出诊断报告
-  3. **如果works有数据**：
-     - 正常输出完整的诊断报告
+- 继续执行分析流程，在报告开头提示：「该账号暂未获取到近7天作品」
+- 输出完整的分析报告
 
 ### 步骤3：在对话中输出诊断报告
 基于脚本输出的数据，直接在对话中输出四维度诊断报告。

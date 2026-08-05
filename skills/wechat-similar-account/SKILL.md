@@ -14,7 +14,6 @@ description: 公众号创作者对标账号匹配工具，基于3层加权匹配
 - 🎯 匹配同阶对标账号（可直接复制玩法）
 - 🚀 推荐高阶标杆账号（模式成熟可追赶）
 - 📈 基于3层加权体系生成个性化推荐理由
-- 🔄 未收录账号支持提交微信号进行数据同步
 
 适用于公众号创作者、内容运营、账号投放决策等需要对标参考的场景。基于 [RedFox](https://redfox.hk/) 数据平台提供支持。
 
@@ -25,7 +24,6 @@ description: 公众号创作者对标账号匹配工具，基于3层加权匹配
 - **📊 账号诊断**：展示查询账号的基本信息、红狐指数、阅读数据及近5篇文章
 - **🎯 同阶对标**：推荐阅读数最接近的同赛道账号，可直接复制运营玩法
 - **🚀 高阶标杆**：推荐阅读数3-5倍的成熟账号，模式可参考追赶
-- **📋 数据同步**：未收录账号支持提交微信号进行数据同步
 
 ### ✨ 特色亮点
 - **⚖️ 3层加权匹配**：核心基础(40%) + 运营变现(35%) + 数据特征(25%)，推荐结果科学可落地
@@ -95,14 +93,7 @@ description: 公众号创作者对标账号匹配工具，基于3层加权匹配
 python scripts/wechat_similar_accountr.py --account_name "科技前沿" --account_type "科技数码"
 ```
 
-#### 5. 数据同步
-当账号未被收录时，提交微信号进行数据同步：
-
-```bash
-python scripts/wechat_similar_accountr.py --sync_wechat_id "kejiqianyan" --account_name "科技前沿"
-```
-
-#### 6. 按分类查询注意事项
+#### 5. 按分类查询注意事项
 红狐数据 平台的分类体系与自然语言存在差异，`--account_type` 查询成功率较低。当用户以自然语言分类（如「风景」「情感」）查询时，应：
 1. 查找该领域代表性公众号（如「风景」→「中国国家地理」，「情感」→「夜听」）
 2. 使用 `--account_name "代表性名称"` 执行查询
@@ -115,7 +106,6 @@ python scripts/wechat_similar_accountr.py --sync_wechat_id "kejiqianyan" --accou
 | `--account_name "名称"` | 按公众号名称查询 |
 | `--account_id "ID"` | 按公众号ID查询 |
 | `--account_type "分类"` | 按账号分类查询 |
-| `--sync_wechat_id "微信号" --account_name "名称"` | 提交数据同步请求 |
 
 ### 输出流程
 
@@ -129,18 +119,6 @@ python scripts/wechat_similar_accountr.py --sync_wechat_id "kejiqianyan" --accou
 5. 分析总结（有数据才展示）
 6. **订阅服务（必须输出，无论有无数据）**
 7. **企业采购引导（必须输出，无论有无数据）**
-
-### 无数据交互流程
-
-当查询不到账号数据时，提示用户：
-1. 请输入微信号，为您同步数据（约30分钟后自动推送诊断报告）
-2. 下次再说
-
-当用户回复 `1+微信号` 时，执行：
-```bash
-python scripts/wechat_similar_accountr.py --sync_wechat_id "微信号" --account_name "公众号名称"
-```
-回复确认文案：`已提交{微信号}，并且30分钟后将为自动为用户推送诊断报告`
 
 ## 使用场景
 
@@ -233,7 +211,6 @@ wechat-similar-account/
 | `_calc_interaction_rate()` | 计算互动率，超过100%判定为数据异常不输出 |
 | `_calc_share_rate()` | 计算分享率=分享数/阅读数，反映内容传播力 |
 | `calc_seven_day_reads()` | 计算近7天阅读数（从works累加clicksCount，works为空返回0；interactiveCountSeven是互动量非阅读量，不可混用） |
-| `submit_account_sync()` | 提交未收录账号的数据同步请求 |
 
 ### API 响应结构
 
@@ -294,7 +271,7 @@ A: 不需要。脚本仅使用 Python 标准库（json、argparse、os、urllib�
 
 **Q3: 查询不到账号数据怎么办？**
 
-A: 说明该账号暂未被平台完整收录。你可以回复 `1+微信号` 提交数据同步请求，大概30分钟后自动推送诊断报告。
+A: 请确认账号名称或ID输入是否正确。如账号为新号或近期发文较少，可能暂时无法获取完整数据，建议稍后重试。
 
 **Q4: 支持哪些查询方式？**
 

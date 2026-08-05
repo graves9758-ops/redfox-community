@@ -21,17 +21,7 @@
 }
 ```
 
-### 同步接口
-
-**请求方式**：POST
-**请求地址**：https://redfox.hk/story/api/gzh/data/queryWorkList
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| accountId | String | 是 | 公众号ID（微信号/biz字段） |
-| source | String | 否 | 来源标识 |
-
-## 接口响应字段
+### 接口响应字段
 
 ### 账号数据（List格式）
 

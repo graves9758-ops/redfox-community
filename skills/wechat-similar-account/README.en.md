@@ -30,7 +30,6 @@ A benchmark account matching tool for WeChat Official Account creators. Using a 
 - **Account diagnostics**: Display basic account info, RedFox Index, readership data, and the latest 5 articles for the queried account.
 - **Peer benchmark recommendations**: Recommend same-niche accounts with the closest readership numbers—directly copy their operational playbooks.
 - **Top aspirational recommendations**: Recommend mature accounts with 3–5× your readership—reference their operational models to catch up.
-- **Data sync**: For unlisted accounts, submit a WeChat ID to trigger data synchronization, with a diagnostic report automatically pushed in about 30 minutes.
 
 ### Highlights
 
@@ -63,7 +62,6 @@ Simply describe your query needs in natural language—no commands to memorize.
 | Search by account name | "Find benchmark accounts for TechFrontier" | Precise name match, outputting both peer benchmarks and top aspirationals |
 | Search by account ID | "Find benchmarks for account ID gh_xxx" | Precise ID-based query |
 | Explore by category | "Recommend benchmark accounts in the tech-digital category" | Category-based query to explore niche landscape |
-| Submit data sync | "My account isn't indexed yet, WeChat ID is kejiqianyan" | Submit sync request; diagnostic report auto-pushed in ~30 minutes |
 
 ### Output Example
 
@@ -79,8 +77,6 @@ After querying, you will receive the following structured analysis:
 **✨ Top Aspirationals (5)**: Top-tier accounts with 3–5× your readership—mature models to pursue
 
 ---
-
-(When no data is found, the system automatically guides you to submit a WeChat ID for sync, ensuring every query yields a result.)
 
 > 💼 RedFox also offers a comprehensive full-scale database with detailed data. For enterprise procurement plans, visit RedFox Hub [Enterprise Services](https://redfox.hk/dashboard/enterprise) for consultation.
 
@@ -100,9 +96,8 @@ After querying, you will receive the following structured analysis:
 ## Important Data Notes
 
 - Data is sourced from the RedFox data platform; the displayed data retrieval time may differ from real-time figures.
-- Recommended account metrics (reads, engagement, etc.) are based on platform-indexed data; engagement counts should not be used as read counts.
+- Recommended account metrics (reads, engagement, etc.) are based on platform data; engagement counts should not be used as read counts.
 - When searching by category, the platform's classification system may differ from natural language; using a representative account name for lookup is recommended.
-- For unlisted accounts, submit the WeChat ID to trigger sync; a diagnostic report will be automatically pushed in about 30 minutes.
 - Maximum displayed read count is 100,001 (10w+ cap); actual readership may be higher.
 
 ---
