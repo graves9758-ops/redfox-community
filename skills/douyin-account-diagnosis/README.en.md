@@ -4,19 +4,19 @@
 
 ## Overview
 
-Enter a Douyin account name or ID to receive a comprehensive diagnosis across four dimensions—account scale, content performance, operational activity, and platform index—with a **100-point quantified score** and a full diagnostic report in one click.
+One-click diagnosis of your Douyin account's operational health. Simply provide an account nickname or Douyin ID to automatically fetch account profile and recent content data. Receive a quantified diagnosis across six dimensions, with a 100-point composite score, dimension breakdown, risk alerts, and optimization directions — all in a well-structured report ready within minutes.
 
 **Core Value**
 
-- **Four-dimension quantified scoring**: Account scale + Content performance + Operational activity + Platform index—say goodbye to subjective judgment
-- **Scoring breakdown + Diagnostic report**: Automatically generates the scoring process and a full diagnostic report with traceable data
-- **Strengths / Weaknesses + Optimization suggestions**: Data-driven analysis with targeted optimization directions
+- **Full-dimensional quantification**: Covers six dimensions — account profile, content productivity, engagement health, content quality, content trends, and follower quality — leaving no blind spots.
+- **Automatic risk alerts**: Six risk types (zombie followers, engagement manipulation, decline, shadow-ban, inactivity, single-hit dependency) are automatically identified and ranked by severity.
+- **Ready-to-use reports**: Standard formatted output with explainable scores and verifiable conclusions, ready for team presentations, competitive analysis, or partnership evaluations.
 
 **Intended Users**
 
-- 🏢 **Brands / MCN agencies** — Replace intuition with data for science-based influencer partnership evaluation
-- 📱 **Douyin creators / Self-media** — Understand your account performance and find optimization directions
-- 📊 **Content operators** — Regularly monitor account health and guide publishing strategy adjustments
+- 📊 **Douyin operators** — Self-audit account health, identify weak spots, and get actionable optimization directions.
+- 🏢 **MCNs / Brands** — Evaluate creator account quality at scale, screen for collaboration risks, and support signing decisions.
+- 🔍 **Content creators** — Benchmark against competitors, identify gaps, and shape content strategy.
 
 ---
 
@@ -24,17 +24,17 @@ Enter a Douyin account name or ID to receive a comprehensive diagnosis across fo
 
 ### Core Capabilities
 
-- **Four-dimension scoring**: Account scale (35 pts) + Content performance (35 pts) + Operational activity (20 pts) + Platform index (10 pts) = 100 pts, unified standard for cross-account comparison
-- **Full diagnostic report**: Automatically generates scoring breakdown + basic info / core data / comprehensive score / optimization suggestions
-- **Flexible querying**: Supports fuzzy matching by nickname or exact matching by Douyin ID
-- **Smart optimization suggestions**: Automatically generates strengths / weaknesses analysis and 3 optimization suggestions based on scoring data
+- **One-click data retrieval**: Enter a nickname or Douyin ID to automatically pull account profile and recent content — no manual data collection needed.
+- **Six-dimension quantified diagnosis**: Scores are calculated for account profile, productivity, engagement, quality, trends, and follower quality, then weighted into a composite score.
+- **100-point composite scoring**: A weighted composite score with a four-tier rating (Excellent / Normal / Needs Improvement / At Risk) — understand account health at a glance.
+- **Risk alerts**: Automatically detects zombie followers, engagement manipulation, decline, shadow-ban, inactivity, and single-hit dependency, with detailed data interpretation.
+- **Recent content details**: All recent content with engagement data is displayed by default, with clickable titles linking directly to each piece — every conclusion is backed by evidence.
 
 ### Highlights
 
-- **Precise data-driven**: Based on RedFoxHub API for real data, all scores are traceable
-- **Standardized scoring system**: Unified 100-point scoring standard for cross-account comparison, avoiding subjective judgment
-- **Compatible with incomplete data**: Automatically uses alternative metrics when play count is unavailable, without affecting the overall score
-- **Automatic category mapping**: API-returned account categories are automatically mapped to unified output names
+- **Transparent, auditable scoring**: Every score follows clear rules; the diagnostic process is traceable — not a black box.
+- **Automatic alert triggering**: Anomalies are detected automatically without manual monitoring, categorized by risk level.
+- **Ready-to-use reports**: Standard Markdown output that can be copied directly into team docs, weekly reports, or partnership evaluation materials.
 
 ---
 
@@ -51,51 +51,38 @@ Enter a Douyin account name or ID to receive a comprehensive diagnosis across fo
 
 ## Usage Guide
 
-Simply say the Douyin account you want to diagnose in natural language—no fixed commands to memorize.
+Simply describe the account you want to diagnose in natural language — no commands to memorize.
 
 ### Quick Reference
 
 | Intent | Example Phrase | Result |
-|--------|----------------|--------|
-| Diagnose by nickname | "Diagnose Douyin account Liangtian" | Fuzzy match nickname, generate full diagnostic report |
-| Diagnose by Douyin ID | "Diagnose Douyin ID liangtian5147" | Exact match Douyin ID, generate full diagnostic report |
-| Natural language trigger | "Liangtian Douyin analysis" | Auto-detect account and intent, output diagnosis results |
+| ------ | -------------- | ------ |
+| Diagnose by nickname | "Diagnose the Douyin account XX" | Fuzzy match by nickname and output full diagnostic report |
+| Diagnose by Douyin ID | "Analyze this Douyin ID 66456544107" | Exact match by ID and output full report |
+| Account health check | "Give XX a Douyin health check" | Six-dimension diagnostic report |
+| Evaluate for partnership | "Evaluate if this account is worth collaborating with" | Score, rating, and risk alerts |
 
 ### Output Example
 
-After diagnosis, you will receive a scoring breakdown followed by a full diagnostic report:
+The diagnostic report includes the following sections:
 
-**Scoring Breakdown (illustrative)**:
-
-```text
-**Dimension 1: Account Scale (35 pts)**
-+ Followers 201,242,077 (≥50M) → 22 pts
-+ Total likes 18,112,283,863 (≥1B) → 8 pts
-+ Likes/Followers ratio ≈ 90.0 (≥15) → 5 pts
-+ **Subtotal: 35 pts (full score)**
-
-**Overall Score: 93.0 pts — 🏆 S-tier Benchmark Account**
-```
-
-**Diagnostic Report (illustrative)**:
-
-| Dimension | Score | Max | Score Rate |
-|-----------|-------|-----|------------|
-| Account Scale | 35.0 | 35 pts | 100.0% |
-| Content Performance | 29.0 | 35 pts | 82.9% |
-| Operational Activity | 20.0 | 20 pts | 100.0% |
-| Platform Index | 10.0 | 10 pts | 100.0% |
-| **Overall** | **94.0** | **100 pts** | **94.0%** |
+- **Summary line**: Nickname + composite score + rating — understand the conclusion at a glance
+- **Basic info table**: Nickname, Douyin ID, UID, follower count, content count, region, etc.
+- **Six-dimension score table**: Score, max points, and one-line evaluation per dimension; weakest dimensions are bolded
+- **Risk alerts**: Each alert type with specific data interpretation
+- **Key findings**: Strengths and weaknesses in two groups, each with supporting data
+- **Recent content details**: Publish time, likes/comments/shares/total engagement per piece; titles link directly to content
+- **Optimization suggestions**: Prioritized improvement directions based on diagnostic data
 
 ---
 
 ## Use Cases
 
 | Scenario | Role | Example Question | Benefit |
-|----------|------|------------------|---------|
-| Influencer partnership evaluation | Brand marketing manager | "Diagnose Douyin account Liangtian, check partnership value" | Replace intuition with data for science-based evaluation |
-| Managed creator monitoring | MCN operator | "Help me analyze our managed creators' Douyin accounts" | Spot problem accounts early, improve management efficiency |
-| Self-account optimization | Douyin creator / operator | "Analyze my Douyin ID, see what needs improvement" | Identify optimization directions, boost account performance |
-> 💼 另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise)对接咨询
+| -------- | ---- | ---------------- | ------- |
+| Account self-audit | Douyin operator | "Diagnose my Douyin account for me" | Quickly identify weak spots and get actionable suggestions |
+| Competitive analysis | Brand / MCN | "Analyze this competitor account's data" | Benchmark performance and develop differentiation strategies |
+| Creator screening | MCN / Brand | "Evaluate if this creator is worth signing" | Data-driven quality assessment to reduce partnership risk |
+| Account valuation | Investor / BD | "Check this account's follower quality and growth potential" | Quantify commercial value to support decisions |
 
 ---
