@@ -1027,7 +1027,7 @@ def main():
 
     except Exception as e:
         # 账号未收录或其他错误
-        print(f"查询失败: {str(e)}")
+        print(f"查询失败: {str(e)}。未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系红狐数据咨询：redfoxdata@proton.me")
 
 
 if __name__ == "__main__":

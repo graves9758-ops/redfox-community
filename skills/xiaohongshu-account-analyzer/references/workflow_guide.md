@@ -30,48 +30,15 @@
 
 ### 步骤2：查询数据
 
-**⚠️ 重要：sync冷却期限制**
-- 当账号处于同步冷却期（调用sync_notes后15分钟内），脚本返回 `query_type: "sync_cooldown"`
-- **冷却期内禁止调用query接口**，直接返回提示给用户：
-  ```
-  数据同步中，请等待约N分钟后再查询，如果急需可联系工作人员邮箱redfoxdata@proton.me
-  ```
-- 脚本内部已实现冷却期检查，返回冷却期状态时不会调用API
-
 ```bash
 python scripts/xiaohongshu_analyzer.py query --user_ids "账号ID"
 ```
 - 脚本自动保存 `output/raw_data.json`
 - 输出结构化JSON结果，包含评分和指标
 
-**⚠️ 重要限制机制**：
-1. **sync冷却期**：调用sync_notes后15分钟内，该账号ID处于冷却期，脚本返回 `query_type: "sync_cooldown"`
-   - **冷却期内禁止调用接口**，直接告知用户：「数据同步中，请等待约N分钟后再查询，如果急需可联系工作人员邮箱redfoxdata@proton.me」
-2. **失败阈值限制**：同一账号ID参数6小时内失败3次后，脚本返回 `query_type: "threshold_exceeded"`
-   - 告知用户：「当前账号ID已超过失败阈值，请联系客服邮箱redfoxdata@proton.me处理」
-
 **⚠️ 账号数据为空处理（未查询到账号）**：
 - 如果脚本返回 `query_type: "not_found"`，说明该账号不在数据库中
-- **立即停止后续步骤**，执行以下处理：
-  1. 调用数据同步接口：
-     ```bash
-     python scripts/xiaohongshu_analyzer.py sync_notes --red_ids "用户输入的账号ID"
-     ```
-     - 同步接口：`https://redfox.hk/story/api/xhsUser/syncUserNotes`，参数 `redId` 从用户输入中获取
-     - **注意**：如果账号已在sync冷却期内，sync_notes也会返回冷却期提示，无需重复调用接口
-  2. 输出提示：
-     ```
-     当前未查询到该账号相关数据，是当前数据覆盖范围不足导致的。不过别担心，我们将提供账号数据去实时获取；
-     1.接收实时获取，大概需要30分钟，自动推送诊断报告
-     2.下次再说
-     ```
-  3. 用户输入编号"1"或回复"接收"后，执行订阅流程：
-     a. **【必须】创建日程任务**（使用calendar_create工具）：
-        - summary: 推送xxx账号诊断报告
-        - dtstart: 当前时间+30分钟（格式YYYYMMDDHHMM）
-        - description: 重新查询账号数据并推送诊断报告（python scripts/xiaohongshu_analyzer.py query --user_ids <用户输入的账号ID>）
-     b. 输出提示：「订阅成功！系统将在30分钟后自动向您推送该账号的诊断报告，请耐心等待」
-  4. 用户输入编号"2"或回复"下次再说"，结束本次分析
+- 直接向用户展示脚本返回的提示信息即可
 
 **⚠️ 作品数据为空处理（直接进入订阅流程）**：
 - 如果查询到账号但 `works` 为空数组，脚本返回 `query_type: "need_sync"` 和 `need_sync` 字段

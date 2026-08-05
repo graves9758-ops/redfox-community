@@ -1266,7 +1266,7 @@ Examples:
         step(f"从 {len(subscriptions)} 个抖音账号拉取作品{date_label}...")
         print()
 
-        if is_adhoc_query and not user_specified_date:
+        if is_adhoc_query and not user_specified_date and not rate_limited_accounts:
             # 规则1：查近 30 天
             works, empty_accounts, rate_limited_accounts = fetch_all_works(
                 session, subscriptions, None, fallback_start, fallback_end
@@ -1296,7 +1296,7 @@ Examples:
             date_end = half_year_end
 
         # ── 规则 2：已订阅账号 T-1 无数据时的提示 ──
-        if not is_adhoc_query and not works and not user_specified_date:
+        if not is_adhoc_query and not works and not user_specified_date and not rate_limited_accounts:
             for name in empty_accounts:
                 print(f"\n  {YELLOW}[!]{RESET} 「{name}」昨日暂未发布作品")
             print(f"\n  {CYAN}💡 如需数据核查可联系工作人员邮箱 {SUPPORT_EMAIL} 处理{RESET}")
@@ -1319,11 +1319,7 @@ Examples:
             info(f"拉取完成: 共 {len(works)} 条作品")
 
         # ── 未收录账号提示 ──
-        NOT_FOUND_MSG = (
-            "当前暂未找到该账号信息，可能是数据覆盖范围有限所致。\n"
-            "不过别担心，我们将尽快为您更新数据，通常10分钟内可查，"
-            "特殊情况下需1天，您可订阅明日推送。"
-        )
+        NOT_FOUND_MSG = "未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系红狐数据咨询：redfoxdata@proton.me"
 
         # ── 输出（终端 / Markdown / HTML） ──
         want_html = getattr(args, 'html', False)
@@ -1353,8 +1349,7 @@ Examples:
                 print_markdown_table(works)
                 for name in empty_accounts:
                     warn(f"「{name}」该时间段内无更新作品")
-                for name in rate_limited_accounts:
-                    print(f"\n**{name}**：当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
+
                 # ── 输出纯文本总结（供 Agent 对话展示，与 HTML 内容一致）──
                 if summary_text:
                     print(f"\n{GREEN}=== 作品总结（与 HTML 报告一致）==={RESET}")
@@ -1364,8 +1359,7 @@ Examples:
             # 仍然输出提示信息
             for name in empty_accounts:
                 warn(f"「{name}」该时间段内无更新作品")
-            for name in rate_limited_accounts:
-                print(f"\n**{name}**：当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
+
         elif getattr(args, 'markdown', False):
             if works:
                 print_markdown_table(works)
@@ -1376,16 +1370,14 @@ Examples:
                     print(summary_text)
             for name in empty_accounts:
                 print(f"\n**{name}**：该时间段内无更新作品")
-            for name in rate_limited_accounts:
-                print(f"\n**{name}**：当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
+
             print(f"\n订阅账号: {len(subscriptions)} 个 | 作品总数: {len(works)} 条")
         else:
             if works:
                 print_terminal_table(works)
             for name in empty_accounts:
                 warn(f"「{name}」该时间段内无更新作品")
-            for name in rate_limited_accounts:
-                warn(f"「{name}」当前账号订阅已超过失败阈值，请联系客服邮箱 {SUPPORT_EMAIL} 处理")
+
             print(f"\n{GREEN}{BOLD}✓ 完成!{RESET}")
             print(f"  订阅账号: {len(subscriptions)} 个")
             print(f"  作品总数: {len(works)} 条")
