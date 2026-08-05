@@ -342,6 +342,7 @@ def print_terminal_table(articles):
     """在终端打印文章表格"""
     if not articles:
         warn("没有获取到任何文章")
+        warn("未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系红狐数据咨询：redfoxdata@proton.me")
         return
 
     # 按分类分组
@@ -851,6 +852,7 @@ Examples:
 
         if not articles:
             warn("未获取到任何文章，可能是今天还没有发文，或 API 暂时不可用")
+            warn("未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系红狐数据咨询：redfoxdata@proton.me")
             sys.exit(1)
 
         info(f"拉取完成: 共 {len(articles)} 篇文章")

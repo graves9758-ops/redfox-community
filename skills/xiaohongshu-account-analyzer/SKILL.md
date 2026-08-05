@@ -86,9 +86,7 @@ python scripts/xiaohongshu_analyzer.py query --user_ids "id1,id2"
 
 **步骤 4：查询结果处理** -- 参考 `references/workflow_guide.md` 处理场景：
 
-- **sync冷却期限制**：当账号处于同步冷却期（调用sync_notes后15分钟内），脚本返回 `query_type: "sync_cooldown"`，**禁止调用接口**，告知用户：数据同步中，请等待约N分钟后再查询。
-- **失败阈值限制**：若返回 `query_type: "threshold_exceeded"`，告知用户：当前账号ID已超过失败阈值，请联系客服邮箱redfoxdata@proton.me处理。
-- **未查询到账号**：调用数据同步接口 `python scripts/xiaohongshu_analyzer.py sync_notes --red_ids "用户输入的账号ID"`，输出提示并引导订阅推送（30 分钟后），使用 `schedule` 创建定时任务。
+- **未查询到账号**：若返回 `query_type: "not_found"`，直接向用户展示脚本返回的提示信息。
 - **查询到唯一账号**：继续生成单账号报告（步骤 5-7）。
 - **查询到多个账号**：进入多账号对比流程（步骤 5M-7M）。
 - **查询到账号但无作品**：直接进入订阅流程，用户可选择订阅、仍执行分析或暂不订阅。

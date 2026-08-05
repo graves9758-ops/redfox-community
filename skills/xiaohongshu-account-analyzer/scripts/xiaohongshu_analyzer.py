@@ -10,112 +10,8 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 
-# 状态管理文件路径（用于冷却期和失败次数控制）
-STATE_FILE = os.path.join(os.path.dirname(__file__), "..", "output", "query_state.json")
-
-# 同步冷却期（秒）
-SYNC_COOLDOWN_SECONDS = 15 * 60  # 15分钟
-# 失败阈值
-FAILURE_THRESHOLD = 3
-# 失败记录有效期（秒）
-FAILURE_EXPIRE_SECONDS = 6 * 60 * 60  # 6小时
-
-
-def _load_state():
-    """加载状态文件"""
-    try:
-        if os.path.exists(STATE_FILE):
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-    except Exception:
-        pass
-    return {"sync_times": {}, "failures": {}}
-
-
-def _save_state(state):
-    """保存状态文件"""
-    try:
-        os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump(state, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
-
-
-def _check_sync_cooldown(red_id):
-    """检查sync冷却期
-    
-    Returns:
-        (is_in_cooldown, remaining_minutes)
-    """
-    state = _load_state()
-    sync_times = state.get("sync_times", {})
-    
-    red_id_str = str(red_id)
-    if red_id_str in sync_times:
-        last_sync = sync_times[red_id_str]
-        if isinstance(last_sync, (int, float)):
-            elapsed = time.time() - last_sync
-            if elapsed < SYNC_COOLDOWN_SECONDS:
-                remaining_minutes = int((SYNC_COOLDOWN_SECONDS - elapsed) / 60) + 1
-                return True, remaining_minutes
-    return False, 0
-
-
-def _record_sync(red_id):
-    """记录sync时间"""
-    state = _load_state()
-    if "sync_times" not in state:
-        state["sync_times"] = {}
-    state["sync_times"][str(red_id)] = time.time()
-    _save_state(state)
-
-
-def _get_failure_count(user_id):
-    """获取失败次数"""
-    state = _load_state()
-    failures = state.get("failures", {})
-    
-    user_id_str = str(user_id)
-    if user_id_str not in failures:
-        return 0
-    
-    # 过滤过期的失败记录
-    valid_failures = []
-    for fail_time in failures[user_id_str]:
-        if isinstance(fail_time, (int, float)):
-            if time.time() - fail_time < FAILURE_EXPIRE_SECONDS:
-                valid_failures.append(fail_time)
-    
-    return len(valid_failures)
-
-
-def _record_failure(user_id):
-    """记录失败"""
-    state = _load_state()
-    if "failures" not in state:
-        state["failures"] = {}
-    
-    user_id_str = str(user_id)
-    if user_id_str not in state["failures"]:
-        state["failures"][user_id_str] = []
-    
-    state["failures"][user_id_str].append(time.time())
-    
-    # 清理过期的失败记录
-    valid_failures = [t for t in state["failures"][user_id_str] 
-                      if time.time() - t < FAILURE_EXPIRE_SECONDS]
-    state["failures"][user_id_str] = valid_failures
-    
-    _save_state(state)
-
-
-def _clear_failures(user_id):
-    """清除失败记录（查询成功时调用）"""
-    state = _load_state()
-    if "failures" in state and str(user_id) in state["failures"]:
-        del state["failures"][str(user_id)]
-        _save_state(state)
+# 统一未收录提示
+UNIFIED_NOT_FOUND_MSG = "未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系红狐数据咨询：redfoxdata@proton.me"
 
 # 导入HTML检查模块和生成模块
 try:
@@ -130,13 +26,13 @@ except ImportError:
     # 兼容直接运行时的导入
     import importlib.util
     script_dir = os.path.dirname(__file__)
-    
+
     spec_checker = importlib.util.spec_from_file_location("html_checker", os.path.join(script_dir, "html_checker.py"))
     html_checker = importlib.util.module_from_spec(spec_checker)
     spec_checker.loader.exec_module(html_checker)
     check_and_fix_html_content = html_checker.check_and_fix_html_content
     check_multi_html_content = html_checker.check_multi_html_content
-    
+
     spec_generator = importlib.util.spec_from_file_location("html_generator", os.path.join(script_dir, "html_generator.py"))
     html_generator = importlib.util.module_from_spec(spec_generator)
     spec_generator.loader.exec_module(html_generator)
@@ -251,20 +147,20 @@ def _get_fans_type(fans):
 
 def _extract_benchmark_from_api(raw):
     """从接口数据中提取水平衡量基准数据
-    
+
     Args:
         raw: 接口返回的原始数据，包含 accountAvgList 和 accountExcellentList
-        
+
     Returns:
         tuple: (benchmark字典, fans_type, account_tag)
     """
     fans = raw.get("fans", 0)
     fans_type = _get_fans_type(fans)
     account_tag = raw.get("accountTag", "") or FANS_TYPE_MAP.get(fans_type, "素人")
-    
+
     avg_list = raw.get("accountAvgList", []) or []
     excellent_list = raw.get("accountExcellentList", []) or []
-    
+
     # 构建中位数参考字典
     avg_dict = {}
     for item in avg_list:
@@ -272,7 +168,7 @@ def _extract_benchmark_from_api(raw):
             name = item.get("name", "")
             value = item.get("value", 0)
             avg_dict[name] = float(value) if value else 0
-    
+
     # 构建优秀值参考字典
     excellent_dict = {}
     for item in excellent_list:
@@ -280,10 +176,10 @@ def _extract_benchmark_from_api(raw):
             name = item.get("name", "")
             value = item.get("value", 0)
             excellent_dict[name] = float(value) if value else 0
-    
+
     # 获取兜底基准数据
     fallback_benchmark = BENCHMARK_DATA.get(account_tag, BENCHMARK_DATA.get("素人", {}))
-    
+
     # 映射到水平衡量指标
     benchmark = {
         "近30天作品互动量": {
@@ -311,29 +207,29 @@ def _extract_benchmark_from_api(raw):
             "优秀值参考": excellent_dict.get("近30天发作品数均值", 0) / 4.0 if excellent_dict.get("近30天发作品数均值", 0) else 5.0,
         },
     }
-    
+
     # 计算互动率和收藏率（基于接口返回的点赞数、收藏数、粉丝数）
     # 互动率 = (点赞数 + 收藏数) / 粉丝数 * 100%
     # 收藏率 = 收藏数 / 点赞数 * 100%
-    
+
     # 获取中位数参考的点赞数、收藏数、粉丝数
     avg_like = avg_dict.get("总点赞数均值", 0)
     avg_collect = avg_dict.get("总收藏数均值", 0)
     avg_fans = avg_dict.get("粉丝数均值", fans)  # 如果没有粉丝数均值，使用当前账号粉丝数
-    
+
     # 获取优秀值参考的点赞数、收藏数、粉丝数
     excellent_like = excellent_dict.get("总点赞数均值", 0)
     excellent_collect = excellent_dict.get("总收藏数均值", 0)
     excellent_fans = excellent_dict.get("粉丝数均值", fans)  # 如果没有粉丝数均值，使用当前账号粉丝数
-    
+
     # 计算互动率中位数参考和优秀值参考
     interaction_rate_avg = round((avg_like + avg_collect) / avg_fans * 100, 2) if avg_fans > 0 else 0.5
     interaction_rate_excellent = round((excellent_like + excellent_collect) / excellent_fans * 100, 2) if excellent_fans > 0 else 1.5
-    
+
     # 计算收藏率中位数参考和优秀值参考
     collect_rate_avg = round(avg_collect / avg_like * 100, 2) if avg_like > 0 else 8.0
     collect_rate_excellent = round(excellent_collect / excellent_like * 100, 2) if excellent_like > 0 else 15.0
-    
+
     benchmark["互动率"] = {
         "中位数参考": interaction_rate_avg,
         "优秀值参考": interaction_rate_excellent,
@@ -342,7 +238,7 @@ def _extract_benchmark_from_api(raw):
         "中位数参考": collect_rate_avg,
         "优秀值参考": collect_rate_excellent,
     }
-    
+
     return benchmark, fans_type, account_tag
 
 
@@ -417,25 +313,25 @@ def _calc_coefficient_of_variation(works):
     """计算离散系数（衡量稳定性），基于近7天作品的互动量（点赞+收藏）"""
     if not works or len(works) < 2:
         return None
-    
+
     interactions = []
     for w in works:
         like_count = w.get("likedCount") or 0
         collect_count = w.get("collectedCount") or 0
         total_interaction = like_count + collect_count
         interactions.append(total_interaction)
-    
+
     if not interactions:
         return None
-    
+
     mean_val = sum(interactions) / len(interactions)
     if mean_val == 0:
         return None
-    
+
     variance = sum((x - mean_val) ** 2 for x in interactions) / len(interactions)
     std_dev = math.sqrt(variance)
     cv = std_dev / mean_val
-    
+
     return round(cv, 2)
 
 
@@ -443,7 +339,7 @@ def _calc_decay_ratio(works, viral_threshold):
     """计算爆文后衰减比（承接比），互动=点赞+收藏"""
     if not works or len(works) < 2:
         return None
-    
+
     # 找到第一个爆文（互动数 = 点赞 + 收藏）
     viral_index = None
     for i, w in enumerate(works):
@@ -453,29 +349,29 @@ def _calc_decay_ratio(works, viral_threshold):
         if total_inter > viral_threshold:
             viral_index = i
             break
-    
+
     if viral_index is None or viral_index >= len(works) - 1:
         return None
-    
+
     # 计算爆文互动量
     viral_work = works[viral_index]
     viral_like = viral_work.get("likedCount") or 0
     viral_collect = viral_work.get("collectedCount") or 0
     viral_interaction = viral_like + viral_collect
-    
+
     if viral_interaction == 0:
         return None
-    
+
     # 计算爆文后3篇均值互动量
     next_works = works[viral_index + 1: viral_index + 4]
     if not next_works:
         return None
-    
+
     next_total = 0
     for nw in next_works:
         next_total += (nw.get("likedCount") or 0) + (nw.get("collectedCount") or 0)
     next_avg = next_total / len(next_works)
-    
+
     # 承接比 = 爆文后3篇均值 / 爆文互动量 * 100%
     carry_ratio = next_avg / viral_interaction * 100
     return round(carry_ratio, 2)
@@ -485,21 +381,21 @@ def _calc_interaction_structure(works):
     """计算互动结构（点赞/收藏占比，接口无分享字段）"""
     if not works:
         return None, None
-    
+
     total_like = 0
     total_collect = 0
-    
+
     for w in works:
         total_like += w.get("likedCount") or 0
         total_collect += w.get("collectedCount") or 0
-    
+
     total = total_like + total_collect
     if total == 0:
         return None, None
-    
+
     like_pct = round(total_like / total * 100, 1)
     collect_pct = round(total_collect / total * 100, 1)
-    
+
     return like_pct, collect_pct
 
 
@@ -507,13 +403,13 @@ def _calc_interaction_rate(works, fans):
     """计算互动率（近7天总互动(点赞+收藏) / 粉丝数 * 100%）"""
     if not works or fans == 0:
         return None
-    
+
     total_interaction = 0
     for w in works:
         like_count = w.get("likedCount") or 0
         collect_count = w.get("collectedCount") or 0
         total_interaction += like_count + collect_count
-    
+
     interaction_rate = total_interaction / fans * 100
     return round(interaction_rate, 2)
 
@@ -522,46 +418,46 @@ def _calc_viral_magnification(works, viral_threshold):
     """计算爆文放大倍数，互动=点赞+收藏"""
     if not works:
         return None
-    
+
     viral_interactions = []
     non_viral_interactions = []
-    
+
     for w in works:
         like_count = w.get("likedCount") or 0
         collect_count = w.get("collectedCount") or 0
         total = like_count + collect_count
-        
+
         # 爆文判断：互动数 = 点赞 + 收藏
         if total > viral_threshold:
             viral_interactions.append(total)
         else:
             non_viral_interactions.append(total)
-    
+
     if not viral_interactions or not non_viral_interactions:
         return None
-    
+
     viral_avg = sum(viral_interactions) / len(viral_interactions)
     non_viral_avg = sum(non_viral_interactions) / len(non_viral_interactions)
-    
+
     if non_viral_avg == 0:
         return None
-    
+
     return round(viral_avg / non_viral_avg, 0)
 
 
 def _get_level_judgment(value, benchmark, is_lower_better=False):
     """根据基准值判断等级
-    
+
     基准数据结构：
     - 中位数参考：同层级账号中位数
     - 优秀值参考：同层级账号优秀值
     """
     if value is None:
         return "数据不足"
-    
+
     median_val = benchmark.get("中位数参考", 0)
     excellent_val = benchmark.get("优秀值参考", 0)
-    
+
     if is_lower_better:
         # 数值越低越好（如间隔标准差）
         if value <= excellent_val:
@@ -608,18 +504,18 @@ def _format_interactive_count(count):
 
 def _score_interactive_scale(interactive_count, collect_count, benchmark=None):
     """互动规模评分（满分20），基于互动量和收藏量
-    
+
     互动量维度：10分（>优秀值10分，>中位数6分，其他1分）
     收藏量维度：10分（>优秀值10分，>中位数6分，其他1分）
     """
     score = 0
-    
+
     # 从benchmark获取中位数和优秀值
     median_interactive = 1000  # 默认中位数
     excellent_interactive = 10000  # 默认优秀值
     median_collect = 100  # 默认中位数
     excellent_collect = 1000  # 默认优秀值
-    
+
     if benchmark:
         if "近30天作品互动量" in benchmark:
             median_interactive = benchmark["近30天作品互动量"].get("中位数参考", 1000)
@@ -627,7 +523,7 @@ def _score_interactive_scale(interactive_count, collect_count, benchmark=None):
         if "总收藏数" in benchmark:
             median_collect = benchmark["总收藏数"].get("中位数参考", 100)
             excellent_collect = benchmark["总收藏数"].get("优秀值参考", 1000)
-    
+
     # 互动量维度（10分）
     if interactive_count > excellent_interactive:
         score += 10
@@ -635,7 +531,7 @@ def _score_interactive_scale(interactive_count, collect_count, benchmark=None):
         score += 6
     else:
         score += 1
-    
+
     # 收藏量维度（10分）
     if collect_count > excellent_collect:
         score += 10
@@ -643,13 +539,13 @@ def _score_interactive_scale(interactive_count, collect_count, benchmark=None):
         score += 6
     else:
         score += 1
-    
+
     return score
 
 
 def _score_update_rhythm(weekly_count, fans=0):
     """更新产能评分（满分15分）- 基于周更频率和粉丝数
-    
+
     参考Excel数据中的近30天发作品数中位数和优秀值：
     - 0-5k: 中位数3篇，优秀值12篇 → 周更0.75篇/3篇
     - 5k-5w: 中位数6篇，优秀值24篇 → 周更1.5篇/6篇
@@ -665,7 +561,7 @@ def _score_update_rhythm(weekly_count, fans=0):
         base_score = 8  # 尾部账号
     else:
         base_score = 5  # 素人账号
-    
+
     if weekly_count >= 5:
         return min(base_score + 5, 15)
     elif weekly_count >= 4:
@@ -682,7 +578,7 @@ def _score_update_rhythm(weekly_count, fans=0):
 
 def _score_viral(viral_rate, interaction_30d, fans):
     """爆文能力评分（满分15），基于爆文率和近30天互动量评估
-    
+
     爆文率：10分
     近30天互动量评估：5分
     """
@@ -700,7 +596,7 @@ def _score_viral(viral_rate, interaction_30d, fans):
         score += 2
     else:  # 无爆文
         score += 1
-    
+
     # 近30天互动量评估（5分）：基于互动量/粉丝数的比值
     if interaction_30d and fans and fans > 0:
         interaction_ratio = interaction_30d / fans
@@ -719,7 +615,7 @@ def _score_viral(viral_rate, interaction_30d, fans):
 
 def _score_positioning(works, account_tag, signature, fans=0):
     """账号定位评分（满分10）
-    
+
     对粉丝数>5000的账号以夸赞为主，评分更宽松
     """
     # 粉丝数>5000的账号基础分更高，以夸赞为主
@@ -731,7 +627,7 @@ def _score_positioning(works, account_tag, signature, fans=0):
         score = 6  # 尾部账号，基础分适中
     else:
         score = 5  # 素人账号，基础分正常
-    
+
     # 简介完整度
     if signature and len(signature.strip()) > 5:
         score += 1
@@ -796,17 +692,17 @@ def _score_fans_insight(collect_rate, fans_gender, works, fans):
 
 def _score_topic_system(works, fans=0):
     """选题体系评分（满分15）
-    
+
     核心逻辑：选题方向单一/聚焦是加分项，专注某一赛道深耕是好的
     - 有固定选题方向：加分
     - 有固定栏目/标签：加分
     - 选题一致性高：加分
-    
+
     对粉丝数>5000的账号评分更宽松
     """
     if not works:
         return 5 if fans > 5000 else 3
-    
+
     # 粉丝数>5000的账号基础分更高
     if fans > 50000:
         score = 10  # 头部账号，基础分高
@@ -816,9 +712,9 @@ def _score_topic_system(works, fans=0):
         score = 8  # 尾部账号，基础分适中
     else:
         score = 6  # 素人账号，基础分正常
-    
+
     titles = [w.get("title", "") for w in works if w.get("title")]
-    
+
     # 选题方向聚焦/单一：加分项（专注赛道深耕是好事）
     unique_titles = set(titles[:5])
     if len(unique_titles) <= 2:  # 选题高度聚焦
@@ -827,7 +723,7 @@ def _score_topic_system(works, fans=0):
         score += 3
     elif len(unique_titles) <= 4:  # 选题有一定聚焦
         score += 2
-    
+
     # 有固定栏目/标签：加分项
     tags = []
     for w in works:
@@ -842,13 +738,13 @@ def _score_topic_system(works, fans=0):
             score += 2
         else:
             score += 1
-    
+
     return min(score, 15)
 
 
 def _score_cover_style(works, fans=0):
     """封面风格评分（满分10）
-    
+
     封面统一或多样只是风格的一种，不作为评分标准
     主要基于：有封面、有作品、粉丝数规模
     对粉丝数>5000的账号以夸赞为主，评分更宽松
@@ -856,7 +752,7 @@ def _score_cover_style(works, fans=0):
     if not works:
         # 粉丝数>5000的账号即使没有作品也给更高基础分
         return 5 if fans > 5000 else 2
-    
+
     # 粉丝数>5000的账号基础分更高，以夸赞为主
     if fans > 50000:
         score = 9  # 头部账号，基础分高
@@ -866,13 +762,13 @@ def _score_cover_style(works, fans=0):
         score = 7  # 尾部账号，基础分适中
     else:
         score = 5  # 素人账号，基础分正常
-    
+
     # 有封面图加分
     covers = [w.get("coverUrl") or w.get("thumbUrl") for w in works]
     valid_covers = [c for c in covers if c]
     if valid_covers:
         score += 1
-    
+
     return min(score, 10)
 
 
@@ -889,14 +785,14 @@ def _format_gender(fans_gender):
 
 def _analyze_single_account(raw, has_works=True):
     """对单个账号原始数据进行评分和结构化处理
-    
+
     Args:
         raw: 原始账号数据
         has_works: 是否有作品数据，False时跳过作品相关分析
     """
     # 无作品确认提示（有账号但无作品时）
     no_works_hint = "" if has_works else "检测到该账号近30天无作品数据。请确认：该账号近30天是否真的无作品？\n1.该账号近30天确实无作品，直接分析\n2.该账号近30天有作品，需要实时获取最新作品（大概需要30分钟，自动推送诊断报告）"
-    
+
     fans = raw.get("fans", 0)
     nickname = raw.get("nickname", "")
     level = raw.get("level") or ""
@@ -939,14 +835,14 @@ def _analyze_single_account(raw, has_works=True):
         coefficient_of_variation = 0
         decay_ratio = 0
         like_pct, collect_pct = 0, 0
-    
+
     avg_interaction = round(interactive_thirty / note_count_thirty, 1) if note_count_thirty > 0 else 0
     collect_rate = round(collected / liked * 100, 1) if liked > 0 else 0
     weekly_count = round(note_count_thirty / 4.3, 1)
-    
+
     # 互动率计算：使用接口直接返回的近30天互动量
     interaction_rate = round(interactive_thirty / fans * 100, 2) if fans > 0 else 0
-    
+
     # 获取水平衡量基准（优先使用接口数据，兜底使用默认值）
     api_benchmark, api_fans_type, api_account_tag = _extract_benchmark_from_api(raw)
     default_benchmark = BENCHMARK_DATA.get(account_tag, BENCHMARK_DATA["素人"])
@@ -957,7 +853,7 @@ def _analyze_single_account(raw, has_works=True):
             benchmark[key] = api_benchmark[key]
         else:
             benchmark[key] = default_benchmark[key]
-    
+
     # 计算近7天作品平均互动数（用于爆文能力评分）
     # 近7天作品：按发布时间筛选
     from datetime import datetime, timedelta
@@ -976,12 +872,12 @@ def _analyze_single_account(raw, has_works=True):
                 pass
     if not works_7d:
         works_7d = works  # 如果无法筛选，使用全部作品
-    
+
     avg_interaction_7d = 0
     if works_7d:
         total_7d = sum((w.get("likedCount") or 0) + (w.get("collectedCount") or 0) for w in works_7d)
         avg_interaction_7d = round(total_7d / len(works_7d), 1) if works_7d else 0
-    
+
     # 七维度评分（总分100）
     # 满分分配：账号定位10 + 粉丝画像与需求15 + 选题体系15 + 封面风格10 + 爆文能力15 + 互动规模20 + 更新产能15 = 100
     score_positioning = _score_positioning(works, account_tag, signature, fans)
@@ -991,7 +887,7 @@ def _analyze_single_account(raw, has_works=True):
     score_viral = _score_viral(viral_rate, interactive_thirty, fans)
     score_interactive = _score_interactive_scale(interactive_thirty, collected, benchmark)
     score_update = _score_update_rhythm(weekly_count, fans)
-    total_score = (score_positioning + score_fans_insight + score_topic_system + 
+    total_score = (score_positioning + score_fans_insight + score_topic_system +
                    score_cover_style + score_viral + score_interactive + score_update)
 
     # 规则：粉丝数>5000的账号，评分必须>60分
@@ -1015,7 +911,7 @@ def _analyze_single_account(raw, has_works=True):
         if score_update < 8:
             score_update = 8
         # 重新计算总分
-        total_score = (score_positioning + score_fans_insight + score_topic_system + 
+        total_score = (score_positioning + score_fans_insight + score_topic_system +
                        score_cover_style + score_viral + score_interactive + score_update)
 
     # 评分一致性检查：确保七维度评分之和等于总分
@@ -1026,7 +922,7 @@ def _analyze_single_account(raw, has_works=True):
     # 水平衡量：使用互动数均值和收藏数均值，不用率
     interaction_avg_level = _get_level_judgment(interactive_thirty, benchmark["近30天作品互动量"]) if interactive_thirty else "数据不足"
     collect_avg_level = _get_level_judgment(collected, benchmark["总收藏数"]) if collected else "数据不足"
-    
+
     # 爆文列表（含超标准倍数）
     viral_list = []
     viral_interactions = []
@@ -1048,7 +944,7 @@ def _analyze_single_account(raw, has_works=True):
                     date_str = str(ts)[:10]
             except (ValueError, OSError):
                 date_str = ""
-        
+
         # 爆文判断：互动数 = 点赞 + 收藏
         if total_inter > viral_threshold:
             magnification = round(total_inter / viral_threshold, 1) if viral_threshold else 0
@@ -1061,7 +957,7 @@ def _analyze_single_account(raw, has_works=True):
             viral_interactions.append(total_inter)
         else:
             non_viral_interactions.append(total_inter)
-    
+
     # 计算爆文和非爆文的平均互动（用于放大倍数计算）
     viral_avg_raw = round(sum(viral_interactions) / len(viral_interactions)) if viral_interactions else 0
     non_viral_avg_raw = round(sum(non_viral_interactions) / len(non_viral_interactions)) if non_viral_interactions else 0
@@ -1276,56 +1172,26 @@ def _save_raw_data(raw_data):
 
 def cmd_query(user_ids, force_analyze=False):
     """查询命令：调用API获取数据，保存raw_data.json，输出结构化结果
-    
+
     Args:
         user_ids: 小红书账号ID列表
         force_analyze: 是否强制分析（订阅推送时为True，即使无作品也执行分析）
     """
-    # 检查失败阈值
-    for user_id in user_ids:
-        failure_count = _get_failure_count(user_id)
-        if failure_count >= FAILURE_THRESHOLD:
-            print(json.dumps({
-                "status": "error",
-                "message": "当前账号ID已超过失败阈值，请联系客服邮箱redfoxdata@proton.me处理",
-                "query_type": "threshold_exceeded",
-                "data": {"accounts": []}
-            }, ensure_ascii=False))
-            return
-    
-    # 检查sync冷却期
-    for user_id in user_ids:
-        in_cooldown, remaining = _check_sync_cooldown(user_id)
-        if in_cooldown:
-            print(json.dumps({
-                "status": "error",
-                "message": f"数据同步中，请等待约{remaining}分钟后再查询，如果急需可联系工作人员邮箱redfoxdata@proton.me",
-                "query_type": "sync_cooldown",
-                "data": {"accounts": [], "remaining_minutes": remaining}
-            }, ensure_ascii=False))
-            return
-    
     try:
         raw = api_query(user_ids)
     except Exception as e:
-        # 记录失败
-        for user_id in user_ids:
-            _record_failure(user_id)
         print(json.dumps({
             "status": "error",
-            "message": f"请求失败: {str(e)}",
+            "message": f"请求失败: {str(e)}。{UNIFIED_NOT_FOUND_MSG}",
             "query_type": "not_found",
             "data": {"accounts": []}
         }, ensure_ascii=False))
         return
 
     if isinstance(raw, dict) and raw.get("code") == 5000:
-        # 记录失败（账号可能不存在）
-        for user_id in user_ids:
-            _record_failure(user_id)
         print(json.dumps({
             "status": "error",
-            "message": f"接口返回: {raw.get('msg', '系统忙')}",
+            "message": f"接口返回: {raw.get('msg', '系统忙')}。{UNIFIED_NOT_FOUND_MSG}",
             "query_type": "not_found",
             "data": {"accounts": []}
         }, ensure_ascii=False))
@@ -1343,21 +1209,15 @@ def cmd_query(user_ids, force_analyze=False):
         items = []
 
     if not items:
-        # 记录失败（账号未被数据库收录）
-        for user_id in user_ids:
-            _record_failure(user_id)
         print(json.dumps({
             "status": "success",
             "query_type": "not_found",
+            "message": UNIFIED_NOT_FOUND_MSG,
             "data": {"accounts": []}
         }, ensure_ascii=False))
         return
 
     _save_raw_data(raw)
-    
-    # 查询成功，清除失败记录
-    for user_id in user_ids:
-        _clear_failures(user_id)
 
     full_data_items = [it for it in items if isinstance(it, dict) and ("fans" in it or "noteCountThirty" in it)]
 
@@ -1374,7 +1234,7 @@ def cmd_query(user_ids, force_analyze=False):
                 })
             else:
                 accounts_with_works.append(it)
-        
+
         # 如果所有账号都没有作品数据
         if not accounts_with_works:
             # 如果是订阅推送（force_analyze参数），仍然执行分析
@@ -1397,7 +1257,7 @@ def cmd_query(user_ids, force_analyze=False):
             }
             print(json.dumps(output, ensure_ascii=False))
             return
-        
+
         # 部分账号有作品数据，生成有数据的账号报告
         accounts = [_analyze_single_account(it) for it in accounts_with_works]
         output = {
@@ -1414,7 +1274,7 @@ def cmd_query(user_ids, force_analyze=False):
     if len(full_data_items) == 1:
         raw_item = full_data_items[0]
         works = raw_item.get("works", []) or []
-        
+
         # 检查是否需要同步作品数据
         if not works:
             red_id = raw_item.get("redId", "")
@@ -1439,7 +1299,7 @@ def cmd_query(user_ids, force_analyze=False):
             }
             print(json.dumps(output, ensure_ascii=False))
             return
-        
+
         result = _analyze_single_account(raw_item)
         output = {
             "status": "success",
@@ -1452,43 +1312,27 @@ def cmd_query(user_ids, force_analyze=False):
     print(json.dumps({
         "status": "success",
         "query_type": "not_found",
-        "message": "当前未查询到该账号相关数据，是当前数据覆盖范围不足导致的。不过别担心，我们将提供账号数据去实时获取；1.接收实时获取，大概需要30分钟，自动推送诊断报告 2.下次再说"
+        "message": UNIFIED_NOT_FOUND_MSG
     }, ensure_ascii=False))
 
 
 def cmd_sync_notes(red_ids, account_names=None):
     """订阅命令：调用接口同步账号作品数据
-    
+
     参数:
         red_ids: 小红书账号ID列表（redId）
         account_names: 账号名称列表（可选）
     """
     SYNC_API_URL = "https://redfox.hk/story/api/xhsUser/syncUserNotes"
     results = []
-    
+
     for i, red_id in enumerate(red_ids):
         account_name = account_names[i] if account_names and i < len(account_names) else f"账号{red_id}"
-        
-        # 检查sync冷却期，冷却期内不再调用接口
-        in_cooldown, remaining = _check_sync_cooldown(red_id)
-        if in_cooldown:
-            results.append({
-                "redId": red_id,
-                "redId_str": str(red_id),
-                "account_name": account_name,
-                "status": "cooldown",
-                "message": f"数据同步中，请等待约{remaining}分钟后再查询，如果急需可联系工作人员邮箱redfoxdata@proton.me",
-                "remaining_minutes": remaining
-            })
-            continue
-        
-        # 记录sync时间（用于冷却期控制）
-        _record_sync(red_id)
-        
+
         try:
             body = {"redId": red_id, "source": "小红书账号诊断-GitHub"}
             result_data = _native_post(SYNC_API_URL, body)
-            
+
             # 无论接口返回什么，都认为同步请求已发出
             results.append({
                 "redId": red_id,
@@ -1504,7 +1348,7 @@ def cmd_sync_notes(red_ids, account_names=None):
                 "status": "error",
                 "message": f"订阅失败: {str(e)}"
             })
-    
+
     print(json.dumps({
         "status": "success",
         "query_type": "sync",
@@ -1514,7 +1358,7 @@ def cmd_sync_notes(red_ids, account_names=None):
 
 def cmd_build_report_data(account_name):
     """基于模板生成report_data.json文件
-    
+
     Args:
         account_name: 账号名称，用于标识
     """
@@ -1522,32 +1366,32 @@ def cmd_build_report_data(account_name):
     template_path = os.path.normpath(os.path.join(script_dir, "..", "assets", "report_data_template.json"))
     output_dir = os.path.normpath(os.path.join(script_dir, "..", "output"))
     output_path = os.path.join(output_dir, REPORT_DATA_FILE)
-    
+
     # 确保输出目录存在
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # 读取模板
     if not os.path.exists(template_path):
         print(json.dumps({"status": "error", "message": f"模板文件不存在: {template_path}"}, ensure_ascii=False))
         sys.exit(1)
-    
+
     with open(template_path, "r", encoding="utf-8") as f:
         template_data = json.load(f)
-    
+
     # 如果有raw_data.json，从中提取基础信息填充模板
     raw_data_path = os.path.join(output_dir, RAW_DATA_FILE)
     if os.path.exists(raw_data_path):
         try:
             with open(raw_data_path, "r", encoding="utf-8") as f:
                 raw_data = json.load(f)
-            
+
             # 从raw_data提取基础信息填充模板的header部分
             if "header" in template_data:
                 # 账号名优先使用传入参数，其次使用raw_data中的数据
                 template_data["header"]["账号名"] = account_name or raw_data.get("nickname", "")
                 template_data["header"]["账号标识"] = raw_data.get("userAttribute", "素人")
                 template_data["header"]["数据获取时间"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
+
             # 填充scores部分的基础分值（如果有）
             if "scores" in template_data and "scores" in raw_data:
                 for key in raw_data["scores"]:
@@ -1555,11 +1399,11 @@ def cmd_build_report_data(account_name):
                         template_data["scores"][key] = raw_data["scores"][key]
         except Exception as e:
             pass  # 模板保持原样，由agent后续填充
-    
+
     # 写入report_data.json（每次都覆盖）
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(template_data, f, ensure_ascii=False, indent=2)
-    
+
     print(json.dumps({
         "status": "success",
         "message": f"report_data.json模板已生成，请基于此文件填充分析数据",
@@ -1570,7 +1414,7 @@ def cmd_build_report_data(account_name):
 
 def cmd_build_multi_report_data(account_names):
     """基于模板生成multi_report_data.json文件
-    
+
     Args:
         account_names: 账号名称列表
     """
@@ -1578,28 +1422,28 @@ def cmd_build_multi_report_data(account_names):
     template_path = os.path.normpath(os.path.join(script_dir, "..", "assets", "multi_report_data_template.json"))
     output_dir = os.path.normpath(os.path.join(script_dir, "..", "output"))
     output_path = os.path.join(output_dir, MULTI_REPORT_DATA_FILE)
-    
+
     # 确保输出目录存在
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # 读取模板
     if not os.path.exists(template_path):
         print(json.dumps({"status": "error", "message": f"模板文件不存在: {template_path}"}, ensure_ascii=False))
         sys.exit(1)
-    
+
     with open(template_path, "r", encoding="utf-8") as f:
         template_data = json.load(f)
-    
+
     # 根据账号数量生成accounts数组
     accounts_template = template_data.get("accounts", [{}])
     if accounts_template:
         account_template = accounts_template[0]
         template_data["accounts"] = [json.loads(json.dumps(account_template)) for _ in account_names]
-    
+
     # 写入multi_report_data.json（每次都覆盖）
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(template_data, f, ensure_ascii=False, indent=2)
-    
+
     print(json.dumps({
         "status": "success",
         "message": f"multi_report_data.json模板已生成，请基于此文件填充分析数据",
@@ -1645,10 +1489,10 @@ def cmd_generate_html():
     safe_name = account_name.replace("/", "_").replace("\\", "_").replace(" ", "_")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_path = os.path.join(output_dir, f"{safe_name}_诊断报告_{timestamp}.html")
-    
+
     # 数据完整性检查与修复
     html, missing_fields = check_and_fix_html_content(html, report_data)
-    
+
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -1691,10 +1535,10 @@ def cmd_generate_multi_html(with_similar=False):
     safe_name = "vs".join(n.replace("/", "_").replace("\\", "_").replace(" ", "_") for n in names)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_path = os.path.join(output_dir, f"{safe_name}_对比报告_{timestamp}.html")
-    
+
     # 多账号HTML数据完整性检查（简化版）
     html, missing_fields = check_multi_html_content(html, accounts)
-    
+
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
