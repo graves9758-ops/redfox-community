@@ -1,6 +1,6 @@
 ---
 name: gzh-subscribe
-description: 微信公众号文章订阅 — 每天 9 点，盯梢竞对、同类、关注账号，一份你订阅的公众号文章推送。
+description: 微信公众号文章订阅 — 每天 6 点，盯梢竞对、同类、关注账号，一份你订阅的公众号文章推送。
 ---
 
 # 公众号订阅追踪
@@ -54,17 +54,21 @@ HTML 日报保存在 `~/Downloads/QoderGzhReports/` 目录，自动在浏览器�
 ## 功能特点
 
 - **收件箱式订阅**：像订阅 Newsletter 一样订阅公众号，最多 20 个，名称即可，微信号可选
-- **每日 9 点准时推送**：一键安装定时任务，每天早上一份精排日报，自动打开浏览器
+- **每日 6 点准时推送**：一键安装定时任务，每天早上一份精排日报，自动打开浏览器（优质库 T+1，拉取昨天及近 7 天发文）
 - **三类分组管理**：「竞对账号」盯对手、「同类账号」找灵感、「关注账号」追大神
 - **关键数据一屏尽览**：发文日期、标题、简介、阅读数、点赞数，原文链接一键直达
 - **终端 + 日报双模式**：命令行实时查表，HTML 日报适合分享存档
+
+> **数据覆盖说明**：本 Skill 基于红狐优质热门库，覆盖主流热门公众号。
+> 部分垂直领域或小众账号可能不在库中。如需更广的公众号覆盖，
+> 可联系红狐 Hub 获取广域库数据：**redfoxdata@proton.me**
 
 ---
 
 ## 适用场景
 
 ### 每日晨报
-开启 `--subscribe`，每天 09:00 自动拉取所有订阅公众号的发文，
+开启 `--subscribe`，每天 06:00 自动拉取所有订阅公众号的发文，
 生成 HTML 日报并自动打开浏览器。像收邮件一样，每天早上收到一份
 专属的公众号文章推送。
 
@@ -129,7 +133,7 @@ python3 "$SKILL_PATH/assets/subscribe.py" report --date 2026-05-26 --output-dir 
 ### 每日自动推送
 
 ```bash
-# 开启每日 09:00 自动推送
+# 开启每日 06:00 自动推送
 python3 "$SKILL_PATH/assets/subscribe.py" --subscribe
 
 # 取消每日自动推送
@@ -150,7 +154,7 @@ python3 "$SKILL_PATH/assets/subscribe.py" --unsubscribe
 | `report` | `--date` | 指定日期 YYYY-MM-DD（默认今天） |
 | | `--output-dir` | 输出目录（默认 ~/Downloads/QoderGzhReports） |
 | 全局 | `--api-key` | 指定 API Key |
-| | `--subscribe` | 安装每日定时任务（09:00） |
+| | `--subscribe` | 安装每日定时任务（06:00） |
 | | `--unsubscribe` | 卸载定时任务 |
 
 ### 依赖安装
@@ -190,6 +194,9 @@ A：日报展示的是标题+简介+数据。如需对文章做摘要改写或�
 **Q：额度用完了怎么办？**
 A：前往 [redfox.hk](https://redfox.hk/settings/api-keys?source=github) 注册获取 API Token。
 
+**Q：为什么有些公众号查不到？**
+A：本 Skill 使用的是红狐**优质热门库**，主要收录主流热门公众号，部分垂直领域或小众账号可能不在库中。如需查询更多公众号，可联系红狐 Hub 获取广域库数据：**redfoxdata@proton.me**。
+
 ---
 
 ## 获取方式
@@ -198,5 +205,4 @@ A：前往 [redfox.hk](https://redfox.hk/settings/api-keys?source=github) 注册
 
 - [SkillHub](https://skillhub.cn)
 - [ClawHub](https://clawhub.com)
-- [GitHub](https://github.com)
 - [GitHub](https://github.com)
