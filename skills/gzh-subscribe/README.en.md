@@ -4,14 +4,14 @@
 
 ## Overview
 
-Your public account content radar. Subscribe to competitors, peers, and followed accounts — auto-fetch daily posts with clear table display and HTML daily report.
+Your public account content radar. Subscribe to competitors, peers, and followed accounts — auto-fetch daily posts with clear table display and visualized daily report.
 
 **Core Value**
 
-- **Inbox-Style Subscription**: Subscribe to public accounts like newsletters, up to 20, name-only
-- **Daily 9 AM Delivery**: One-click cron setup for automated curated daily reports
-- **Three-Category Grouping**: Competitors / Peers / Favorites, organized for easy management
-- **Key Metrics at a Glance**: Publish date, title, reads, likes — article link one-click away
+- **Inbox-Style Subscription**: Subscribe to public accounts like newsletters, up to 20, name-only (WeChat ID optional)
+- **Daily 6 AM Delivery**: One-click cron setup for automated curated daily reports, auto-opens in browser
+- **Three-Category Grouping**: Competitors for tracking rivals, Peers for inspiration, Favorites for following experts
+- **Key Metrics at a Glance**: Publish date, title, summary, reads, likes — article link one-click away
 
 **Target Users**
 
@@ -25,18 +25,18 @@ Your public account content radar. Subscribe to competitors, peers, and followed
 
 ### Core Features
 
-- **Public Account Subscription**: Subscribe by account name (WeChat ID optional), up to 20
-- **Three Categories**: Competitors / Peers / Favorites, grouped in reports
-- **Daily Auto Push**: 09:00 scheduled fetch, auto-generates HTML report and opens browser
-- **Terminal Table Display**: Publish date, title, summary, reads, likes in clear table format
-- **Date Backtrack**: Fetch posts for a specific date to review history
-- **LLM-Ready Data**: Fetched data can be used with LLMs for summary rewriting and style imitation
+- Subscribe by account name (WeChat ID optional), up to 20 accounts
+- Three categories (Competitors / Peers / Favorites), grouped in daily reports
+- Daily 06:00 scheduled fetch, auto-generates visualized report and opens browser
+- Terminal table display: publish date, title, summary, reads, likes in clear format
+- Date backtrack support to review historical posts
+- Fetched data works with LLMs for summary rewriting and style imitation
 
 ---
 
 ## API Key Acquisition & Security
 
-- The skill uses the environment variable: `REDFOX_API_KEY`.
+- This skill requires the environment variable: `REDFOX_API_KEY`.
 - `REDFOX_API_KEY` is provided by [RedFoxHub](https://redfox.hk/settings/api-keys?source=github) (`https://redfox.hk`).
 - Visit [RedFoxHub](https://redfox.hk?source=github) to register and obtain your `REDFOX_API_KEY`.
 - Configure the device environment variable `REDFOX_API_KEY` before using this skill.
@@ -47,17 +47,18 @@ Your public account content radar. Subscribe to competitors, peers, and followed
 
 ## Usage
 
-Manage your subscriptions in natural language.
+Manage your subscriptions in natural language — no commands to memorize.
 
 ### Quick Reference
 
 | Intent | Example | Result |
 |--------|---------|--------|
 | Add subscription | "Subscribe to QbitAI public account" | Adds account to watchlist |
-| View posts | "Fetch today's posts from my subscriptions" | Retrieves all subscribed accounts' daily posts |
 | Competitor tracking | "Add XX account to competitor monitoring" | Categorized as competitor, prioritized in reports |
-| View report | "Generate today's subscription daily report" | Fetches posts and generates HTML report |
-| Enable push | "Push public account daily report every morning" | Installs cron job for 09:00 auto-push |
+| View posts | "Fetch today's posts from my subscriptions" | Retrieves all subscribed accounts' daily posts |
+| View report | "Generate today's subscription daily report" | Fetches posts and generates visualized report |
+| Enable push | "Push public account daily report every morning" | Installs cron job for 06:00 auto-push |
+| Remove subscription | "Unsubscribe from XX account" | Removes from watchlist |
 
 ---
 
