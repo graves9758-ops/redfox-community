@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-微信公众号文章订阅 — 每天 9 点，盯梢竞对、同类和关注账号，推送最新发文
+微信公众号文章订阅 — 每天 6 点，盯梢竞对、同类和关注账号，推送最新发文
 ========================================================
 订阅你关注的微信公众号，自动抓取每日发文内容，表格化展示。
 
@@ -23,7 +23,7 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 try:
@@ -37,7 +37,7 @@ API_URL = "https://redfox.hk/story/api/gzhData/queryWorkList"
 CONFIG_DIR = Path.home() / ".qoder" / "apis"
 CONFIG_FILE = CONFIG_DIR / "redfox.json"
 ENV_KEY = "REDFOX_API_KEY"
-SOURCE = "公众号账号订阅GitHub"
+SOURCE = "公众号账号订阅-GitHub"
 
 SUBSCRIPTIONS_FILE = Path.home() / ".qoder" / "gzh_subscriptions.json"
 MAX_SUBSCRIPTIONS = 20
@@ -227,9 +227,16 @@ def list_subscriptions():
 
 # ─── 数据获取 ──────────────────────────────────────────────────────────────────────
 def fetch_account_articles(session, account_id, account_name, date_str):
-    """获取单个公众号在指定日期的文章列表，最多 5 次请求（每次 20 条，共 100 条）"""
+    """获取单个公众号文章列表（优质库 T+1，查昨天及近 7 天），最多 5 次请求（每次 20 条，共 100 条）"""
     id_label = f" (ID: {account_id})" if account_id else ""
     all_articles = []
+
+    # T+1: 优质库查不到当天数据，取昨天往前 7 天
+    target_date = datetime.strptime(date_str, "%Y-%m-%d")
+    end_date = target_date - timedelta(days=1)
+    start_date = end_date - timedelta(days=7)
+    end_str = end_date.strftime("%Y-%m-%d")
+    start_str = start_date.strftime("%Y-%m-%d")
 
     for page in range(5):  # 5 页，每页 20 条
         offset = page * 20
@@ -237,9 +244,9 @@ def fetch_account_articles(session, account_id, account_name, date_str):
             "uid": account_id or "",
             "accountName": account_name,
             "offset": offset,
-            "sortType": "default",
-            "publishTimeStart": f"{date_str} 00:00:00",
-            "publishTimeEnd": f"{date_str} 23:59:59",
+            "sortType": "0",
+            "publishTimeStart": f"{start_str} 00:00:00",
+            "publishTimeEnd": f"{end_str} 23:59:59",
             "source": SOURCE,
         }
         try:
@@ -266,6 +273,10 @@ def fetch_account_articles(session, account_id, account_name, date_str):
         if code not in (200, 2000):
             if code in (3106, 3107):
                 error(f"API Key 错误 (code {code}): {result.get('msg', '')}")
+            elif code == 3203:
+                warn(f"「{account_name}」不在优质热门库中，暂未收录")
+                print(f"    💡 当前 Skill 基于红狐优质热门库，覆盖主流热门公众号。")
+                print(f"    如需更广的公众号覆盖，可联系红狐获取广域库数据：redfoxdata@proton.me")
             elif code:
                 warn(f"API 返回错误 (code {code}): {result.get('msg', '')} — {account_name}")
             return all_articles if all_articles else []
@@ -342,7 +353,6 @@ def print_terminal_table(articles):
     """在终端打印文章表格"""
     if not articles:
         warn("没有获取到任何文章")
-        warn("未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系红狐数据咨询：redfoxdata@proton.me")
         return
 
     # 按分类分组
@@ -651,7 +661,7 @@ def install_subscription():
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>9</integer>
+        <integer>6</integer>
         <key>Minute</key>
         <integer>0</integer>
     </dict>
@@ -668,7 +678,7 @@ def install_subscription():
 
         try:
             subprocess.run(["launchctl", "load", str(plist_path)], check=True, capture_output=True)
-            info("订阅成功! 每天 09:00 自动拉取所有订阅公众号的发文并生成日报")
+            info("订阅成功! 每天 06:00 自动拉取所有订阅公众号的发文并生成日报")
             info(f"日报目录: ~/Downloads/QoderGzhReports/")
             info(f"日志: {log_path}")
             return True
@@ -678,13 +688,13 @@ def install_subscription():
     else:
         # Linux / Windows: 使用 crontab
         script_path = os.path.abspath(__file__)
-        cron_line = f"0 9 * * * /usr/bin/python3 {script_path} fetch"
+        cron_line = f"0 6 * * * /usr/bin/python3 {script_path} fetch"
         try:
             subprocess.run(
                 f'(crontab -l 2>/dev/null; echo "{cron_line}") | crontab -',
                 shell=True, check=True, capture_output=True
             )
-            info("订阅成功! 每天 09:00 自动拉取并生成日报 (crontab)")
+            info("订阅成功! 每天 06:00 自动拉取并生成日报 (crontab)")
             info(f"日报目录: ~/Downloads/QoderGzhReports/")
             return True
         except subprocess.CalledProcessError:
@@ -773,7 +783,7 @@ Examples:
 
     # ── 全局参数 ──
     parser.add_argument("--api-key", help="API Key")
-    parser.add_argument("--subscribe", action="store_true", help="安装每日定时任务（09:00 自动拉取）")
+    parser.add_argument("--subscribe", action="store_true", help="安装每日定时任务（06:00 自动拉取）")
     parser.add_argument("--unsubscribe", action="store_true", help="卸载定时任务")
 
     args = parser.parse_args()
@@ -851,8 +861,9 @@ Examples:
         articles = fetch_all_articles(session, subscriptions, args.date)
 
         if not articles:
-            warn("未获取到任何文章，可能是今天还没有发文，或 API 暂时不可用")
-            warn("未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系红狐数据咨询：redfoxdata@proton.me")
+            warn("未获取到任何文章")
+            print(f"    💡 当前 Skill 基于红狐优质热门库，覆盖主流热门公众号。")
+            print(f"    如需更广的公众号覆盖，可联系红狐获取广域库数据：redfoxdata@proton.me")
             sys.exit(1)
 
         info(f"拉取完成: 共 {len(articles)} 篇文章")
