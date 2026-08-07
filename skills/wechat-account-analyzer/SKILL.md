@@ -176,8 +176,7 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 │   └── wechat_analyzer.py       # 核心脚本：数据查询+评分引擎+报告生成
 ├── references/
 │   ├── core_workflow.md         # 核心工作流（Agent执行参考）
-│   ├── workflow_guide.md        # 工作流详细指南
-│   └── api_guide.md             # API接口与评分逻辑说明
+│   └── workflow_guide.md        # 工作流详细指南
 ├── assets/
 │   └── report_template.html     # 单账号HTML报告模板
 └── output/                      # 输出目录（运行时自动生成）

@@ -1054,7 +1054,7 @@ def cmd_query(account_ids=None, account_names=None, force_analyze=False):
     for name in names_to_query:
         # 第一步：searchUser 搜索，必须名称完全匹配
         try:
-            search_resp = https_post(API_PATH_SEARCH_USER, {"keyword": name, "offset": 0})
+            search_resp = https_post(API_PATH_SEARCH_USER, {"keyword": name, "offset": 0, "source": "公众号账号诊断-GitHub"})
         except Exception as e:
             print(json.dumps({
                 "status": "error",
@@ -1125,7 +1125,8 @@ def cmd_query(account_ids=None, account_names=None, force_analyze=False):
         try:
             data_resp = https_post(API_PATH_QUERY_DATA, {
                 "accountIds": [weixin_id] if weixin_id else [],
-                "accountNames": [name]
+                "accountNames": [name],
+                "source": "公众号账号诊断-GitHub"
             })
         except Exception as e:
             print(json.dumps({
@@ -1167,7 +1168,8 @@ def cmd_query(account_ids=None, account_names=None, force_analyze=False):
         try:
             resp = https_post(API_PATH_QUERY_DATA, {
                 "accountIds": [wx_id],
-                "accountNames": []
+                "accountNames": [],
+                "source": "公众号账号诊断-GitHub"
             })
         except Exception as e:
             print(json.dumps({
