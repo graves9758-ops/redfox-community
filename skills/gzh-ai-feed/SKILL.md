@@ -7,7 +7,7 @@ description: AI公众号信息源 — Daily scan of AI WeChat public accounts, f
 
 每日自动扫描全网 AI 公众号，按阅读量找出最火的爆款内容，智能聚类后生成精美 HTML 日报。
 
-> API 请求均携带 `AI公众号信息源-SkillHub` 标识。需先配置 API Key，通过环境变量 REDFOX_API_KEY 或 --api-key 参数传入。
+> API 请求均携带 `AI公众号信息源-GitHub` 标识。需先配置 API Key，通过环境变量 REDFOX_API_KEY 或 --api-key 参数传入。
 
 ---
 
