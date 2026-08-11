@@ -24,13 +24,15 @@ description: 微信公众号文章订阅 — 每天 6 点，盯梢竞对、同�
 配置完成后，即可使用：
 
 ```bash
-# 1. 添加订阅（只需公众号名称即可）
-python3 "$SKILL_PATH/assets/subscribe.py" add "示例公众号" --category "竞对账号"
+# 1. 添加订阅（需提供账号 ID，支持三种格式）
+# 以「红狐数据」公众号为例：
+python3 "$SKILL_PATH/assets/subscribe.py" add "红狐数据" --id "redfoxdata1" --category "关注账号"
 
-# 如果有公众号微信号（如 WebNotes），可以一并提供以精确定位
-python3 "$SKILL_PATH/assets/subscribe.py" add "示例公众号" --id "WebNotes"
+# 也可用 wxId 或 bizInfo 格式
+python3 "$SKILL_PATH/assets/subscribe.py" add "红狐数据" --id "gh_53301f7745f3"
+python3 "$SKILL_PATH/assets/subscribe.py" add "红狐数据" --id "MzY4ODI4ODc2MA=="
 
-# 2. 拉取今日发文
+# 2. 拉取发文
 python3 "$SKILL_PATH/assets/subscribe.py" fetch
 
 # 3. 生成并打开日报
@@ -53,15 +55,15 @@ HTML 日报保存在 `~/Downloads/QoderGzhReports/` 目录，自动在浏览器�
 
 ## 功能特点
 
-- **收件箱式订阅**：像订阅 Newsletter 一样订阅公众号，最多 20 个，名称即可，微信号可选
-- **每日 6 点准时推送**：一键安装定时任务，每天早上一份精排日报，自动打开浏览器（优质库 T+1，拉取昨天及近 7 天发文）
+- **收件箱式订阅**：像订阅 Newsletter 一样订阅公众号，最多 20 个，需提供账号 ID（支持 account / wxId / bizInfo 三种格式）
+- **每日 6 点准时推送**：一键安装定时任务，每天早上一份精排日报，自动打开浏览器（广域库 T+1，拉取昨天及近 7 天发文）
 - **三类分组管理**：「竞对账号」盯对手、「同类账号」找灵感、「关注账号」追大神
 - **关键数据一屏尽览**：发文日期、标题、简介、阅读数、点赞数，原文链接一键直达
 - **终端 + 日报双模式**：命令行实时查表，HTML 日报适合分享存档
 
-> **数据覆盖说明**：本 Skill 基于红狐优质热门库，覆盖主流热门公众号。
-> 部分垂直领域或小众账号可能不在库中。如需更广的公众号覆盖，
-> 可联系红狐 Hub 获取广域库数据：**redfoxdata@proton.me**
+> **数据覆盖说明**：本 Skill 基于红狐广域库，覆盖范围更广。
+> 如在广域库中仍搜不到目标账号，可联系红狐数据获取定制支持：
+> **redfoxdata@proton.me**
 
 ---
 
@@ -92,14 +94,24 @@ HTML 日报保存在 `~/Downloads/QoderGzhReports/` 目录，自动在浏览器�
 
 ### 管理订阅
 
+> **账号 ID 说明**：新接口基于红狐广域库，必须提供账号 ID 才能查询。
+> 支持以下三种格式（三选一即可），以「红狐数据」公众号为例：
+>
+> - **account** — 公众号标识，最容易获取，如 `redfoxdata1`
+> - **wxId** — 微信号，格式 `gh_` 开头，仅限**自己的公众号后台**查看，如 `gh_53301f7745f3`
+> - **bizInfo** — 文章链接中的 biz 编码，通过**手机端默认浏览器**打开任意文章，从链接地址中提取，如 `MzY4ODI4ODc2MA==`
+>
+> 三种格式提供任意一种即可，推荐优先使用 account 格式。
+
 ```bash
-# 添加订阅（只需公众号名称即可）
-python3 "$SKILL_PATH/assets/subscribe.py" add "公众号名称" --category "竞对账号"
+# 添加订阅（账号名称 + 账号 ID 均为必填）
+python3 "$SKILL_PATH/assets/subscribe.py" add "公众号名称" --id "redfoxdata1" --category "竞对账号"
 
-# 添加订阅时附带公众号微信号
-python3 "$SKILL_PATH/assets/subscribe.py" add "公众号名称" --id "WebNotes"
+# 支持三种账号 ID 格式
+python3 "$SKILL_PATH/assets/subscribe.py" add "公众号名称" --id "gh_53301f7745f3"
+python3 "$SKILL_PATH/assets/subscribe.py" add "公众号名称" --id "MzY4ODI4ODc2MA=="
 
-# 取消订阅（支持用名称或微信号）
+# 取消订阅（支持用名称或 ID）
 python3 "$SKILL_PATH/assets/subscribe.py" remove "公众号名称"
 python3 "$SKILL_PATH/assets/subscribe.py" remove "WebNotes"
 
@@ -145,7 +157,7 @@ python3 "$SKILL_PATH/assets/subscribe.py" --unsubscribe
 | 命令 | 参数 | 说明 |
 |------|------|------|
 | `add` | `accountName` | 公众号名称（必填） |
-| | `--id` | 公众号 ID（可选） |
+| | `--id` | 账号 ID（必填），支持 account / wxId / bizInfo |
 | | `--category` | 分类标签：竞对账号 / 同类账号 / 关注账号 |
 | `remove` | `identifier` | 公众号名称 或 公众号 ID |
 | `list` | — | 列出所有订阅 |
@@ -167,8 +179,13 @@ python3 "$SKILL_PATH/assets/subscribe.py" --unsubscribe
 
 ## 常见问题
 
-**Q：公众号 ID（微信号）是什么？必须提供吗？**
-A：公众号的微信号（如 `WebNotes`），可在公众号主页 → 基础信息中查看。**非必填**，仅用公众号名称也能完成订阅和拉取发文。提供微信号可以让 API 更精确地定位到目标公众号。
+**Q：账号 ID 是什么？支持哪些格式？**
+A：本 Skill 使用红狐广域库，**必须提供账号 ID** 才能查询。支持三种格式（三选一即可）：
+- **account**：公众号标识，最容易获取（如 `redfoxdata1`）
+- **wxId**：微信号，格式 `gh_` 开头，仅限**自己的公众号后台**查看（如 `gh_53301f7745f3`）
+- **bizInfo**：文章链接中的 biz 编码，通过**手机端默认浏览器**打开任意文章，从链接地址中提取（如 `MzY4ODI4ODc2MA==`）
+
+提供其中任意一种即可，推荐优先使用 account 格式。
 
 **Q：最多能订阅多少个公众号？**
 A：最多 20 个。这是保证 API 调用效率和合理使用的上限。
@@ -195,7 +212,7 @@ A：日报展示的是标题+简介+数据。如需对文章做摘要改写或�
 A：前往 [redfox.hk](https://redfox.hk/settings/api-keys?source=github) 注册获取 API Token。
 
 **Q：为什么有些公众号查不到？**
-A：本 Skill 使用的是红狐**优质热门库**，主要收录主流热门公众号，部分垂直领域或小众账号可能不在库中。如需查询更多公众号，可联系红狐 Hub 获取广域库数据：**redfoxdata@proton.me**。
+A：本 Skill 使用红狐**广域库**，覆盖范围较广。如确认账号 ID 正确但仍查不到，请联系红狐数据获取定制支持：**redfoxdata@proton.me**。
 
 ---
 
@@ -205,4 +222,5 @@ A：本 Skill 使用的是红狐**优质热门库**，主要收录主流热门�
 
 - [SkillHub](https://skillhub.cn)
 - [ClawHub](https://clawhub.com)
+- [GitHub](https://github.com)
 - [GitHub](https://github.com)
