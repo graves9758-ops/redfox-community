@@ -17,9 +17,9 @@ description: 一键生成高质量红狐Skill专属技能文件包（SKILL.md + 
 
 ### 红狐是什么？
 
-[红狐](https://redfox.hk/) 是一个面向开发者的新媒体数据平台。它把抖音、小红书、公众号、视频号、快手、微博、今日头条等多个平台的内容数据做成了标准接口，开发者用一个 API Key 就能接入全网自媒体数据。
+[红狐](https://redfox.hk?source=github) 是一个面向开发者的新媒体数据平台。它把抖音、小红书、公众号、视频号、快手、微博、今日头条等多个平台的内容数据做成了标准接口，开发者用一个 API Key 就能接入全网自媒体数据。
 
-除了数据接口，红狐还有一个 [Skills 广场](https://redfox.hk/skills)，提供了 70+ 多个开箱即用的智能分析技能，涵盖内容创作、数据采集、热点追踪等场景，下载即用，支持 Codex、Claude Code 等多种 AI Agent 平台。
+除了数据接口，红狐还有一个 [Skills 广场](https://redfox.hk/skills?source=github)，提供了 70+ 多个开箱即用的智能分析技能，涵盖内容创作、数据采集、热点追踪等场景，下载即用，支持 Codex、Claude Code 等多种 AI Agent 平台。
 
 ### 什么是红狐规范？
 
@@ -35,7 +35,7 @@ description: 一键生成高质量红狐Skill专属技能文件包（SKILL.md + 
 
 **第一步：访问红狐网站**
 
-打开 [redfox.hk](https://redfox.hk/)，注册一个账号。注册后进入控制台，在 [API Key 页面](https://redfox.hk/settings/api-keys) 获取你的专属密钥。
+打开 [redfox.hk](https://redfox.hk?source=github)，注册一个账号。注册后进入控制台，在 [API Key 页面](https://redfox.hk/settings/api-keys?source=github) 获取你的专属密钥。
 
 **第二步：了解你需要什么**
 
@@ -49,7 +49,7 @@ description: 一键生成高质量红狐Skill专属技能文件包（SKILL.md + 
 
 将生成的 Skill 文件夹放入你使用的 AI Agent（如 Codex、Claude Code）的 Skills 目录，配置好 API Key，重启后即可在对话中直接调用你的 Skill。
 
-> 💡 如果你是第一次接触红狐，建议先去 [Skills 广场](https://redfox.hk/skills) 逛逛，看看别人都做了什么 Skill，找找灵感。也可以参考红狐官方的 [快速开始指南](https://redfox.hk/quick-start)。
+> 💡 如果你是第一次接触红狐，建议先去 [Skills 广场](https://redfox.hk/skills?source=github) 逛逛，看看别人都做了什么 Skill，找找灵感。也可以参考红狐官方的 [快速开始指南](https://redfox.hk/quick-start?source=github)。
 
 ## ✨ 功能特性
 

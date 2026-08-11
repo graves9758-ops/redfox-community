@@ -48,7 +48,7 @@ description: "短剧-公众号信息源 — 每日扫描公众号短剧爆款文
 ### 前置条件
 
 - Python 3 运行环境
-- 红狐Hub API Key(前往 [红狐Hub 官网](https://redfox.hk/) 注册获取,格式为 `ak_xxxxxxxx`)
+- 红狐Hub API Key(前往 [红狐Hub 官网](https://redfox.hk?source=github) 注册获取,格式为 `ak_xxxxxxxx`)
 
 ### 环境变量配置
 
@@ -425,7 +425,7 @@ python3 "$SKILL_PATH/assets/daily_report.py" --unsubscribe
 
 **Q1: API Key 怎么获取?**
 
-A: 前往 [红狐Hub 官网](https://redfox.hk/) 注册,登录后在个人中心获取,格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
+A: 前往 [红狐Hub 官网](https://redfox.hk?source=github) 注册,登录后在个人中心获取,格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
 
 **Q2: 配置了 API Key 但提示无效?**
 

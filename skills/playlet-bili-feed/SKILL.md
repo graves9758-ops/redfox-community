@@ -51,7 +51,7 @@ B站短剧爆款内容追踪工具，每日自动扫描B站短剧创作内容，
 
 ### API Key 获取
 
-前往 [红狐Hub 官网](https://redfox.hk/) 注册，登录后在个人中心获取，格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
+前往 [红狐Hub 官网](https://redfox.hk?source=github) 注册，登录后在个人中心获取，格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
 
 ### 环境变量配置
 

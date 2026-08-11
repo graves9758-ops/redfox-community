@@ -233,6 +233,6 @@ A: 本技能已将所有时间统一转换为北京时间（UTC+8），X 页面�
 
 ### 获取帮助
 
-- 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/)
-- 企业服务（全量数据库）：[https://redfox.hk/dashboard/enterprise](https://redfox.hk/dashboard/enterprise)
+- 红狐Hub 官网：[https://redfox.hk?source=github](https://redfox.hk?source=github)
+- 企业服务（全量数据库）：[https://redfox.hk/dashboard/enterprise?source=github](https://redfox.hk/dashboard/enterprise?source=github)
 - 技能实现细节：参见 [核心工作流](references/core_workflow.md) 与 [API接口指南](references/api_guide.md)

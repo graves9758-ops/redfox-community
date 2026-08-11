@@ -83,7 +83,7 @@ def get_api_key() -> str:
     # 第三级：提示用户配置
     raise ValueError(
         "缺少 API Key，请按以下步骤配置：\n"
-        "1. 访问 https://redfox.hk/login 注册账号\n"
+        "1. 访问 https://redfox.hk/login?source=github 注册账号\n"
         "2. 登录后在个人中心获取 API Key（格式：ak_xxxxxxxx）\n"
         "3. 设置环境变量：export REDFOX_API_KEY=<你的apikey>\n"
         "   或永久配置：echo 'export REDFOX_API_KEY=<你的apikey>' >> ~/.bashrc && source ~/.bashrc"

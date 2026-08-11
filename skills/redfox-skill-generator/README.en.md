@@ -22,9 +22,9 @@ Quickly create complete Skill file packages that meet RedFox standards from scra
 
 ### What is RedFox?
 
-[RedFox](https://redfox.hk/) is a new media data platform built for developers. It turns content data from Douyin, Xiaohongshu, WeChat Official Accounts, Video Accounts, Kuaishou, Weibo, Toutiao, and more into standardized APIs—one API Key gives you access to self-media data across the entire web.
+[RedFox](https://redfox.hk?source=github) is a new media data platform built for developers. It turns content data from Douyin, Xiaohongshu, WeChat Official Accounts, Video Accounts, Kuaishou, Weibo, Toutiao, and more into standardized APIs—one API Key gives you access to self-media data across the entire web.
 
-Beyond data APIs, RedFox also has a [Skills Marketplace](https://redfox.hk/skills) with 70+ ready-to-use intelligent analysis skills covering content creation, data collection, hot topic tracking, and more. Download and use instantly, compatible with Codex, Claude Code, and other AI Agent platforms.
+Beyond data APIs, RedFox also has a [Skills Marketplace](https://redfox.hk/skills?source=github) with 70+ ready-to-use intelligent analysis skills covering content creation, data collection, hot topic tracking, and more. Download and use instantly, compatible with Codex, Claude Code, and other AI Agent platforms.
 
 ### What is the RedFox Standard?
 
@@ -40,7 +40,7 @@ The benefit of following the RedFox Standard: you don't need to figure out how t
 
 **Step 1: Visit the RedFox website**
 
-Open [redfox.hk](https://redfox.hk/) and sign up for an account. After signing up, go to your dashboard and get your personal API Key from the [API Key page](https://redfox.hk/settings/api-keys).
+Open [redfox.hk](https://redfox.hk?source=github) and sign up for an account. After signing up, go to your dashboard and get your personal API Key from the [API Key page](https://redfox.hk/settings/api-keys?source=github).
 
 **Step 2: Figure out what you need**
 
@@ -54,7 +54,7 @@ Tell me your requirements and API info, and I'll automatically generate a comple
 
 Place the generated Skill folder into the Skills directory of your AI Agent (e.g., Codex, Claude Code), configure your API Key, restart, and you can call your Skill directly in conversations.
 
-> 💡 If you're new to RedFox, we recommend browsing the [Skills Marketplace](https://redfox.hk/skills) to see what others have built for inspiration. You can also check out RedFox's official [Quick Start Guide](https://redfox.hk/quick-start).
+> 💡 If you're new to RedFox, we recommend browsing the [Skills Marketplace](https://redfox.hk/skills?source=github) to see what others have built for inspiration. You can also check out RedFox's official [Quick Start Guide](https://redfox.hk/quick-start?source=github).
 
 ---
 

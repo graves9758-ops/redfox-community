@@ -52,7 +52,7 @@ description: "短剧-小红书信息源 — 每日扫描小红书短剧爆款内
 
 #### 1. 获取 API Key
 
-前往 [红狐Hub 官网](https://redfox.hk/) 注册,登录后在个人中心获取,格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
+前往 [红狐Hub 官网](https://redfox.hk?source=github) 注册,登录后在个人中心获取,格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
 
 #### 2. 配置环境变量
 
@@ -280,7 +280,7 @@ A: 请按以下步骤检查:
 
 **Q2: API Key 如何获取?**
 
-A: 前往 [红狐Hub 官网](https://redfox.hk/) 注册账号,登录后在个人中心获取,格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
+A: 前往 [红狐Hub 官网](https://redfox.hk?source=github) 注册账号,登录后在个人中心获取,格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
 
 ---
 

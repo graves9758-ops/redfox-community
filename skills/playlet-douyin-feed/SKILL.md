@@ -52,7 +52,7 @@ description: "短剧-抖音信息源 — 每日扫描抖音短剧爆款内容,�
 
 数据查询接口通过请求头 `X-API-KEY` 鉴权,Key 从环境变量 `REDFOX_API_KEY` 获取。
 
-前往 [红狐Hub 官网](https://redfox.hk/) 注册,登录后在个人中心获取,格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
+前往 [红狐Hub 官网](https://redfox.hk?source=github) 注册,登录后在个人中心获取,格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
 
 ### 环境变量配置
 
@@ -288,7 +288,7 @@ python3 scripts/playlet_douyin_daily.py --topics "悬疑,推理,反转,惊悚"
 **Q: 提示 "缺少 API Key" 怎么办?**
 
 A: 请确认已正确配置环境变量 `REDFOX_API_KEY`:
-1. 前往 [红狐Hub](https://redfox.hk/) 注册并获取 API Key(格式 `ak_xxxxxxxx`)
+1. 前往 [红狐Hub](https://redfox.hk?source=github) 注册并获取 API Key(格式 `ak_xxxxxxxx`)
 2. Windows:`[Environment]::SetEnvironmentVariable("REDFOX_API_KEY", "ak_xxx", "User")`
 3. 重启终端后验证:`echo %REDFOX_API_KEY%`
 
