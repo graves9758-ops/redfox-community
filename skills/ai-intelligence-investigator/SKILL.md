@@ -37,7 +37,7 @@ description: 深度A股情报调查与分析工具，支持A股情报调查、�
 
 调查记录保存至红狐平台，需通过环境变量 `REDFOX_API_KEY` 鉴权。
 
-**API Key 获取**：前往 [RedFox 官网](https://redfox.hk/) 注册，登录后在个人中心获取，格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
+**API Key 获取**：前往 [RedFox 官网](https://redfox.hk?source=github) 注册，登录后在个人中心获取，格式为 `ak_xxxxxxxx`。新注册用户获赠免费积分。
 
 **配置方式**：
 - **macOS/Linux**：将 `export REDFOX_API_KEY=<值>` 追加到 `~/.zshrc` 或 `~/.bashrc`，然后 `source` 使其生效
