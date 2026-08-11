@@ -5,8 +5,7 @@
 订阅你关注的微信公众号，自动抓取每日发文内容，表格化展示。
 
 Usage:
-    python3 subscribe.py add "公众号名称" --category "竞对账号"
-    python3 subscribe.py add "公众号名称" --id "WebNotes"
+    python3 subscribe.py add "公众号名称" --id "redfoxdata1" --category "竞对账号"
     python3 subscribe.py remove "公众号名称"
     python3 subscribe.py list
     python3 subscribe.py fetch
@@ -33,7 +32,7 @@ except ImportError:
     HAS_REQUESTS = False
 
 # ─── 配置 ─────────────────────────────────────────────────────────────────────────
-API_URL = "https://redfox.hk/story/api/gzhData/queryWorkList"
+API_URL = "https://redfox.hk/story/api/gzh/data/queryWorkList"
 CONFIG_DIR = Path.home() / ".qoder" / "apis"
 CONFIG_FILE = CONFIG_DIR / "redfox.json"
 ENV_KEY = "REDFOX_API_KEY"
@@ -179,8 +178,8 @@ def list_subscriptions():
     if not subs:
         warn("当前没有订阅任何公众号")
         print(f"\n  使用 '{CYAN}add{RESET}' 命令添加订阅:")
-        print(f"  python3 subscribe.py add \"<公众号名称>\" --category \"竞对账号\"")
-        print(f"  python3 subscribe.py add \"<公众号名称>\" --id \"<微信号>\"  # 微信号可选")
+        print(f"  python3 subscribe.py add \"<公众号名称>\" --id \"<账号ID>\" --category \"竞对账号\"")
+        print(f"  账号 ID 支持三种格式：account / wxId / bizInfo")
         return
 
     # 按分类分组
@@ -227,11 +226,15 @@ def list_subscriptions():
 
 # ─── 数据获取 ──────────────────────────────────────────────────────────────────────
 def fetch_account_articles(session, account_id, account_name, date_str):
-    """获取单个公众号文章列表（优质库 T+1，查昨天及近 7 天），最多 5 次请求（每次 20 条，共 100 条）"""
-    id_label = f" (ID: {account_id})" if account_id else ""
+    """获取单个公众号文章列表（广域库 T+1，查昨天及近 7 天），需提供账号 ID，最多 5 次请求（每次 20 条，共 100 条）"""
+    if not account_id:
+        warn(f"「{account_name}」缺少账号 ID，无法查询。请使用 add 命令重新订阅并提供账号 ID")
+        return []
+
+    id_label = f" (ID: {account_id})"
     all_articles = []
 
-    # T+1: 优质库查不到当天数据，取昨天往前 7 天
+    # T+1: 广域库查不到当天数据，取昨天往前 7 天
     target_date = datetime.strptime(date_str, "%Y-%m-%d")
     end_date = target_date - timedelta(days=1)
     start_date = end_date - timedelta(days=7)
@@ -241,8 +244,7 @@ def fetch_account_articles(session, account_id, account_name, date_str):
     for page in range(5):  # 5 页，每页 20 条
         offset = page * 20
         payload = {
-            "uid": account_id or "",
-            "accountName": account_name,
+            "account": account_id,
             "offset": offset,
             "sortType": "0",
             "publishTimeStart": f"{start_str} 00:00:00",
@@ -274,9 +276,8 @@ def fetch_account_articles(session, account_id, account_name, date_str):
             if code in (3106, 3107):
                 error(f"API Key 错误 (code {code}): {result.get('msg', '')}")
             elif code == 3203:
-                warn(f"「{account_name}」不在优质热门库中，暂未收录")
-                print(f"    💡 当前 Skill 基于红狐优质热门库，覆盖主流热门公众号。")
-                print(f"    如需更广的公众号覆盖，可联系红狐获取广域库数据：redfoxdata@proton.me")
+                warn(f"「{account_name}」不在广域库中，暂未收录")
+                print(f"    💡 如需查询此账号，请联系红狐数据获取定制支持：redfoxdata@proton.me")
             elif code:
                 warn(f"API 返回错误 (code {code}): {result.get('msg', '')} — {account_name}")
             return all_articles if all_articles else []
@@ -298,9 +299,9 @@ def fetch_account_articles(session, account_id, account_name, date_str):
 
         # 为每篇文章附加公众号信息
         for article in articles:
-            article["_accountId"] = account_id or str(article.get("uid", ""))
+            article["_accountId"] = account_id
             article["_accountName"] = account_name
-            article["_url"] = article.get("url") or "#"
+            article["_url"] = article.get("workUrl") or article.get("url") or "#"
 
         all_articles.extend(articles)
 
@@ -402,8 +403,8 @@ def print_terminal_table(articles):
                        article.get("description") or
                        article.get("digest") or
                        article.get("abstract") or "")
-            reads = format_number(article.get("clicksCount") or
-                                  article.get("readCount") or
+            reads = format_number(article.get("readCount") or
+                                  article.get("clicksCount") or
                                   article.get("reads"))
             likes = format_number(article.get("likeCount") or article.get("likes"))
             url = article.get("_url") or "#"
@@ -438,7 +439,7 @@ def compute_stats(articles):
         return {"article_count": 0, "account_count": 0,
                 "avg_reads": "0", "total_likes": "0"}
 
-    reads = [a.get("clicksCount") or a.get("readCount") or a.get("reads") or 0 for a in articles]
+    reads = [a.get("readCount") or a.get("clicksCount") or a.get("reads") or 0 for a in articles]
     avg_reads = sum(int(r) for r in reads) // total if total > 0 else 0
     total_likes = sum(int(a.get("likeCount") or a.get("likes") or 0) for a in articles)
 
@@ -488,8 +489,8 @@ def generate_category_sections(articles):
                        article.get("description") or
                        article.get("digest") or
                        article.get("abstract") or "")
-            reads = format_number(article.get("clicksCount") or
-                                  article.get("readCount") or
+            reads = format_number(article.get("readCount") or
+                                  article.get("clicksCount") or
                                   article.get("reads"))
             likes = format_number(article.get("likeCount") or article.get("likes"))
             url = article.get("_url") or "#"
@@ -738,8 +739,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 subscribe.py add "公众号名称" --category "竞对账号"
-  python3 subscribe.py add "公众号名称" --id "WebNotes"
+  python3 subscribe.py add "公众号名称" --id "redfoxdata1" --category "竞对账号"
+  python3 subscribe.py add "公众号名称" --id "gh_53301f7745f3"
+  python3 subscribe.py add "公众号名称" --id "MzY4ODI4ODc2MA=="
   python3 subscribe.py remove "公众号名称"
   python3 subscribe.py remove "WebNotes"
   python3 subscribe.py list
@@ -747,6 +749,11 @@ Examples:
   python3 subscribe.py report --date 2026-05-26
   python3 subscribe.py --subscribe
   python3 subscribe.py --unsubscribe
+
+账号 ID 支持三种格式（三选一即可）：
+  account    — 公众号标识，最容易获取（如 redfoxdata1）
+  wxId       — 微信号，仅限自己的公众号后台查看（如 gh_53301f7745f3）
+  bizInfo    — 文章链接中的 biz 编码，通过手机端浏览器提取（如 MzY4ODI4ODc2MA==）
         """,
     )
 
@@ -755,8 +762,8 @@ Examples:
     # ── add 子命令 ──
     add_parser = subparsers.add_parser("add", help="添加订阅")
     add_parser.add_argument("account_name", help="公众号名称（必填）")
-    add_parser.add_argument("--id", dest="account_id", default="",
-                            help="公众号微信号（可选，如 WebNotes，可在公众号主页基础信息中查看）")
+    add_parser.add_argument("--id", dest="account_id", required=True,
+                            help="账号 ID — 支持三种格式（必填）：account（公众号标识）/ wxId（微信号）/ bizInfo（文章链接编码）")
     add_parser.add_argument("--category", default="关注账号",
                             choices=DEFAULT_CATEGORIES + ["其他"],
                             help="分类标签（默认: 关注账号）")
@@ -828,8 +835,7 @@ Examples:
         subscriptions = load_subscriptions()
         if not subscriptions:
             error("尚未订阅任何公众号，请先用 'add' 命令添加订阅")
-            print(f"\n  示例: {CYAN}python3 subscribe.py add \"公众号名称\"{RESET}")
-            print(f"         {CYAN}python3 subscribe.py add \"公众号名称\" --id \"微信号\"{RESET}")
+            print(f"\n  示例: {CYAN}python3 subscribe.py add \"公众号名称\" --id \"WebNotes\"{RESET}")
             sys.exit(1)
 
         # API Key
@@ -862,8 +868,8 @@ Examples:
 
         if not articles:
             warn("未获取到任何文章")
-            print(f"    💡 当前 Skill 基于红狐优质热门库，覆盖主流热门公众号。")
-            print(f"    如需更广的公众号覆盖，可联系红狐获取广域库数据：redfoxdata@proton.me")
+            print(f"    💡 当前 Skill 基于红狐广域库。如确认账号 ID 正确但仍查不到，")
+            print(f"    请联系红狐数据获取定制支持：redfoxdata@proton.me")
             sys.exit(1)
 
         info(f"拉取完成: 共 {len(articles)} 篇文章")
