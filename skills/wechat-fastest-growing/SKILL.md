@@ -64,7 +64,7 @@ pip install requests
 python scripts/fetch_growth_rank.py --rankDate yesterday
 ```
 
-安装完成后，访问 [红狐 Hub](https://redfox.hk/)网站 [登录](https://redfox.hk/login) 注册并获取 API Key（新用户获赠免费积分），配置环境变量 `REDFOX_API_KEY`（见下方），重启终端即可在对话中发起查询。
+安装完成后，访问 [红狐 Hub](https://redfox.hk/?source=github)网站 [登录](https://redfox.hk/login?source=github) 注册并获取 API Key（新用户获赠免费积分），配置环境变量 `REDFOX_API_KEY`（见下方），重启终端即可在对话中发起查询。
 
 ### 环境变量配置
 
@@ -94,8 +94,8 @@ source ~/.zshrc
 
 ### 获取 API Key
 
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用 API 服务
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 

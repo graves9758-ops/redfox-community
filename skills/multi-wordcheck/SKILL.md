@@ -66,7 +66,7 @@ dependency:
 ### 前置条件
 
 - Python 3.8+，已安装依赖 `requests==2.31.0`、`beautifulsoup4==4.12.3`
-- 获取 `REDFOX_API_KEY`（访问 [RedFox 官网](https://redfox.hk/) 注册账号，新用户获赠免费积分）
+- 获取 `REDFOX_API_KEY`（访问 [RedFox 官网](https://redfox.hk/?source=github) 注册账号，新用户获赠免费积分）
 
 ### 鉴权
 
