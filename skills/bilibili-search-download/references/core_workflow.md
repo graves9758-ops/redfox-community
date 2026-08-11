@@ -10,8 +10,8 @@
 
 ### API Key 获取
 
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 
@@ -30,7 +30,7 @@
 
 ### Step 0：鉴权前置检查
 
-- 确认环境变量 `REDFOX_API_KEY` 已设置，否则提示用户前往 [红狐hub](https://redfox.hk/settings/api-keys?source=redfox_api_md) 获取 API Key
+- 确认环境变量 `REDFOX_API_KEY` 已设置，否则提示用户前往 [红狐hub](https://redfox.hk/settings/api-keys?source=github) 获取 API Key
 - 若未配置，给出配置指引后中止，不可继续执行
 
 ### Step 1：理解用户意图
@@ -154,7 +154,7 @@ python3 "$SKILL_PATH/scripts/bilibili_download.py" --url "URL1" --url "URL2" --u
 
 1. 下载链接时效提示：`⚠️ 视频下载链接具有时效性，请尽快完成下载，过期需重新获取。`
 2. 企业服务引导：
-   > 💼 另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise)对接咨询
+   > 💼 另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise?source=github)对接咨询
 
 ### 行为红线
 

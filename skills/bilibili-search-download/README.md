@@ -75,5 +75,5 @@ B站搜索批量下载是一款智能视频采集工具，输入关键词即可�
 
 ## 获取帮助
 
-- 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/)
-- 企业服务：[https://redfox.hk/dashboard/enterprise](https://redfox.hk/dashboard/enterprise)
+- 红狐Hub 官网：[https://redfox.hk?source=github](https://redfox.hk?source=github)
+- 企业服务：[https://redfox.hk/dashboard/enterprise?source=github](https://redfox.hk/dashboard/enterprise?source=github)

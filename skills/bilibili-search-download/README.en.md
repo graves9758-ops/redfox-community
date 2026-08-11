@@ -75,5 +75,5 @@ Configure the data service access credential (REDFOX_API_KEY) — see the Usage 
 
 ## Get Help
 
-- RedFoxHub Official: [https://redfox.hk/](https://redfox.hk/)
-- Enterprise Services: [https://redfox.hk/dashboard/enterprise](https://redfox.hk/dashboard/enterprise)
+- RedFoxHub Official: [https://redfox.hk?source=github](https://redfox.hk?source=github)
+- Enterprise Services: [https://redfox.hk/dashboard/enterprise?source=github](https://redfox.hk/dashboard/enterprise?source=github)

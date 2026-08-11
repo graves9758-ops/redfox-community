@@ -81,8 +81,8 @@ description: B站搜索批量下载工具。输入关键词即可搜索B站全�
 
 使用本技能前需要配置红狐 API 密钥 `REDFOX_API_KEY`：
 
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号（新用户获赠免费积分）
+1. 访问 [红狐Hub 官网](https://redfox.hk?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号（新用户获赠免费积分）
 3. 登录后在 API 密钥管理页面创建密钥，格式为 `ak_xxxxxxxx`
 4. 将密钥设置为环境变量 `REDFOX_API_KEY`
 
@@ -274,7 +274,7 @@ A: 可能原因：视频链接有误；视频已被删除或设为私密；网�
 
 **Q10: 提示积分不足？**
 
-A: 每次搜索和下载均消耗一次积分。请前往 [红狐Hub](https://redfox.hk/) 查看积分余额或充值。
+A: 每次搜索和下载均消耗一次积分。请前往 [红狐Hub](https://redfox.hk?source=github) 查看积分余额或充值。
 
 ---
 
@@ -313,6 +313,6 @@ bilibili-search-download/
 
 ### 获取帮助
 
-- 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/)
-- 企业服务（全量数据库）：[https://redfox.hk/dashboard/enterprise](https://redfox.hk/dashboard/enterprise)
+- 红狐Hub 官网：[https://redfox.hk?source=github](https://redfox.hk?source=github)
+- 企业服务（全量数据库）：[https://redfox.hk/dashboard/enterprise?source=github](https://redfox.hk/dashboard/enterprise?source=github)
 - 技能实现细节：参见 [核心工作流](references/core_workflow.md) 与 [API接口指南](references/api_guide.md)
