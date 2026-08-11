@@ -44,7 +44,7 @@ A specialized tool for Douyin follower growth data, tracking real-time follower 
 ## API Key Acquisition & Security
 
 - This skill requires the environment variable: `REDFOX_API_KEY`
-- `REDFOX_API_KEY` is provided by [RedFoxHub](https://redfox.hk/settings/api-keys?source=github) (`https://redfox.hk`)
+- `REDFOX_API_KEY` is provided by [RedFoxHub](https://redfox.hk/settings/api-keys?source=github) (`https://redfox.hk?source=github`)
 - Please visit [RedFoxHub](https://redfox.hk?source=github) to register and obtain your `REDFOX_API_KEY`
 - Configure the `REDFOX_API_KEY` environment variable on your device before using this skill
 - Before providing your key, verify its source, scope, validity period, and whether it supports reset/revocation

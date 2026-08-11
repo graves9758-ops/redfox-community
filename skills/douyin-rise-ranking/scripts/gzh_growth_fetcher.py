@@ -72,7 +72,7 @@ def _get_api_key():
         "请按以下方式配置：\n"
         "  macOS/Linux：export REDFOX_API_KEY=ak_xxxxxxxx（追加到 ~/.zshrc 或 ~/.bashrc 后执行 source）\n"
         "  Windows：[Environment]::SetEnvironmentVariable(\"REDFOX_API_KEY\", \"ak_xxxxxxxx\", \"User\")\n"
-        "API Key 可在 https://redfox.hk/ 注册后于个人中心获取。"
+        "API Key 可在 https://redfox.hk?source=github 注册后于个人中心获取。"
     )
 
 CATEGORIES = [

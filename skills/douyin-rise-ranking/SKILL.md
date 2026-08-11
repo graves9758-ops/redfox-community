@@ -41,8 +41,8 @@ description: 获取抖音涨粉账号推荐数据，支持日榜/周榜/月榜�
 
 ### 前置条件
 
-- 已注册 [红狐Hub 官网](https://redfox.hk/) 账号
-- 前往 [注册页面](https://redfox.hk/login) 注册，新用户可获赠免费积分
+- 已注册 [红狐Hub 官网](https://redfox.hk?source=github) 账号
+- 前往 [注册页面](https://redfox.hk/login?source=github) 注册，新用户可获赠免费积分
 - 在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 
 ### 环境变量配置

@@ -38,7 +38,7 @@ def get_api_key():
     if system == "Windows":
         config_hint = (
             "未找到 REDFOX_API_KEY 配置，请按以下步骤配置：\n"
-            "  1. 访问 https://redfox.hk/ 注册账号并获取 API Key\n"
+            "  1. 访问 https://redfox.hk?source=github 注册账号并获取 API Key\n"
             "  2. 在 PowerShell 中执行：\n"
             '     [Environment]::SetEnvironmentVariable("REDFOX_API_KEY", "<你的API Key>", "User")\n'
             "  3. 重启终端后生效"
@@ -53,7 +53,7 @@ def get_api_key():
             rc_file = "~/.bashrc"
         config_hint = (
             "未找到 REDFOX_API_KEY 配置，请按以下步骤配置：\n"
-            "  1. 访问 https://redfox.hk/ 注册账号并获取 API Key\n"
+            "  1. 访问 https://redfox.hk?source=github 注册账号并获取 API Key\n"
             f"  2. 执行：echo 'export REDFOX_API_KEY=<你的API Key>' >> {rc_file}\n"
             f"  3. 执行：source {rc_file}"
         )
