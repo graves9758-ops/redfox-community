@@ -110,9 +110,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     <tr><th>维度</th><th>得分</th><th>满分</th><th>评分原因简述</th></tr>
     <tr><td>账号定位</td><td class="score-val">{{账号定位得分}}</td><td class="max-val">10</td><td class="reason">{{账号定位简述原因}}</td></tr>
     <tr><td>粉丝画像与需求</td><td class="score-val">{{粉丝画像与需求得分}}</td><td class="max-val">15</td><td class="reason">{{粉丝画像与需求简述原因}}</td></tr>
-    <tr><td>选题体系</td><td class="score-val">{{选题体系得分}}</td><td class="max-val">15</td><td class="reason">{{选题体系简述原因}}</td></tr>
+    <tr><td>选题体系</td><td class="score-val">{{选题体系得分}}</td><td class="max-val">10</td><td class="reason">{{选题体系简述原因}}</td></tr>
     <tr><td>封面风格</td><td class="score-val">{{封面风格得分}}</td><td class="max-val">10</td><td class="reason">{{封面风格简述原因}}</td></tr>
-    <tr><td>爆文能力</td><td class="score-val">{{爆文能力得分}}</td><td class="max-val">15</td><td class="reason">{{爆文能力简述原因}}</td></tr>
+    <tr><td>爆文能力</td><td class="score-val">{{爆文能力得分}}</td><td class="max-val">20</td><td class="reason">{{爆文能力简述原因}}</td></tr>
     <tr><td>互动规模</td><td class="score-val">{{互动规模得分}}</td><td class="max-val">20</td><td class="reason">{{互动规模简述原因}}</td></tr>
     <tr><td>更新产能</td><td class="score-val">{{更新产能得分}}</td><td class="max-val">15</td><td class="reason">{{更新产能简述原因}}</td></tr>
   </table>
@@ -163,7 +163,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 <!-- 选题体系 -->
 <div class="card">
-  <div class="section-title"><span class="icon">📝</span>选题体系 | {{选题体系得分}}分/15</div>
+  <div class="section-title"><span class="icon">📝</span>选题体系 | {{选题体系得分}}分/10</div>
   <div class="info-row"><span class="label">选题方向：</span><span class="value">{{选题方向}}</span></div>
   <div class="info-row"><span class="label">表达风格：</span><span class="value">{{表达风格}}</span></div>
   <div class="info-row"><span class="label">叙事手法：</span><span class="value">{{叙事手法}}</span></div>
@@ -181,7 +181,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 <!-- 爆文能力 -->
 <!-- SECTION_VIRAL_START -->
 <div class="card">
-  <div class="section-title"><span class="icon">🔥</span>爆文能力 | {{爆文能力得分}}分/15</div>
+  <div class="section-title"><span class="icon">🔥</span>爆文能力 | {{爆文能力得分}}分/20</div>
   <div class="info-row"><span class="label">爆文率：</span><span class="value">{{爆文率}}%（{{爆文数}}篇）</span></div>
   <div class="info-row"><span class="label">爆文标准：</span><span class="value">{{账号标识}}互动>{{爆文标准}}</span></div>
   <div class="sub-title">爆文特征分析</div>
@@ -197,15 +197,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 <!-- 互动规模 -->
 <div class="card">
   <div class="section-title"><span class="icon">💬</span>互动规模 | {{互动规模得分}}分/20</div>
-  <div class="info-row"><span class="label">近30天互动量：</span><span class="value">{{近30天互动量}} | {{账号标识}} | 官方等级：{{官方等级}}</span></div>
-  <div class="info-row"><span class="label">互动率：</span><span class="value">{{互动率}}% = 近30天作品互动量 / 粉丝数 * 100%</span></div>
+  <div class="info-row"><span class="label">获取期间互动量：</span><span class="value">{{获取期间互动量}} | {{账号标识}} | 官方等级：{{官方等级}}</span></div>
+  <div class="info-row"><span class="label">获取期间：</span><span class="value">{{获取期间}}（{{获取天数}}天）</span></div>
+  <div class="info-row"><span class="label">互动率：</span><span class="value">{{互动率}}% = 获取期间作品互动量 / 粉丝数 * 100%</span></div>
   <div class="info-row"><span class="label">收藏率：</span><span class="value">{{收藏率}}% = 总收藏数 / 总点赞数 * 100%</span></div>
   <div class="info-row"><span class="label">互动结构：</span><span class="value">点赞{{互动结构_点赞占比}}% | 收藏{{互动结构_收藏占比}}%</span></div>
   <div class="info-row"><span class="label">类型判断：</span><span class="value">{{类型判断}}</span></div>
   <div class="sub-title">水平衡量</div>
   <table class="benchmark-table">
     <tr><th>指标</th><th>当前值</th><th>等级</th><th>中位数参考</th><th>优秀值参考</th></tr>
-    <tr><td>近30天互动量</td><td>{{近30天互动量}}</td><td>{{水平衡量_互动数等级}}</td><td>{{水平衡量_互动数中位数参考}}</td><td>{{水平衡量_互动数优秀值参考}}</td></tr>
+    <tr><td>获取期间互动量</td><td>{{获取期间互动量}}</td><td>{{水平衡量_互动数等级}}</td><td>{{水平衡量_互动数中位数参考}}</td><td>{{水平衡量_互动数优秀值参考}}</td></tr>
     <tr><td>总收藏数</td><td>{{总收藏数}}</td><td>{{水平衡量_收藏数等级}}</td><td>{{水平衡量_收藏数中位数参考}}</td><td>{{水平衡量_收藏数优秀值参考}}</td></tr>
   </table>
 </div>
@@ -213,7 +214,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 <!-- 更新产能 -->
 <div class="card">
   <div class="section-title"><span class="icon">🚀</span>更新产能 | {{更新产能得分}}分/15</div>
-  <div class="info-row"><span class="label">近30天：</span><span class="value">{{近30天发作品数}}篇 | 周均{{周更频率}}篇</span></div>
+  <div class="info-row"><span class="label">获取期间（{{获取天数}}天）：</span><span class="value">{{获取期间发作品数}}篇 | 周均{{周更频率}}篇</span></div>
   <div class="info-row"><span class="label">频率分析：</span><span class="value">{{频率分析}}</span></div>
   <div class="sub-title">水平衡量</div>
   <table class="benchmark-table">

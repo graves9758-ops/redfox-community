@@ -10,12 +10,13 @@ from datetime import datetime
 # 评分满分映射
 SCORE_MAX_MAP = {
     "账号定位": 10,
-    "互动规模": 10,
-    "爆文能力": 15,
-    "更新产能": 10,
     "粉丝画像与需求": 15,
     "选题体系": 10,
     "封面风格": 10,
+    "爆文能力": 20,
+    "互动规模": 20,
+    "更新产能": 15,
+     
 }
 
 # 报告数据文件名
@@ -42,11 +43,14 @@ def _flatten_dict(d, parent_key="", sep="."):
 
 
 def _format_interactive_count(count):
-    """格式化互动数（万级显示）"""
+    """格式化互动数（万级显示，与xiaohongshu_analyzer.py保持一致使用w+格式）"""
     try:
         num = int(count)
         if num >= 10000:
-            return f"{num/10000:.1f}万"
+            w_val = num / 10000
+            if w_val == int(w_val):
+                return f"{int(w_val)}w+"
+            return f"{round(w_val, 1)}w+"
         return str(num)
     except (ValueError, TypeError):
         return str(count)
@@ -74,7 +78,8 @@ def _build_replacements(report_data):
     for k, v in flat_data.items():
         # 空值处理：将 none/null/None/空字符串 替换为 0 或空字符串
         str_v = str(v).strip().lower() if v is not None else ""
-        if str_v in ("none", "null", ""):
+        is_empty = str_v in ("none", "null", "")
+        if is_empty:
             v = "0" if k in numeric_fields else ""
         else:
             v = str(v).strip()
@@ -83,8 +88,8 @@ def _build_replacements(report_data):
         # 完整路径占位符：{{header.账号名}}
         replacements["{{" + k + "}}"] = str_v
         
-        # 处理短路径
-        if "." in k:
+        # 处理短路径 - 只有非空值才生成短路径替换
+        if "." in k and not is_empty:
             parts = k.split(".")
             # 跳过_raw字典下的字段，避免覆盖其他模块的同名字段
             if parts[0] == "_raw":
@@ -265,6 +270,8 @@ def _fill_unreplaced_fields(html, report_data, raw_data=None):
         "作品总数": "works_total",
         "账号名": "nickname",
         "官方等级": "level",
+        "账号标识": "userAttribute",
+        "数据获取时间": "queryTime",
     }
     
     filled_fields = []
@@ -272,15 +279,16 @@ def _fill_unreplaced_fields(html, report_data, raw_data=None):
         field_name = field[2:-2]  # 移除 {{ 和 }}
         found_value = None
 
-        # 第一步：从分析数据中查找
+        # 第一步：从分析数据中查找（包括空值）
         for k, v in flat_data.items():
             if k == field_name or k.endswith("." + field_name):
-                if v is not None and str(v).strip() != "" and str(v) != "0":
+                # 接受任何非None的值，包括空字符串
+                if v is not None:
                     found_value = v
                     break
 
-        # 第二步：分析数据为空，从原始数据中查找
-        if found_value is None and flat_raw:
+        # 第二步：分析数据为空或不存在，从原始数据中查找
+        if (found_value is None or str(found_value).strip() == "") and flat_raw:
             # 先尝试字段名映射
             if field_name in field_mapping:
                 raw_field = field_mapping[field_name]
@@ -293,7 +301,7 @@ def _fill_unreplaced_fields(html, report_data, raw_data=None):
                                 found_value = _format_interactive_count(v)
                             break
             # 再尝试直接匹配字段名
-            if found_value is None:
+            if found_value is None or str(found_value).strip() == "":
                 for k, v in flat_raw.items():
                     if k == field_name or k.endswith("." + field_name):
                         if v is not None and str(v).strip() != "":
@@ -306,12 +314,17 @@ def _fill_unreplaced_fields(html, report_data, raw_data=None):
             filled_fields.append(field_name)
         else:
             # 数据中无值，根据字段类型填充默认值
-            numeric_fields = ["得分", "分", "粉丝", "互动", "收藏", "点赞", "数", "率", "量", "倍", "篇", "天", "中位数参考", "优秀值参考", "等级"]
-            is_numeric = any(nf in field_name for nf in numeric_fields)
-            if is_numeric:
+            # 精确匹配数字字段，避免误判
+            numeric_exact = ["得分", "分", "粉丝数", "互动量", "收藏数", "点赞数", "爆文数", "篇", "率", "倍数", "中位数参考", "优秀值参考", "等级", "占比"]
+            is_numeric = any(field_name.endswith(nf) or field_name == nf for nf in numeric_exact)
+            # 特殊处理：时间、日期等字段不是数字
+            time_fields = ["时间", "日期", "日期"]
+            is_time = any(tf in field_name for tf in time_fields)
+            
+            if is_numeric and not is_time:
                 html = html.replace(field, "0")
             else:
-                html = html.replace(field, "")
+                html = html.replace(field, "-")
 
     return html, filled_fields
 
@@ -329,6 +342,15 @@ def generate_single_report_html(report_data, template_path, raw_data=None):
     """
     if not os.path.exists(template_path):
         return None, f"模板文件不存在: {template_path}"
+    
+    # 评分保护：如果report_data中评分为空，从raw_data回填
+    if raw_data and isinstance(raw_data.get("scores"), dict):
+        if not isinstance(report_data.get("scores"), dict):
+            report_data["scores"] = {}
+        for k, v in raw_data["scores"].items():
+            cur = report_data["scores"].get(k)
+            if cur in (None, "", 0, "0", "0.0") and v not in (None, "", 0, "0", "0.0"):
+                report_data["scores"][k] = v
     
     with open(template_path, "r", encoding="utf-8") as f:
         html = f.read()

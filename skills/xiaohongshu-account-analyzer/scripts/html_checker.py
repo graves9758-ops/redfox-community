@@ -14,32 +14,17 @@ from datetime import datetime
 
 
 def generate_default_action(score):
-    """根据评分生成默认行动处方"""
+    """根据评分生成默认行动处方占位（不生成空话内容，仅标记需AI补充）"""
     try:
         score = int(score)
     except:
         score = 0
     
-    if score >= 80:
-        return '''
+    # 不生成空话式默认内容（违反反空话校验规则）
+    # 仅生成占位标记，提示AI需要补充具体行动处方
+    return '''
           <div class="action-title">行动处方</div>
-          <div class="action-step">1. 保持当前内容策略，持续优化细节</div>
-          <div class="action-step">2. 关注粉丝反馈，增强互动粘性</div>
-          <div class="action-step">3. 探索变现路径，提升商业价值</div>
-        '''
-    elif score >= 60:
-        return '''
-          <div class="action-title">行动处方</div>
-          <div class="action-step">1. 强化内容垂直度，明确账号定位</div>
-          <div class="action-step">2. 提升更新频率，保持稳定输出</div>
-          <div class="action-step">3. 优化封面视觉，提升点击率</div>
-        '''
-    else:
-        return '''
-          <div class="action-title">行动处方</div>
-          <div class="action-step">1. 明确账号定位，聚焦垂直领域</div>
-          <div class="action-step">2. 提升内容质量，增加互动引导</div>
-          <div class="action-step">3. 保持稳定更新，积累账号权重</div>
+          <div class="action-step" style="color:#999;">[待补充] 请基于诊断报告数据填写具体问题归因和行动处方</div>
         '''
 
 
@@ -68,13 +53,13 @@ def check_and_fix_html_content(html, report_data):
         "更新产能得分": report_data.get("scores", {}).get("更新产能得分", "0"),
         
         # 简述原因
-        "账号定位简述原因": report_data.get("scores", {}).get("账号定位简述原因", "账号定位清晰"),
-        "粉丝画像与需求简述原因": report_data.get("scores", {}).get("粉丝画像与需求简述原因", "粉丝画像较清晰"),
-        "选题体系简述原因": report_data.get("scores", {}).get("选题体系简述原因", "选题方向明确"),
-        "封面风格简述原因": report_data.get("scores", {}).get("封面风格简述原因", "封面风格统一"),
-        "爆文能力简述原因": report_data.get("scores", {}).get("爆文能力简述原因", "爆文表现良好"),
-        "互动规模简述原因": report_data.get("scores", {}).get("互动规模简述原因", "互动表现良好"),
-        "更新产能简述原因": report_data.get("scores", {}).get("更新产能简述原因", "更新频率稳定"),
+        "账号定位简述得分和扣分原因": report_data.get("scores", {}).get("账号定位简述得分和扣分原因", "账号定位清晰"),
+        "粉丝画像与需求简述得分和扣分原因": report_data.get("scores", {}).get("粉丝画像与需求简述得分和扣分原因", "粉丝画像较清晰"),
+        "选题体系简述得分和扣分原因": report_data.get("scores", {}).get("选题体系简述得分和扣分原因", "选题方向明确"),
+        "封面风格简述得分和扣分原因": report_data.get("scores", {}).get("封面风格简述得分和扣分原因", "封面风格统一"),
+        "爆文能力简述得分和扣分原因": report_data.get("scores", {}).get("爆文能力简述得分和扣分原因", "爆文表现良好"),
+        "互动规模简述得分和扣分原因": report_data.get("scores", {}).get("互动规模简述得分和扣分原因", "互动表现良好"),
+        "更新产能简述得分和扣分原因": report_data.get("scores", {}).get("更新产能简述得分和扣分原因", "更新频率稳定"),
     }
     
     # 检查HTML中的关键模块是否有内容
