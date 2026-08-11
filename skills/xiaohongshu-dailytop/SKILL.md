@@ -43,7 +43,7 @@ description: 小红书每日爆款笔记是追踪小红书各领域每日趋势�
 
 - Python 3.8 及以上
 - `requests`：`pip install requests`
-- [红狐Hub](https://redfox.hk/) 账号与 API Key（格式 `ak_xxxxxxxx`，新用户注册赠免费积分）
+- [红狐Hub](https://redfox.hk?source=github) 账号与 API Key（格式 `ak_xxxxxxxx`，新用户注册赠免费积分）
 
 ### 安装方式
 
@@ -77,7 +77,7 @@ python scripts/gen_xhs_html.py --keyword "睫毛膏" --top 20 --input_json /tmp/
 | --- | --- | --- |
 | `REDFOX_API_KEY` | 是 | 红狐 API 密钥，格式 `ak_xxxxxxxx` |
 
-**获取 API Key**：访问 [红狐Hub官网](https://redfox.hk/) → [注册/登录](https://redfox.hk/login) → 个人中心复制 Key。
+**获取 API Key**：访问 [红狐Hub官网](https://redfox.hk/?source=github) → [注册/登录](https://redfox.hk/login?source=github) → 个人中心复制 Key。
 
 **macOS / Linux**：
 

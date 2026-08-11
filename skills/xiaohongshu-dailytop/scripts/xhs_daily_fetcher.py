@@ -63,7 +63,7 @@ def get_redfox_api_key():
         "  macOS/Linux: export REDFOX_API_KEY=<你的apikey>\n"
         "  Windows PowerShell: [Environment]::SetEnvironmentVariable('REDFOX_API_KEY', '<值>', 'User')\n"
         "\n"
-        "获取 API Key: https://redfox.hk/login"
+        "获取 API Key: https://redfox.hk/login?source=github"
     )
 
 

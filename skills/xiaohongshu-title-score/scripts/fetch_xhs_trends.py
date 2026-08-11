@@ -78,7 +78,7 @@ def get_api_key():
             "  PowerShell 永久设置：[Environment]::SetEnvironmentVariable('REDFOX_API_KEY', '<你的apikey>', 'User')\n"
             "  CMD 永久设置：setx REDFOX_API_KEY <你的apikey>\n"
             "设置后需重启终端生效。\n"
-            "获取 API Key: 访问 https://redfox.hk 注册账号，在个人中心获取"
+            "获取 API Key: 访问 https://redfox.hk?source=github 注册账号，在个人中心获取"
         )
     else:
         hint = (
@@ -87,7 +87,7 @@ def get_api_key():
             "  在 ~/.zshrc（zsh）或 ~/.bashrc（bash）中添加：\n"
             "  export REDFOX_API_KEY=<你的apikey>\n"
             "  然后 source ~/.zshrc 或 source ~/.bashrc 使其生效\n"
-            "获取 API Key: 访问 https://redfox.hk 注册账号，在个人中心获取"
+            "获取 API Key: 访问 https://redfox.hk?source=github 注册账号，在个人中心获取"
         )
     raise ValueError(hint)
 

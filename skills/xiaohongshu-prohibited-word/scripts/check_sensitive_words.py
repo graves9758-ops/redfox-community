@@ -78,7 +78,7 @@ def _get_api_key():
     # 3) 未找到
     raise ValueError(
         f"未检测到 红狐Hub API Key。请将 {ENV_KEY_NAME} 设置为环境变量，格式为 ak_xxxxxxxx。\n"
-        "获取方式：访问 https://redfox.hk/login 注册登录后，在个人中心获取 API Key。\n"
+        "获取方式：访问 https://redfox.hk/login?source=github 注册登录后，在个人中心获取 API Key。\n"
         "配置示例：export REDFOX_API_KEY=ak_xxxxxxxx"
     )
 

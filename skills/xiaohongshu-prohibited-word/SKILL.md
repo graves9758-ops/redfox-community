@@ -61,8 +61,8 @@ dependency:
 
 ### 获取 API Key
 
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用 API 服务
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 
@@ -228,7 +228,7 @@ playwright install chromium
 **Q2: 提示"缺少凭证配置"怎么办？**
 
 A: 请按以下步骤操作：
-1. 访问 https://redfox.hk/login 注册获取 API Key（新用户赠免费积分）
+1. 访问 https://redfox.hk/login?source=github 注册获取 API Key（新用户赠免费积分）
 2. 配置环境变量：`export REDFOX_API_KEY=ak_xxxxxxxx`
 3. 或在 `~/.bashrc` / `~/.zshrc` 中添加后执行 `source ~/.bashrc`
 
@@ -262,5 +262,5 @@ A: 文字提取依赖图片清晰度和字体。建议使用高清晰度截图�
 
 ### 获取帮助
 
-- 🌐 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/)
+- 🌐 红狐Hub 官网：[https://redfox.hk/?source=github](https://redfox.hk/?source=github)
 - 📧 联系邮箱：graves9758@gmail.com

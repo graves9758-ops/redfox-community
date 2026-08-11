@@ -213,7 +213,7 @@ A: 每次查询返回一页评论（具体条数由数据服务控制）。如�
 
 **Q4: 支持获取二级评论（回复的回复）吗？**
 
-A: 当前版本仅支持一级评论，嵌套回复暂不展开显示。如需完整数据可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise)对接咨询。
+A: 当前版本仅支持一级评论，嵌套回复暂不展开显示。如需完整数据可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise?source=github)对接咨询。
 
 **Q5: 支持哪些排序方式？**
 
@@ -239,6 +239,6 @@ A: YouTube API 返回的评论时间为相对时间格式（如"4年前"、"1天
 
 ### 获取帮助
 
-- 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/)
-- 企业服务（全量数据库）：[https://redfox.hk/dashboard/enterprise](https://redfox.hk/dashboard/enterprise)
+- 红狐Hub 官网：[https://redfox.hk?source=github](https://redfox.hk?source=github)
+- 企业服务（全量数据库）：[https://redfox.hk/dashboard/enterprise?source=github](https://redfox.hk/dashboard/enterprise?source=github)
 - 技能实现细节：参见 [核心工作流](references/core_workflow.md) 与 [API接口指南](references/api_guide.md)

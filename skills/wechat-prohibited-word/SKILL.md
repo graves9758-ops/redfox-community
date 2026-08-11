@@ -55,7 +55,7 @@ dependency:
 ### 前置条件
 - **Python 3.7+** 运行环境
 - **pip** 包管理器
-- 已注册 [红狐Hub](https://redfox.hk/) 账号并获取 API Key
+- 已注册 [红狐Hub](https://redfox.hk/?source=github) 账号并获取 API Key
 
 ### 安装步骤
 
@@ -72,8 +72,8 @@ playwright install chromium
 ### API Key 配置
 
 #### 获取 API Key
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk/?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用 API 服务
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 
@@ -231,7 +231,7 @@ playwright install chromium
 
 **Q: 提示 "未配置 REDFOX_API_KEY" 怎么办？**
 A: 请按以下步骤处理：
-1. 访问 [redfox.hk](https://redfox.hk/) 注册账号
+1. 访问 [redfox.hk](https://redfox.hk?source=github) 注册账号
 2. 在个人中心复制 API Key（格式 `ak_xxxxxxxx`）
 3. 执行 `export REDFOX_API_KEY=ak_xxxxxxxx` 或写入 `~/.bashrc`
 
@@ -266,7 +266,7 @@ A: 支持的文本文件格式：TXT、DOC、DOCX、CSV、MD、LOG、JSON、XML�
 ### 获取帮助
 
 如有其他问题，可通过以下方式获取支持：
-- 🌐 访问 [红狐Hub](https://redfox.hk/) 查看文档
+- 🌐 访问 [红狐Hub](https://redfox.hk?source=github) 查看文档
 - 📧 邮件联系服务提供商
 
 ---

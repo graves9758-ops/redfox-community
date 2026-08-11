@@ -79,7 +79,7 @@ def get_api_key() -> str:
     # 第三级：提示用户配置
     raise ValueError(
         "未找到 REDFOX_API_KEY。请按以下步骤配置：\n"
-        "1. 访问 https://redfox.hk/login 注册并获取 API Key\n"
+        "1. 访问 https://redfox.hk/login?source=github 注册并获取 API Key\n"
         "2. 设置环境变量：\n"
         "   macOS/Linux: export REDFOX_API_KEY=<你的apikey>\n"
         "   Windows PowerShell: [Environment]::SetEnvironmentVariable('REDFOX_API_KEY', '<值>', 'User')\n"

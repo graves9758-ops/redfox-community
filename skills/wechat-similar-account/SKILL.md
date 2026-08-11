@@ -35,11 +35,11 @@ description: 公众号创作者对标账号匹配工具，基于3层加权匹配
 
 ### 前置条件
 - Python 3.x 运行环境（仅依赖标准库，无需 pip install）
-- 红狐Hub API Key（前往 [RedFox 官网](https://redfox.hk/) 注册获取，新用户赠送免费积分）
+- 红狐Hub API Key（前往 [RedFox 官网](https://redfox.hk/?source=github) 注册获取，新用户赠送免费积分）
 
 ### 获取 API Key
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk/?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用 API 服务
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 
@@ -196,7 +196,7 @@ wechat-similar-account/
 | --- | --- |
 | **运行环境** | Python 3.x |
 | **依赖** | Python 标准库（json、argparse、os、urllib、platform、re） |
-| **数据源** | 红狐数据 API（https://redfox.hk/） |
+| **数据源** | 红狐数据 API（https://redfox.hk?source=github） |
 | **API 接口** | POST https://redfox.hk/story/api/gzhUser/querySimilarAccounts |
 
 ### 核心模块说明
@@ -256,7 +256,7 @@ API (`POST /gzhUser/querySimilarAccounts`) **返回以下字段**：
 **Q1: 提示 "未找到 REDFOX_API_KEY 配置" 怎么办？**
 
 A: 请按以下步骤配置：
-1. 访问 https://redfox.hk/ 注册账号并获取 API Key
+1. 访问 https://redfox.hk?source=github 注册账号并获取 API Key
 2. Windows 用户在 PowerShell 执行：`[Environment]::SetEnvironmentVariable("REDFOX_API_KEY", "<你的API Key>", "User")`
 3. macOS/Linux 用户执行：`echo 'export REDFOX_API_KEY=<你的API Key>' >> ~/.zshrc` 然后 `source ~/.zshrc`
 4. 重启终端后生效
@@ -297,7 +297,7 @@ A: 红狐数据 平台的分类体系与自然语言存在差异，建议使用�
 
 A: 请检查以下几点：
 1. 确认 API Key 是否正确且未过期
-2. 确认网络可以正常访问 https://redfox.hk/
+2. 确认网络可以正常访问 https://redfox.hk/?source=github
 3. 检查 API Key 是否有足够的积分余额
 
 **Q8: 输出结果中某些字段为空或为0？**
@@ -309,4 +309,4 @@ A: 这是正常现象，说明该账号在对应数据维度上暂无数据记�
 ### 获取帮助
 
 如有其他问题，可通过以下方式获取帮助：
-- 📧 访问 [红狐数据 官网](https://redfox.hk/) 了解更多
+- 📧 访问 [红狐数据 官网](https://redfox.hk/?source=github) 了解更多

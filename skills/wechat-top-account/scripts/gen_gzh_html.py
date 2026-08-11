@@ -335,8 +335,8 @@ def fetch_gzh_growth(rank_type="day", rank_date=None, category="人文资讯"):
     if not credential:
         print(
             "未检测到 红狐Hub API Key。请按以下步骤配置：\n"
-            "1. 访问 https://redfox.hk/ 了解服务详情\n"
-            "2. 前往 https://redfox.hk/login 注册账号（新用户获赠免费积分）\n"
+            "1. 访问 https://redfox.hk/?source=github 了解服务详情\n"
+            "2. 前往 https://redfox.hk/login?source=github 注册账号（新用户获赠免费积分）\n"
             "3. 注册登录后在个人中心获取 API Key（格式 ak_xxxxxxxx）\n"
             "4. 设置环境变量：\n"
             "   macOS/Linux: export REDFOX_API_KEY=<你的apikey>\n"

@@ -21,7 +21,7 @@ Agent
 适用于小红书博主、内容运营、品牌方、MCN 机构等需要提升笔记封面点击率的场景。
 
 ---
-  
+
 ## 功能特性
 
 ### 🎯 核心功能
@@ -78,8 +78,8 @@ Agent
 - 已获取红狐数据 API Key
 
 ### 获取 API Key
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk/?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用 API 服务
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 
@@ -111,7 +111,7 @@ pip install requests>=2.28.0
 告诉助手你想设计的封面主题：
 
 > 用户：帮我设计一个穿搭类封面
-> 
+>
 > 助手：好的！我将为您分析穿搭赛道的爆款封面数据，生成专属封面设计方案。
 
 #### 2. 等待分析完成
@@ -250,7 +250,7 @@ xiaohongshu-cover/
 **Q1: 提示"未找到 REDFOX_API_KEY 环境变量"怎么办？**
 
 A: 请按以下步骤配置：
-1. 访问 [红狐Hub](https://redfox.hk/) 注册账号并获取 API Key
+1. 访问 [红狐Hub](https://redfox.hk?source=github) 注册账号并获取 API Key
 2. Windows 用户：在 PowerShell 中执行 `[Environment]::SetEnvironmentVariable("REDFOX_API_KEY", "你的API Key", "User")`，然后重启终端
 3. macOS/Linux 用户：将 `export REDFOX_API_KEY=你的API Key` 追加到 shell 配置文件，然后 `source` 使其生效
 4. 验证配置：执行 `echo %REDFOX_API_KEY%`（Windows）或 `echo $REDFOX_API_KEY`（macOS/Linux）

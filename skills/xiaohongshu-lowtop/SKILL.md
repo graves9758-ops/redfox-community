@@ -41,12 +41,12 @@ dependency:
 
 ## 3.鉴权
 
-本技能调用 [红狐Hub API](https://redfox.hk/) 获取小红书低粉爆款数据，需要有效的 API Key 才能正常使用。
+本技能调用 [红狐Hub API](https://redfox.hk/?source=github) 获取小红书低粉爆款数据，需要有效的 API Key 才能正常使用。
 
 ### 获取 API Key
 
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk/?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用 API 服务
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 

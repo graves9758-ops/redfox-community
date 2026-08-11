@@ -36,7 +36,7 @@ def get_api_key():
     if system == "Windows":
         config_hint = (
             "未找到 REDFOX_API_KEY 配置，请按以下步骤配置：\n"
-            "  1. 访问 https://redfox.hk/ 注册账号并获取 API Key\n"
+            "  1. 访问 https://redfox.hk?source=github 注册账号并获取 API Key\n"
             "  2. 在 PowerShell 中执行：\n"
             '     [Environment]::SetEnvironmentVariable("REDFOX_API_KEY", "<你的API Key>", "User")\n'
             "  3. 重启终端后生效"
@@ -51,7 +51,7 @@ def get_api_key():
             rc_file = "~/.bashrc"
         config_hint = (
             "未找到 REDFOX_API_KEY 配置，请按以下步骤配置：\n"
-            "  1. 访问 https://redfox.hk/ 注册账号并获取 API Key\n"
+            "  1. 访问 https://redfox.hk?source=github 注册账号并获取 API Key\n"
             f"  2. 执行：echo 'export REDFOX_API_KEY=<你的API Key>' >> {rc_file}\n"
             f"  3. 执行：source {rc_file}"
         )
@@ -737,7 +737,7 @@ def format_output(query_account, benchmark_accounts, top_accounts):
 
     # 企业采购引导（所有输出结果末尾统一追加）
     output_lines.append("")
-    output_lines.append("> 💼 另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise)对接咨询")
+    output_lines.append("> 💼 另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise?source=github)对接咨询")
 
     return "\n".join(output_lines)
 
