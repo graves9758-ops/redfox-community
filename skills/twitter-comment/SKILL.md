@@ -211,7 +211,7 @@ A: 服务端按游标分页返回，单页约 30~40 条一级评论（具体条�
 
 **Q4: 支持获取二级评论（回复的回复）吗？**
 
-A: 当前版本仅支持一级评论，嵌套回复暂不展开显示。如需完整数据可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise)对接咨询。
+A: 当前版本仅支持一级评论，嵌套回复暂不展开显示。如需完整数据可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise?source=github)对接咨询。
 
 **Q6: 一次可以查询多条推文吗？**
 

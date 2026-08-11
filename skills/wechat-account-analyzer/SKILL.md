@@ -44,7 +44,7 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 
 ### 前置条件
 - 已安装 Python 3.8+
-- 已注册 [红狐Hub](https://redfox.hk/) 账号并获取 API Key
+- 已注册 [红狐Hub](https://redfox.hk?source=github) 账号并获取 API Key
 
 ### 安装步骤
 
@@ -58,8 +58,8 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 ### 配置 API Key
 
 #### 获取 API Key
-1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk/?source=github) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 
@@ -252,5 +252,5 @@ A: 所有数据来自红狐API接口，诊断结果仅反映接口返回的数�
 
 ### 获取帮助
 
-- 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/)
+- 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/?source=github)
 - 技能实现细节：参见 [核心工作流](references/core_workflow.md)

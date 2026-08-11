@@ -7,7 +7,7 @@ description: 专注于获取抖音最新的热榜数据，每小时更新，包�
 
 ## 简介
 
-抖音热榜是一款实时追踪抖音平台热点趋势的数据工具，对接 [红狐Hub](https://redfox.hk/) 数据 API，每小时更新热榜内容，并提供创作者视角的深度分析。
+抖音热榜是一款实时追踪抖音平台热点趋势的数据工具，对接 [红狐Hub](https://redfox.hk/?source=github) 数据 API，每小时更新热榜内容，并提供创作者视角的深度分析。
 
 通过简单的自然语言指令，你可以：
 
@@ -47,7 +47,7 @@ description: 专注于获取抖音最新的热榜数据，每小时更新，包�
 ### 前置条件
 
 - 已安装 Python 3.x 及 `requests` 库
-- 已注册 [红狐Hub官网](https://redfox.hk/login) 账号并获取 API Key（格式 `ak_xxxxxxxx`）
+- 已注册 [红狐Hub官网](https://redfox.hk/login?source=github) 账号并获取 API Key（格式 `ak_xxxxxxxx`）
 - 新注册用户将获赠免费积分，可立即开始使用
 
 ### 安装方式
@@ -262,7 +262,7 @@ douyin-hot-trend/
 | 运行环境 | Python 3.x |
 | HTTP 请求 | 原生 `requests` 库 |
 | 认证方式 | `X-API-KEY` 请求头，三级回退（环境变量 → Shell 配置 → 提示配置） |
-| 数据来源 | [红狐Hub API](https://redfox.hk/) |
+| 数据来源 | [红狐Hub API](https://redfox.hk?source=github) |
 | 部署平台 | WorkBuddy / Cursor 等 Agent 环境 |
 
 
@@ -306,7 +306,7 @@ A: 最长支持查询近 30 天的历史热榜。超过 30 天的数据暂不支
 **Q6: API 调用失败怎么办？**
 
 A: 请按以下顺序排查：
-1. 检查网络连接，确认可以访问 `https://redfox.hk`
+1. 检查网络连接，确认可以访问 `https://redfox.hk?source=github`
 2. 确认 API Key 未过期，账户积分是否充足
 3. 检查环境变量：`echo $REDFOX_API_KEY`
 4. 稍后重试，API 服务可能存在临时波动
@@ -332,7 +332,7 @@ A: 建议通过环境变量或 Shell 配置文件存储，不要将 Key 写入�
 
 **Q10: 数据来源与使用许可？**
 
-A: 热榜数据来自 [红狐Hub](https://redfox.hk/) 官方 API，使用时须遵守 红狐Hub 平台服务条款及抖音平台相关规定。本技能仅作数据展示与分析辅助，不保证数据的商业用途合规性。
+A: 热榜数据来自 [红狐Hub](https://redfox.hk?source=github) 官方 API，使用时须遵守 红狐Hub 平台服务条款及抖音平台相关规定。本技能仅作数据展示与分析辅助，不保证数据的商业用途合规性。
 
 ---
 
@@ -341,7 +341,7 @@ A: 热榜数据来自 [红狐Hub](https://redfox.hk/) 官方 API，使用时须�
 如有其他问题，可通过以下方式获取帮助：
 
 - 📖 查阅 Agent 执行参考：`references/core_workflow.md`
-- 🌐 红狐Hub 官网：[https://redfox.hk](https://redfox.hk/)
+- 🌐 红狐Hub 官网：[https://redfox.hk?source=github](https://redfox.hk/?source=github)
 - 📧 联系 红狐Hub 平台客服获取 API 相关问题支持
 
 ---
