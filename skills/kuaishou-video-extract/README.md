@@ -1,4 +1,4 @@
-# 快手视频提文案 / kuaishou-text-extract
+# 快手视频提文案 / kuaishou-video-extract
 
 ---
 

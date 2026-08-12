@@ -5,9 +5,9 @@
 ### Step 1：调用提文案脚本（自动完成「提交任务 → 轮询 → 取结果」两步）
 
 ```bash
-python3 ~/.workbuddy/skills/kuaishou-text-extract/scripts/extract_ks_text.py "<视频链接>" [--interval 3] [--timeout 120]
+python3 ~/.workbuddy/skills/kuaishou-video-extract/scripts/extract_ks_text.py "<视频链接>" [--interval 3] [--timeout 120]
 # 或查询已有任务结果（脚本中途超时后可续查）
-python3 ~/.workbuddy/skills/kuaishou-text-extract/scripts/extract_ks_text.py --task-id "<taskId>"
+python3 ~/.workbuddy/skills/kuaishou-video-extract/scripts/extract_ks_text.py --task-id "<taskId>"
 ```
 
 **参数说明：**

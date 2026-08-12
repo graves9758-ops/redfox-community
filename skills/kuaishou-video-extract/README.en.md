@@ -1,4 +1,4 @@
-# Kuaishou Text Extract / kuaishou-text-extract
+# Kuaishou Video Extract / kuaishou-video-extract
 
 ---
 
