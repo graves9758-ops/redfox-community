@@ -10,8 +10,81 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 
-# 统一未收录提示
-UNIFIED_NOT_FOUND_MSG = "未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系红狐数据咨询：redfoxdata@proton.me"
+# 状态管理文件路径（用于失败次数控制）
+STATE_FILE = os.path.join(os.path.dirname(__file__), "..", "output", "query_state.json")
+
+# 失败阈值
+FAILURE_THRESHOLD = 3
+# 失败记录有效期（秒）
+FAILURE_EXPIRE_SECONDS = 6 * 60 * 60  # 6小时
+
+
+def _load_state():
+    """加载状态文件"""
+    try:
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {"failures": {}}
+
+
+def _save_state(state):
+    """保存状态文件"""
+    try:
+        os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def _get_failure_count(user_id):
+    """获取失败次数"""
+    state = _load_state()
+    failures = state.get("failures", {})
+
+    user_id_str = str(user_id)
+    if user_id_str not in failures:
+        return 0
+
+    # 过滤过期的失败记录
+    valid_failures = []
+    for fail_time in failures[user_id_str]:
+        if isinstance(fail_time, (int, float)):
+            if time.time() - fail_time < FAILURE_EXPIRE_SECONDS:
+                valid_failures.append(fail_time)
+
+    return len(valid_failures)
+
+
+def _record_failure(user_id):
+    """记录失败"""
+    state = _load_state()
+    if "failures" not in state:
+        state["failures"] = {}
+
+    user_id_str = str(user_id)
+    if user_id_str not in state["failures"]:
+        state["failures"][user_id_str] = []
+
+    state["failures"][user_id_str].append(time.time())
+
+    # 清理过期的失败记录
+    valid_failures = [t for t in state["failures"][user_id_str]
+                      if time.time() - t < FAILURE_EXPIRE_SECONDS]
+    state["failures"][user_id_str] = valid_failures
+
+    _save_state(state)
+
+
+def _clear_failures(user_id):
+    """清除失败记录（查询成功时调用）"""
+    state = _load_state()
+    if "failures" in state and str(user_id) in state["failures"]:
+        del state["failures"][str(user_id)]
+        _save_state(state)
 
 # 导入HTML检查模块和生成模块
 try:
@@ -114,14 +187,14 @@ def _map_user_attribute(raw):
 def _get_viral_threshold(account_tag):
     """根据账号标识获取爆文标准"""
     thresholds = {
-        "素人": 1000,
-        "尾部KOL": 5000,
-        "腰部KOL": 10000,
-        "头部KOL": 20000,
-        "明星": 20000,
-        "品牌/企业": 1000,
+        "素人": 500,
+        "尾部KOL": 2000,
+        "腰部KOL": 5000,
+        "头部KOL": 10000,
+        "明星": 10000,
+        "品牌/企业": 500,
     }
-    return thresholds.get(account_tag, 1000)
+    return thresholds.get(account_tag, 500)
 
 
 # 粉丝区间与账号标识的映射
@@ -503,10 +576,10 @@ def _format_interactive_count(count):
 
 
 def _score_interactive_scale(interactive_count, collect_count, benchmark=None):
-    """互动规模评分（满分20），基于互动量和收藏量
+    """互动规模评分（满分20），基于互动量和收藏量（放宽标准）
 
-    互动量维度：10分（>优秀值10分，>中位数6分，其他1分）
-    收藏量维度：10分（>优秀值10分，>中位数6分，其他1分）
+    互动量维度：10分（>优秀值10分，>中位数7分，>中位数50%给5分，其他3分）
+    收藏量维度：10分（>优秀值10分，>中位数7分，>中位数50%给5分，其他3分）
     """
     score = 0
 
@@ -528,119 +601,209 @@ def _score_interactive_scale(interactive_count, collect_count, benchmark=None):
     if interactive_count > excellent_interactive:
         score += 10
     elif interactive_count > median_interactive:
-        score += 6
+        score += 7
+    elif interactive_count > median_interactive * 0.5:
+        score += 5
     else:
-        score += 1
+        score += 3
 
     # 收藏量维度（10分）
     if collect_count > excellent_collect:
         score += 10
     elif collect_count > median_collect:
-        score += 6
+        score += 7
+    elif collect_count > median_collect * 0.5:
+        score += 5
     else:
-        score += 1
+        score += 3
 
     return score
 
 
-def _score_update_rhythm(weekly_count, fans=0):
-    """更新产能评分（满分15分）- 基于周更频率和粉丝数
+def _parse_work_time(ts):
+    """解析作品时间，支持字符串格式日期和时间戳"""
+    if not ts:
+        return None
+    try:
+        if isinstance(ts, (int, float)):
+            if ts > 1e12:
+                ts = ts / 1000
+            return datetime.fromtimestamp(ts)
+        else:
+            s = str(ts).strip()
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d"):
+                try:
+                    return datetime.strptime(s[:10] if "%H" not in fmt else s[:19], fmt)
+                except ValueError:
+                    continue
+            return datetime.strptime(s[:10], "%Y-%m-%d")
+    except Exception:
+        return None
 
-    参考Excel数据中的近30天发作品数中位数和优秀值：
-    - 0-5k: 中位数3篇，优秀值12篇 → 周更0.75篇/3篇
-    - 5k-5w: 中位数6篇，优秀值24篇 → 周更1.5篇/6篇
-    - 5w-50w: 中位数7篇，优秀值19篇 → 周更1.75篇/4.75篇
-    - >50w: 中位数7篇，优秀值12篇 → 周更1.75篇/3篇
+
+def _score_update_rhythm(weekly_count, fans=0, works=None):
+    """更新产能评分（满分15分）- 更新频率12分 + 间隔稳定性3分
+
+    更新频率（12分）：
+    - 达到优秀值频率：12分
+    - 达到优秀值50%：10分
+    - 达到中位数频率：8分
+    - 达到中位数30%：6分
+    - 有更新即给5分保底
+    - 无更新：1分
+
+    间隔稳定性（3分）：基于发布间隔的变异系数
+    - 间隔稳定（CV<=0.5）：3分
+    - 间隔较稳定（0.5<CV<=1.0）：2分
+    - 间隔不稳定（CV>1.0）：1分
     """
-    # 粉丝数>5000的账号基础分更高
-    if fans > 50000:
-        base_score = 10  # 头部账号
-    elif fans > 10000:
-        base_score = 9  # 中腰部账号
-    elif fans > 5000:
-        base_score = 8  # 尾部账号
+    if fans >= 50000:
+        median_weekly, excellent_weekly = 1.75, 4.75
+    elif fans >= 5000:
+        median_weekly, excellent_weekly = 1.5, 6
     else:
-        base_score = 5  # 素人账号
+        median_weekly, excellent_weekly = 0.75, 3
 
-    if weekly_count >= 5:
-        return min(base_score + 5, 15)
-    elif weekly_count >= 4:
-        return min(base_score + 4, 15)
-    elif weekly_count >= 3:
-        return min(base_score + 3, 15)
-    elif weekly_count >= 2:
-        return min(base_score + 2, 15)
-    elif weekly_count >= 1:
-        return min(base_score + 1, 15)
+    # 更新频率评分（12分）
+    if weekly_count >= excellent_weekly:
+        freq_score = 12
+    elif weekly_count >= excellent_weekly * 0.5:
+        freq_score = 10
+    elif weekly_count >= median_weekly:
+        freq_score = 8
+    elif weekly_count >= median_weekly * 0.3:
+        freq_score = 6
+    elif weekly_count > 0:
+        freq_score = 5
     else:
-        return min(base_score, 15)
+        freq_score = 1
+
+    # 间隔稳定性评分（3分）
+    stability_score = 1
+    if works and len(works) >= 2:
+        import statistics
+        intervals = []
+        dates = []
+        for w in works:
+            t = w.get("time") or w.get("createTime") or w.get("displayTime") or w.get("publishTime")
+            dt = _parse_work_time(t)
+            if dt:
+                dates.append(dt)
+        dates.sort()
+        if len(dates) >= 2:
+            for i in range(1, len(dates)):
+                delta = (dates[i] - dates[i-1]).total_seconds() / 86400
+                if delta > 0:
+                    intervals.append(delta)
+            if intervals:
+                mean_interval = statistics.mean(intervals)
+                if mean_interval > 0:
+                    std_interval = statistics.stdev(intervals) if len(intervals) >= 2 else 0
+                    cv = std_interval / mean_interval
+                    if cv <= 0.5:
+                        stability_score = 3
+                    elif cv <= 1.0:
+                        stability_score = 2
+                    else:
+                        stability_score = 1
+                else:
+                    stability_score = 3
+            else:
+                stability_score = 3
+    elif weekly_count > 0:
+        stability_score = 2
+
+    return freq_score + stability_score
 
 
-def _score_viral(viral_rate, interaction_30d, fans):
-    """爆文能力评分（满分15），基于爆文率和近30天互动量评估
+def _score_viral(viral_rate, interaction_30d, fans, works=None, viral_threshold=500):
+    """爆文能力评分（满分20），基于爆文率、互动量和爆文潜力评估
 
     爆文率：10分
-    近30天互动量评估：5分
+    互动量评估：5分（一篇达到爆文标准50%即可得5分）
+    爆文潜力：5分（最高互动作品与爆文标准的比值）
     """
     score = 0
-    # 爆文率（10分）：爆文数/近7天发作品数*100%
-    if viral_rate >= 30:  # 爆文率>=30%
+    # 爆文率（10分）
+    if viral_rate >= 15:
         score += 10
-    elif viral_rate >= 20:  # 爆文率>=20%
+    elif viral_rate >= 8:
         score += 8
-    elif viral_rate >= 10:  # 爆文率>=10%
+    elif viral_rate >= 3:
         score += 6
-    elif viral_rate >= 5:  # 爆文率>=5%
-        score += 4
-    elif viral_rate > 0:  # 有爆文但爆文率<5%
-        score += 2
-    else:  # 无爆文
-        score += 1
+    elif viral_rate > 0:
+        score += 5
+    else:
+        score += 3
 
-    # 近30天互动量评估（5分）：基于互动量/粉丝数的比值
-    if interaction_30d and fans and fans > 0:
+    # 互动量评估（5分）
+    has_half_viral = False
+    if works and viral_threshold:
+        half_threshold = viral_threshold * 0.5
+        for w in works:
+            total_inter = (w.get("likedCount") or 0) + (w.get("collectedCount") or 0)
+            if total_inter >= half_threshold:
+                has_half_viral = True
+                break
+
+    if has_half_viral:
+        score += 5
+    elif interaction_30d and fans and fans > 0:
         interaction_ratio = interaction_30d / fans
-        if interaction_ratio >= 1.0:  # 互动量>=粉丝数，极强
+        if interaction_ratio >= 0.3:
             score += 5
-        elif interaction_ratio >= 0.5:  # 互动量>=粉丝数50%，强
+        elif interaction_ratio >= 0.1:
             score += 4
-        elif interaction_ratio >= 0.2:  # 互动量>=粉丝数20%，良好
+        elif interaction_ratio >= 0.05:
             score += 3
-        elif interaction_ratio >= 0.1:  # 互动量>=粉丝数10%，一般
+        else:
             score += 2
-        else:  # 互动量<粉丝数10%，较弱
+    else:
+        score += 2
+
+    # 爆文潜力（5分）：最高互动作品与爆文标准的比值
+    max_interaction = 0
+    if works:
+        for w in works:
+            total_inter = (w.get("likedCount") or 0) + (w.get("collectedCount") or 0)
+            if total_inter > max_interaction:
+                max_interaction = total_inter
+
+    if viral_threshold > 0 and max_interaction > 0:
+        potential_ratio = max_interaction / viral_threshold
+        if potential_ratio >= 2.0:  # 最高互动 >= 爆文标准2倍
+            score += 5
+        elif potential_ratio >= 1.0:  # 最高互动 >= 爆文标准
+            score += 4
+        elif potential_ratio >= 0.5:  # 最高互动 >= 爆文标准50%
+            score += 3
+        elif potential_ratio >= 0.2:  # 最高互动 >= 爆文标准20%
+            score += 2
+        else:
             score += 1
-    return min(score, 15)
+    else:
+        score += 1
+    return min(score, 20)
 
 
 def _score_positioning(works, account_tag, signature, fans=0):
-    """账号定位评分（满分10）
+    """账号定位评分（满分10）（放宽标准）
 
-    对粉丝数>5000的账号以夸赞为主，评分更宽松
+    质性分析以肯定为主，符合优秀即打满分
+    有简介或有作品即可获得较高分数
     """
-    # 粉丝数>5000的账号基础分更高，以夸赞为主
-    if fans > 50000:
-        score = 8  # 头部账号，基础分高
-    elif fans > 10000:
-        score = 7  # 中腰部账号，基础分较高
-    elif fans > 5000:
-        score = 6  # 尾部账号，基础分适中
+    # 基础分提高
+    if fans >= 5000:
+        score = 9  # 大账号基础分高
     else:
-        score = 5  # 素人账号，基础分正常
+        score = 7  # 小账号基础分也提高
 
-    # 简介完整度
-    if signature and len(signature.strip()) > 5:
+    # 有简介即加分
+    if signature and len(signature.strip()) > 0:
         score += 1
-    # 内容垂直度
+    # 有作品即加分
     if works:
-        tags = []
-        for w in works:
-            desc = w.get("desc") or ""
-            if desc:
-                tags.extend([t.strip() for t in desc.split("#") if t.strip()])
-        unique_tags = set(tags)
-        if len(unique_tags) <= 5:
-            score += 1  # 对粉丝数>5000的账号，垂直度要求放宽
+        score += 1
     return min(score, 10)
 
 
@@ -660,114 +823,98 @@ def _get_viral_magnification_judgment(viral_avg, non_viral_avg):
 
 
 def _score_fans_insight(collect_rate, fans_gender, works, fans):
-    """粉丝画像与需求评分（满分15），含粉丝数评估"""
-    score = 5  # 基础分
-    # 收藏率评估（3分）
-    if collect_rate and collect_rate > 30:
-        score += 3
-    elif collect_rate and collect_rate > 20:
+    """粉丝画像与需求评分（满分15）（放宽标准）
+
+    质性分析以肯定为主，画像清晰、需求匹配即打高分
+    粉丝量只在对应阶层内比较，不跨层比较
+    """
+    score = 10  # 基础分提高
+    # 收藏率评估（2分）
+    if collect_rate and collect_rate > 20:
         score += 2
     elif collect_rate and collect_rate > 10:
         score += 1
-    # 粉丝画像集中度（3分）
+    # 粉丝画像集中度（1分）
     if fans_gender and isinstance(fans_gender, dict):
         female_ratio = fans_gender.get("female_ratio", 0)
-        if female_ratio > 0.7 or female_ratio < 0.3:
-            score += 3
-        elif female_ratio > 0.6 or female_ratio < 0.4:
-            score += 2
-        else:
+        if female_ratio > 0.6 or female_ratio < 0.4:
             score += 1
-    # 粉丝数规模评估（4分）
-    if fans >= 100000:
-        score += 4
-    elif fans >= 50000:
-        score += 3
-    elif fans >= 10000:
-        score += 2
-    elif fans >= 5000:
+    # 粉丝数规模评估（1分）- 只在同阶层内比较
+    if fans > 500:
+        score += 1
+    # 有作品数据即加分（1分）
+    if works:
         score += 1
     return min(score, 15)
 
 
 def _score_topic_system(works, fans=0):
-    """选题体系评分（满分15）
+    """选题体系评分（满分10）（放宽标准）
 
+    质性分析以肯定为主，选题有方向感、风格统一即打高分
     核心逻辑：选题方向单一/聚焦是加分项，专注某一赛道深耕是好的
-    - 有固定选题方向：加分
-    - 有固定栏目/标签：加分
-    - 选题一致性高：加分
-
-    对粉丝数>5000的账号评分更宽松
+    超过5篇发文即给7分保底
     """
     if not works:
-        return 5 if fans > 5000 else 3
+        return 7 if fans >= 5000 else 5
 
-    # 粉丝数>5000的账号基础分更高
-    if fans > 50000:
-        score = 10  # 头部账号，基础分高
-    elif fans > 10000:
-        score = 9  # 中腰部账号，基础分较高
-    elif fans > 5000:
-        score = 8  # 尾部账号，基础分适中
+    # 有超过5篇发文即给7分保底
+    if len(works) >= 5:
+        score = 7
+    elif fans >= 5000:
+        score = 7
     else:
-        score = 6  # 素人账号，基础分正常
+        score = 5
 
+    # 选题方向聚焦：加分项
     titles = [w.get("title", "") for w in works if w.get("title")]
-
-    # 选题方向聚焦/单一：加分项（专注赛道深耕是好事）
     unique_titles = set(titles[:5])
-    if len(unique_titles) <= 2:  # 选题高度聚焦
-        score += 4
-    elif len(unique_titles) <= 3:  # 选题较为聚焦
-        score += 3
-    elif len(unique_titles) <= 4:  # 选题有一定聚焦
+    if len(unique_titles) <= 3:
         score += 2
+    else:
+        score += 1
 
-    # 有固定栏目/标签：加分项
-    tags = []
-    for w in works:
-        desc = w.get("desc") or ""
-        if desc:
-            tags.extend([t.strip() for t in desc.split("#") if t.strip()])
-    unique_tags = set(tags)
-    if unique_tags:
-        if len(unique_tags) <= 3:  # 标签高度统一
-            score += 3
-        elif len(unique_tags) <= 5:  # 标签较为统一
-            score += 2
-        else:
-            score += 1
+    # 有作品即加分
+    score += 1
 
-    return min(score, 15)
+    return min(score, 10)
 
 
 def _score_cover_style(works, fans=0):
-    """封面风格评分（满分10）
+    """封面风格评分（满分10）（放宽标准）
 
     封面统一或多样只是风格的一种，不作为评分标准
-    主要基于：有封面、有作品、粉丝数规模
-    对粉丝数>5000的账号以夸赞为主，评分更宽松
+    有作品即给较高分，有封面即加分
+    超过5篇发文即给7分保底
     """
     if not works:
-        # 粉丝数>5000的账号即使没有作品也给更高基础分
-        return 5 if fans > 5000 else 2
+        return 6 if fans >= 5000 else 4
 
-    # 粉丝数>5000的账号基础分更高，以夸赞为主
-    if fans > 50000:
-        score = 9  # 头部账号，基础分高
-    elif fans > 10000:
-        score = 8  # 中腰部账号，基础分较高
-    elif fans > 5000:
-        score = 7  # 尾部账号，基础分适中
+    # 有超过5篇发文即给7分保底（放宽）
+    if len(works) >= 5:
+        score = 7
+    elif fans >= 5000:
+        score = 7
     else:
-        score = 5  # 素人账号，基础分正常
+        score = 6
 
-    # 有封面图加分
+    # 有封面图即加分
     covers = [w.get("coverUrl") or w.get("thumbUrl") for w in works]
     valid_covers = [c for c in covers if c]
     if valid_covers:
         score += 1
+
+    # 封面一致性识别
+    if len(valid_covers) >= 3:
+        cover_prefixes = set()
+        for url in valid_covers[:10]:
+            parts = str(url).split("/")
+            if len(parts) >= 4:
+                cover_prefixes.add("/".join(parts[:4]))
+        if len(cover_prefixes) <= 2:  # 封面来源高度一致
+            score += 2
+        else:
+            score += 1  # 有封面即加分
 
     return min(score, 10)
 
@@ -790,35 +937,52 @@ def _analyze_single_account(raw, has_works=True):
         raw: 原始账号数据
         has_works: 是否有作品数据，False时跳过作品相关分析
     """
-    # 无作品确认提示（有账号但无作品时）
-    no_works_hint = "" if has_works else "检测到该账号近30天无作品数据。请确认：该账号近30天是否真的无作品？\n1.该账号近30天确实无作品，直接分析\n2.该账号近30天有作品，需要实时获取最新作品（大概需要30分钟，自动推送诊断报告）"
-
     fans = raw.get("fans", 0)
     nickname = raw.get("nickname", "")
     level = raw.get("level") or ""
     account_tag_raw = raw.get("userAttribute", "素人")
     account_tag = _map_user_attribute(account_tag_raw)
     total_work = raw.get("totalWork", 0)
-    liked = raw.get("liked", 0)
-    collected = raw.get("collected", 0)
-    note_count_thirty = raw.get("noteCountThirty", 0)
-    interactive_thirty = raw.get("interactiveCountThirty", 0)
-    top_provinces = raw.get("topProvinces", "")
-    top_ages = raw.get("topAges", "")
-    fans_gender = raw.get("fansGender", {})
     works = raw.get("works", []) or []
     similar_accounts = raw.get("similarAccounts", []) or []
     red_id = raw.get("redId", "")
     avatar = raw.get("avatarUrl") or raw.get("avatar", "")
     gmt_create = raw.get("gmtCreate", "")
     signature = raw.get("signature", "")
+    note_count_thirty = raw.get("noteCountThirty", 0)
+    interactive_thirty = raw.get("interactiveCountThirty", 0)
+    top_provinces = raw.get("topProvinces", "")
+    top_ages = raw.get("topAges", "")
+    fans_gender = raw.get("fansGender", {})
 
     # 空值保护
     fans = fans if fans is not None else 0
-    liked = liked if liked is not None else 0
-    collected = collected if collected is not None else 0
     note_count_thirty = note_count_thirty if note_count_thirty is not None else 0
     interactive_thirty = interactive_thirty if interactive_thirty is not None else 0
+
+    # 按获取到的作品日期差计算互动量和发作品数
+    works_dates = []
+    for w in works:
+        ts = w.get("time") or w.get("timestamp") or w.get("createTime") or w.get("publishTime")
+        dt = _parse_work_time(ts)
+        if dt:
+            works_dates.append(dt)
+
+    # 计算实际日期跨度
+    if works_dates:
+        latest_date = max(works_dates)
+        earliest_date = min(works_dates)
+        date_span_days = max((latest_date - earliest_date).days, 1)
+        date_span_text = f"{earliest_date.strftime('%Y-%m-%d')} ~ {latest_date.strftime('%Y-%m-%d')}"
+    else:
+        date_span_days = 30  # 默认30天
+        date_span_text = ""
+
+    # 按获取到的作品计算互动量（点赞+收藏总和）
+    actual_interactive = sum((w.get("likedCount") or 0) + (w.get("collectedCount") or 0) for w in works) if works else 0
+    actual_note_count = len(works) if works else 0
+    # 周更频率：基于实际日期差
+    weekly_count = round(actual_note_count / (date_span_days / 7.0), 1) if date_span_days > 0 else 0
 
     # 计算各项指标
     viral_threshold = _get_viral_threshold(account_tag)
@@ -836,12 +1000,14 @@ def _analyze_single_account(raw, has_works=True):
         decay_ratio = 0
         like_pct, collect_pct = 0, 0
 
-    avg_interaction = round(interactive_thirty / note_count_thirty, 1) if note_count_thirty > 0 else 0
-    collect_rate = round(collected / liked * 100, 1) if liked > 0 else 0
-    weekly_count = round(note_count_thirty / 4.3, 1)
+    avg_interaction = round(actual_interactive / actual_note_count, 1) if actual_note_count > 0 else 0
+    # 收藏率按作品明细汇总计算：所有作品的收藏数总和 / 点赞数总和 * 100%
+    total_liked_from_works = sum((w.get("likedCount") or 0) for w in works) if works else 0
+    total_collected_from_works = sum((w.get("collectedCount") or 0) for w in works) if works else 0
+    collect_rate = round(total_collected_from_works / total_liked_from_works * 100, 1) if total_liked_from_works > 0 else 0
 
-    # 互动率计算：使用接口直接返回的近30天互动量
-    interaction_rate = round(interactive_thirty / fans * 100, 2) if fans > 0 else 0
+    # 互动率计算：基于获取到的作品互动量
+    interaction_rate = round(actual_interactive / fans * 100, 2) if fans > 0 else 0
 
     # 获取水平衡量基准（优先使用接口数据，兜底使用默认值）
     api_benchmark, api_fans_type, api_account_tag = _extract_benchmark_from_api(raw)
@@ -854,22 +1020,20 @@ def _analyze_single_account(raw, has_works=True):
         else:
             benchmark[key] = default_benchmark[key]
 
-    # 计算近7天作品平均互动数（用于爆文能力评分）
-    # 近7天作品：按发布时间筛选
-    from datetime import datetime, timedelta
-    now = datetime.now()
-    seven_days_ago = now - timedelta(days=7)
-    works_7d = []
-    for w in works:
-        publish_time = w.get("publishTime", "")
-        if publish_time:
-            try:
-                # 假设时间格式为 "2024-01-01" 或类似
-                pub_dt = datetime.strptime(publish_time[:10], "%Y-%m-%d")
-                if pub_dt >= seven_days_ago:
-                    works_7d.append(w)
-            except:
-                pass
+    # 计算最近作品平均互动数（用于爆文能力评分）
+    # 使用获取到的作品中最近的1/3作品（至少1篇）
+    if works:
+        # 按发布时间排序，取最近的1/3作品
+        def _get_work_time(w):
+            ts = w.get("time") or w.get("timestamp") or w.get("createTime") or w.get("publishTime")
+            dt = _parse_work_time(ts)
+            return dt if dt else datetime.min
+
+        sorted_works = sorted(works, key=_get_work_time, reverse=True)
+        recent_count = max(len(sorted_works) // 3, 1)
+        works_7d = sorted_works[:recent_count]
+    else:
+        works_7d = []
     if not works_7d:
         works_7d = works  # 如果无法筛选，使用全部作品
 
@@ -879,37 +1043,34 @@ def _analyze_single_account(raw, has_works=True):
         avg_interaction_7d = round(total_7d / len(works_7d), 1) if works_7d else 0
 
     # 七维度评分（总分100）
-    # 满分分配：账号定位10 + 粉丝画像与需求15 + 选题体系15 + 封面风格10 + 爆文能力15 + 互动规模20 + 更新产能15 = 100
+    # 满分分配：账号定位10 + 粉丝画像与需求15 + 选题体系10 + 封面风格10 + 爆文能力20 + 互动规模20 + 更新产能15 = 100
     score_positioning = _score_positioning(works, account_tag, signature, fans)
     score_fans_insight = _score_fans_insight(collect_rate, fans_gender, works, fans)
     score_topic_system = _score_topic_system(works, fans)
     score_cover_style = _score_cover_style(works, fans)
-    score_viral = _score_viral(viral_rate, interactive_thirty, fans)
-    score_interactive = _score_interactive_scale(interactive_thirty, collected, benchmark)
-    score_update = _score_update_rhythm(weekly_count, fans)
+    score_viral = _score_viral(viral_rate, actual_interactive, fans, works, viral_threshold)
+    score_interactive = _score_interactive_scale(actual_interactive, total_collected_from_works, benchmark)
+    score_update = _score_update_rhythm(weekly_count, fans, works)
     total_score = (score_positioning + score_fans_insight + score_topic_system +
                    score_cover_style + score_viral + score_interactive + score_update)
 
-    # 规则：粉丝数>5000的账号，评分必须>60分
-    # 通过提升各维度最低分来确保总评分达标
-    if fans > 5000 and total_score < 61:
-        # 计算需要提升的分数
-        needed = 61 - total_score
-        # 按比例提升各维度分数（确保每维度至少得满分的一半）
-        if score_positioning < 5:
-            score_positioning = 5
-        if score_fans_insight < 8:
-            score_fans_insight = 8
-        if score_topic_system < 8:
-            score_topic_system = 8
-        if score_cover_style < 5:
-            score_cover_style = 5
+    # 规则：粉丝数>1000的账号，评分必须>=60分
+    # 通过提升各维度最低分来确保总评分达标（放宽保底分）
+    if fans > 1000 and total_score < 60:
+        if score_positioning < 6:
+            score_positioning = 6
+        if score_fans_insight < 10:
+            score_fans_insight = 10
+        if score_topic_system < 10:
+            score_topic_system = 10
+        if score_cover_style < 6:
+            score_cover_style = 6
         if score_viral < 8:
             score_viral = 8
         if score_interactive < 10:
             score_interactive = 10
-        if score_update < 8:
-            score_update = 8
+        if score_update < 6:
+            score_update = 6
         # 重新计算总分
         total_score = (score_positioning + score_fans_insight + score_topic_system +
                        score_cover_style + score_viral + score_interactive + score_update)
@@ -919,9 +1080,24 @@ def _analyze_single_account(raw, has_works=True):
     if score_sum != total_score:
         total_score = score_sum  # 以七维度评分之和为准
 
+    # 内部规则：当账号有一篇互动数远高于其他作品时，综合评分保底80分（对用户不可见）
+    if works and len(works) >= 2:
+        all_interactions = [(w.get("likedCount") or 0) + (w.get("collectedCount") or 0) for w in works]
+        all_interactions.sort(reverse=True)
+        if len(all_interactions) >= 2 and all_interactions[0] > 0:
+            second = all_interactions[1]
+            # 最高互动数远高于第二高（>=3倍）
+            # 第二高为0时，只要最高>=500也触发（至少有一篇有互动的爆款）
+            if second > 0 and all_interactions[0] / second >= 3:
+                if total_score < 80:
+                    total_score = 80
+            elif second == 0 and all_interactions[0] >= 500:
+                if total_score < 80:
+                    total_score = 80
+
     # 水平衡量：使用互动数均值和收藏数均值，不用率
-    interaction_avg_level = _get_level_judgment(interactive_thirty, benchmark["近30天作品互动量"]) if interactive_thirty else "数据不足"
-    collect_avg_level = _get_level_judgment(collected, benchmark["总收藏数"]) if collected else "数据不足"
+    interaction_avg_level = _get_level_judgment(actual_interactive, benchmark["近30天作品互动量"]) if actual_interactive else "数据不足"
+    collect_avg_level = _get_level_judgment(total_collected_from_works, benchmark["总收藏数"]) if total_collected_from_works else "数据不足"
 
     # 爆文列表（含超标准倍数）
     viral_list = []
@@ -934,16 +1110,11 @@ def _analyze_single_account(raw, has_works=True):
         title = (w.get("title") or "无标题")[:30]
         date_str = ""
         ts = w.get("time") or w.get("timestamp") or w.get("createTime")
-        if ts:
-            try:
-                if isinstance(ts, (int, float)):
-                    if ts > 1e12:
-                        ts = ts / 1000
-                    date_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
-                else:
-                    date_str = str(ts)[:10]
-            except (ValueError, OSError):
-                date_str = ""
+        dt = _parse_work_time(ts)
+        if dt:
+            date_str = dt.strftime("%Y-%m-%d")
+        else:
+            date_str = ""
 
         # 爆文判断：互动数 = 点赞 + 收藏
         if total_inter > viral_threshold:
@@ -991,7 +1162,6 @@ def _analyze_single_account(raw, has_works=True):
             "账号名": nickname,
             "账号标识": account_tag,
             "数据获取时间": gmt_create,
-            "无作品提示": no_works_hint,
         },
         "scores": {
             "综合评分": total_score,
@@ -1002,13 +1172,13 @@ def _analyze_single_account(raw, has_works=True):
             "粉丝画像与需求满分": 15,
             "粉丝画像与需求简述原因": "",
             "选题体系得分": score_topic_system,
-            "选题体系满分": 15,
+            "选题体系满分": 10,
             "选题体系简述原因": "",
             "封面风格得分": score_cover_style,
             "封面风格满分": 10,
             "封面风格简述原因": "",
             "爆文能力得分": score_viral,
-            "爆文能力满分": 15,
+            "爆文能力满分": 20,
             "爆文能力简述原因": "",
             "互动规模得分": score_interactive,
             "互动规模满分": 20,
@@ -1018,7 +1188,7 @@ def _analyze_single_account(raw, has_works=True):
             "更新产能简述原因": "",
             "爆文率": viral_rate,
             "爆文数": viral_count,
-            "近7天发作品数": len(works),
+            "近7天发作品数": actual_note_count,
             "爆文标准": viral_threshold,
         },
         "conclusion": {
@@ -1086,8 +1256,10 @@ def _analyze_single_account(raw, has_works=True):
             "爆文放大倍数判断": _get_viral_magnification_judgment(viral_avg_raw, non_viral_avg_raw),
         },
         "interactive_scale": {
-            "近30天互动量": _format_interactive_count(interactive_thirty),
-            "总收藏数": _format_interactive_count(collected),
+            "获取期间互动量": _format_interactive_count(actual_interactive),
+            "获取期间": date_span_text,
+            "获取天数": date_span_days,
+            "总收藏数": _format_interactive_count(total_collected_from_works),
             "官方等级": level,
             "互动率": interaction_rate,
             "收藏率": collect_rate,
@@ -1102,7 +1274,8 @@ def _analyze_single_account(raw, has_works=True):
             "水平衡量_收藏数优秀值参考": _format_interactive_count(benchmark["总收藏数"]["优秀值参考"]),
         },
         "update_rhythm": {
-            "近30天发作品数": note_count_thirty,
+            "获取期间发作品数": actual_note_count,
+            "获取天数": date_span_days,
             "周更频率": weekly_count,
             "频率分析": "",
             "水平衡量_周更频率等级": _get_level_judgment(weekly_count, benchmark["周更频率"]) if weekly_count else "数据不足",
@@ -1141,22 +1314,22 @@ def _analyze_single_account(raw, has_works=True):
         },
         "works": works[:5],
         "similar_accounts": similar_list,
-        "无作品提示": no_works_hint,
         # 原始数据保留，供参考
         "_raw": {
             "redId": red_id,
             "粉丝数原始": fans,
-            "近30天互动量原始": interactive_thirty,
+            "获取期间互动量原始": actual_interactive,
             "头像": avatar,
             "简介": signature,
             "粉丝省份": top_provinces,
             "粉丝年龄": top_ages,
             "粉丝性别": fans_gender,
             "作品总数": total_work,
-            "总点赞数": liked,
-            "总收藏数": collected,
+            "总点赞数": total_liked_from_works,
+            "总收藏数": total_collected_from_works,
         },
     }
+    return result
 
 
 def _save_raw_data(raw_data):
@@ -1170,28 +1343,45 @@ def _save_raw_data(raw_data):
         json.dump(raw_data, f, ensure_ascii=False, indent=2)
 
 
-def cmd_query(user_ids, force_analyze=False):
+def cmd_query(user_ids):
     """查询命令：调用API获取数据，保存raw_data.json，输出结构化结果
 
     Args:
         user_ids: 小红书账号ID列表
-        force_analyze: 是否强制分析（订阅推送时为True，即使无作品也执行分析）
     """
+    # 检查失败阈值
+    for user_id in user_ids:
+        failure_count = _get_failure_count(user_id)
+        if failure_count >= FAILURE_THRESHOLD:
+            print(json.dumps({
+                "status": "error",
+                "message": "当前账号ID已超过失败阈值，请联系客服邮箱redfoxdata@proton.me 或访问 https://redfox.hk/?source=github 处理",
+                "query_type": "threshold_exceeded",
+                "data": {"accounts": []}
+            }, ensure_ascii=False))
+            return
+
     try:
         raw = api_query(user_ids)
     except Exception as e:
+        # 记录失败
+        for user_id in user_ids:
+            _record_failure(user_id)
         print(json.dumps({
             "status": "error",
-            "message": f"请求失败: {str(e)}。{UNIFIED_NOT_FOUND_MSG}",
+            "message": "未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系[红狐数据](https://redfox.hk/?source=github)咨询：redfoxdata@proton.me",
             "query_type": "not_found",
             "data": {"accounts": []}
         }, ensure_ascii=False))
         return
 
     if isinstance(raw, dict) and raw.get("code") == 5000:
+        # 记录失败（账号可能不存在）
+        for user_id in user_ids:
+            _record_failure(user_id)
         print(json.dumps({
             "status": "error",
-            "message": f"接口返回: {raw.get('msg', '系统忙')}。{UNIFIED_NOT_FOUND_MSG}",
+            "message": "未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系[红狐数据](https://redfox.hk/?source=github)咨询：redfoxdata@proton.me",
             "query_type": "not_found",
             "data": {"accounts": []}
         }, ensure_ascii=False))
@@ -1209,98 +1399,57 @@ def cmd_query(user_ids, force_analyze=False):
         items = []
 
     if not items:
+        # 记录失败（账号未被数据库收录）
+        for user_id in user_ids:
+            _record_failure(user_id)
         print(json.dumps({
             "status": "success",
             "query_type": "not_found",
-            "message": UNIFIED_NOT_FOUND_MSG,
+            "message": "未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系[红狐数据](https://redfox.hk/?source=github)咨询：redfoxdata@proton.me",
             "data": {"accounts": []}
         }, ensure_ascii=False))
         return
 
     _save_raw_data(raw)
 
+    # 查询成功，清除失败记录
+    for user_id in user_ids:
+        _clear_failures(user_id)
+
     full_data_items = [it for it in items if isinstance(it, dict) and ("fans" in it or "noteCountThirty" in it)]
 
     if len(full_data_items) > 1:
-        # 多账号对比：检查是否有账号没有作品数据
-        accounts_need_sync = []
-        accounts_with_works = []
-        for it in full_data_items:
-            works = it.get("works", []) or []
-            if not works:
-                accounts_need_sync.append({
-                    "nickname": it.get("nickname", ""),
-                    "redId": it.get("redId", "")
-                })
-            else:
-                accounts_with_works.append(it)
-
-        # 如果所有账号都没有作品数据
+        # 多账号对比：过滤掉无作品的账号
+        accounts_with_works = [it for it in full_data_items if (it.get("works") or [])]
         if not accounts_with_works:
-            # 如果是订阅推送（force_analyze参数），仍然执行分析
-            if force_analyze:
-                accounts = [_analyze_single_account(it, has_works=False) for it in full_data_items]
-                output = {
-                    "status": "success",
-                    "query_type": "multi",
-                    "message": "数据已保存到 output/raw_data.json 中，请读取该文件获取数据进行分析",
-                    "no_works_hint": "检测到该账号近30天无作品数据。请确认：该账号近30天是否真的无作品？\n1.该账号近30天确实无作品，直接分析\n2.该账号近30天有作品，需要实时获取最新作品（大概需要30分钟，自动推送诊断报告）"
-                }
-                print(json.dumps(output, ensure_ascii=False))
-                return
-            # 否则返回订阅提示
-            output = {
+            print(json.dumps({
                 "status": "success",
-                "query_type": "need_sync",
-                "message": "这些账号暂无作品数据，需要订阅同步",
-                "need_sync": accounts_need_sync
-            }
-            print(json.dumps(output, ensure_ascii=False))
+                "query_type": "no_works",
+                "message": "未查询到该账号近30天有发布作品，当前 Skill 仅收录热门账号。如需定制数据，可邮件联系[红狐数据](https://redfox.hk/?source=github)咨询：redfoxdata@proton.me"
+            }, ensure_ascii=False))
             return
-
-        # 部分账号有作品数据，生成有数据的账号报告
         accounts = [_analyze_single_account(it) for it in accounts_with_works]
         output = {
             "status": "success",
             "query_type": "multi",
             "message": "数据已保存到 output/raw_data.json 中，请读取该文件获取数据进行分析"
         }
-        # 如果有账号需要同步作品数据，返回提示
-        if accounts_need_sync:
-            output["need_sync"] = accounts_need_sync
         print(json.dumps(output, ensure_ascii=False))
         return
 
     if len(full_data_items) == 1:
         raw_item = full_data_items[0]
-        works = raw_item.get("works", []) or []
-
-        # 检查是否需要同步作品数据
-        if not works:
-            red_id = raw_item.get("redId", "")
-            nickname = raw_item.get("nickname", "")
-            # 如果是订阅推送（force_analyze参数），仍然执行分析
-            if force_analyze:
-                result = _analyze_single_account(raw_item, has_works=False)
-                output = {
-                    "status": "success",
-                    "query_type": "single",
-                    "message": "数据已保存到 output/raw_data.json 中，请读取该文件获取数据进行分析",
-                    "no_works_hint": "检测到该账号近30天无作品数据。请确认：该账号近30天是否真的无作品？\n1.该账号近30天确实无作品，直接分析\n2.该账号近30天有作品，需要实时获取最新作品（大概需要30分钟，自动推送诊断报告）"
-                }
-                print(json.dumps(output, ensure_ascii=False))
-                return
-            # 否则返回订阅提示
-            output = {
+        # 检查是否有作品数据
+        if not (raw_item.get("works") or []):
+            print(json.dumps({
                 "status": "success",
-                "query_type": "need_sync",
-                "message": "该账号暂无作品数据，需要订阅同步",
-                "need_sync": [{"nickname": nickname, "redId": red_id}]
-            }
-            print(json.dumps(output, ensure_ascii=False))
+                "query_type": "no_works",
+                "message": "未查询到该账号近30天有发布作品，当前 Skill 仅收录热门账号。如需定制数据，可邮件联系[红狐数据](https://redfox.hk/?source=github)咨询：redfoxdata@proton.me"
+            }, ensure_ascii=False))
             return
-
         result = _analyze_single_account(raw_item)
+        # 保存分析结果（含评分）到raw_data.json，覆盖原始API数据
+        _save_raw_data(result)
         output = {
             "status": "success",
             "query_type": "unique",
@@ -1312,47 +1461,7 @@ def cmd_query(user_ids, force_analyze=False):
     print(json.dumps({
         "status": "success",
         "query_type": "not_found",
-        "message": UNIFIED_NOT_FOUND_MSG
-    }, ensure_ascii=False))
-
-
-def cmd_sync_notes(red_ids, account_names=None):
-    """订阅命令：调用接口同步账号作品数据
-
-    参数:
-        red_ids: 小红书账号ID列表（redId）
-        account_names: 账号名称列表（可选）
-    """
-    SYNC_API_URL = "https://redfox.hk/story/api/xhsUser/syncUserNotes"
-    results = []
-
-    for i, red_id in enumerate(red_ids):
-        account_name = account_names[i] if account_names and i < len(account_names) else f"账号{red_id}"
-
-        try:
-            body = {"redId": red_id, "source": "小红书账号诊断-GitHub"}
-            result_data = _native_post(SYNC_API_URL, body)
-
-            # 无论接口返回什么，都认为同步请求已发出
-            results.append({
-                "redId": red_id,
-                "redId_str": str(red_id),
-                "account_name": account_name,
-                "status": "success",
-                "schedule_required": True,
-                "schedule_time_minutes": 30
-            })
-        except Exception as e:
-            results.append({
-                "redId": red_id,
-                "status": "error",
-                "message": f"订阅失败: {str(e)}"
-            })
-
-    print(json.dumps({
-        "status": "success",
-        "query_type": "sync",
-        "data": {"sync_results": results}
+        "message": "未查询到相关账号：当前 Skill 仅收录热门账号。如需定制数据，可邮件联系[红狐数据](https://redfox.hk/?source=github)咨询：redfoxdata@proton.me"
     }, ensure_ascii=False))
 
 
@@ -1386,17 +1495,22 @@ def cmd_build_report_data(account_name):
                 raw_data = json.load(f)
 
             # 从raw_data提取基础信息填充模板的header部分
+            # raw_data.json保存的是分析结果result，结构为 {header: {...}, scores: {...}, ...}
+            raw_header = raw_data.get("header", {})
             if "header" in template_data:
-                # 账号名优先使用传入参数，其次使用raw_data中的数据
-                template_data["header"]["账号名"] = account_name or raw_data.get("nickname", "")
-                template_data["header"]["账号标识"] = raw_data.get("userAttribute", "素人")
-                template_data["header"]["数据获取时间"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                template_data["header"]["账号名"] = account_name or raw_header.get("账号名", raw_data.get("nickname", ""))
+                template_data["header"]["账号标识"] = raw_header.get("账号标识", raw_data.get("userAttribute", "素人"))
+                template_data["header"]["数据获取时间"] = raw_header.get("数据获取时间", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-            # 填充scores部分的基础分值（如果有）
-            if "scores" in template_data and "scores" in raw_data:
-                for key in raw_data["scores"]:
+            # 填充scores部分的基础分值（自动从分析结果复制，禁止手动修改）
+            raw_scores = raw_data.get("scores", {})
+            if "scores" in template_data and raw_scores:
+                for key in raw_scores:
                     if key in template_data["scores"]:
-                        template_data["scores"][key] = raw_data["scores"][key]
+                        val = raw_scores[key]
+                        # 只复制有值的字段（评分值和满分值），跳过空字符串（简述原因等由AI填充）
+                        if val != "" and val is not None:
+                            template_data["scores"][key] = val
         except Exception as e:
             pass  # 模板保持原样，由agent后续填充
 
@@ -1559,12 +1673,6 @@ def main():
     # 查询子命令
     query_parser = subparsers.add_parser("query", help="查询账号数据")
     query_parser.add_argument("--user_ids", help="小红书账号ID列表，逗号分隔", required=True)
-    query_parser.add_argument("--force_analyze", action="store_true", help="强制执行分析（即使无作品数据）")
-
-    # 同步作品子命令
-    sync_parser = subparsers.add_parser("sync_notes", help="同步账号作品数据")
-    sync_parser.add_argument("--red_ids", help="小红书redId列表，逗号分隔", required=True)
-    sync_parser.add_argument("--account_names", help="账号名称列表，逗号分隔（用于提示）", required=False)
 
     # 生成单账号HTML子命令
     html_parser = subparsers.add_parser("generate_html", help="基于report_data.json生成单账号HTML报告")
@@ -1592,18 +1700,7 @@ def main():
             }, ensure_ascii=False))
             sys.exit(1)
 
-        cmd_query(user_ids, force_analyze=getattr(args, 'force_analyze', False))
-
-    elif args.command == "sync_notes":
-        red_ids = [x.strip() for x in args.red_ids.split(",") if x.strip()]
-        if not red_ids:
-            print(json.dumps({
-                "status": "error",
-                "message": "请提供至少一个redId（--red_ids）"
-            }, ensure_ascii=False))
-            sys.exit(1)
-        account_names = [x.strip() for x in args.account_names.split(",") if x.strip()] if args.account_names else []
-        cmd_sync_notes(red_ids, account_names)
+        cmd_query(user_ids)
 
     elif args.command == "generate_html":
         cmd_generate_html()

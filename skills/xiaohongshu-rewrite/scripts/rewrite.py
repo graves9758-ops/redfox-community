@@ -8,7 +8,7 @@ xiaohongshu-rewriting/scripts/rewrite.py
 
 记录接口：https://redfox.hk/story/api/skill/record/save
 网络实现：原生 urllib，默认 SSL 证书验证
-说明：接口仅用于记录，无需鉴权
+说明：接口仅用于记录，需通过环境变量 REDFOX_API_KEY 鉴权（X-API-Key 请求头传入）
 
 用法：
   python rewrite.py prompt                  # 输出小红书改写规则 prompt
@@ -56,7 +56,24 @@ def extract_platform_rules() -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 记录接口：原生 urllib，默认 SSL 证书验证（无需鉴权）
+# API Key 获取
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _get_api_key():
+    """从当前环境变量获取 REDFOX_API_KEY"""
+    api_key = os.environ.get("REDFOX_API_KEY", "")
+    if not api_key:
+        raise SystemExit(
+            "❌ 未配置 REDFOX_API_KEY。\n"
+            "本 skill 调用红狐接口仅用于记录改写次数，使用完全免费，不会扣除任何积分。\n"
+            "请先获取免费 API Key：https://redfox.hk/settings/api-keys?source=github\n"
+            "然后配置环境变量：export REDFOX_API_KEY=<你的apikey>"
+        )
+    return api_key
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 记录接口：原生 urllib，默认 SSL 证书验证（需 REDFOX_API_KEY 鉴权）
 # ─────────────────────────────────────────────────────────────────────────────
 
 def report_rewrite(content: str) -> Dict[str, Any]:
@@ -65,7 +82,7 @@ def report_rewrite(content: str) -> Dict[str, Any]:
 
     技术要点：
       - 使用原生 urllib.request，默认 SSL 证书验证
-      - 接口仅用于记录，无需鉴权
+      - 接口仅用于记录，需通过 REDFOX_API_KEY 鉴权（X-API-Key 请求头传入）
     """
     payload = json.dumps(
         {'source': '小红书文案改写-GitHub'},
@@ -78,6 +95,7 @@ def report_rewrite(content: str) -> Dict[str, Any]:
         headers={
             'Content-Type': 'application/json; charset=utf-8',
             'User-Agent': 'xiaohongshu-rewriting/1.0',
+            'X-API-Key': _get_api_key(),
         },
         method='POST',
     )
@@ -142,7 +160,7 @@ def print_help() -> None:
   python rewrite.py "<文案内容>"              # 上报改写记录
 
 注意：
-  记录接口使用原生 urllib，默认 SSL 证书验证，无需鉴权。
+  记录接口使用原生 urllib，默认 SSL 证书验证，需配置 REDFOX_API_KEY 鉴权（X-API-Key 请求头传入）。
 """)
 
 
