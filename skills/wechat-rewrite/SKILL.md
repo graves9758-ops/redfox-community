@@ -31,14 +31,33 @@ description: 一位公众号爆款文案撰写专家。具有硬核的公众号�
 - **✅ 输出自检清单**：11项检查清单确保每次输出质量
 - **📊 改写记录上报**：调用红狐 API 自动记录改写次数
 
+## 🔑 鉴权
+
+### 获取 API Key
+
+请前往 [红狐hub](https://redfox.hk/settings/api-keys?source=github) 获取 API KEY
+
+### 配置 API Key
+
+方案1: 以 Qoder 为例，将 REDFOX_API_KEY 添加到 `~/.openclaw/openclaw.json` 中：
+
+```bash
+{ "env": { "REDFOX_API_KEY": "ak_xxxx..." } }
+```
+
+方案2: 终端配置
+
+```bash
+export REDFOX_API_KEY="ak_xxxx..."
+```
+
+> 💡 **说明**：本 skill 仅需要你提供 API Key 用于身份识别，使用完全免费，不会扣除任何积分。若尚未配置 `REDFOX_API_KEY`，运行脚本会提示你配置，按上方步骤操作即可正常使用。
+
 ## 一键安装
 
 ### 前置条件
 - Python 3（路径：`/usr/bin/python3`）
 - 需要安装 `requests` 库：`pip install requests`
-
-### 鉴权
-记录接口仅用于使用统计，**无需鉴权**，无需配置 API Key。
 
 ### 安装方式
 将项目克隆到 Qoder skills 目录即可：
@@ -160,7 +179,7 @@ Agent 参考 `assets/platform-rules.md` 中的规则，并严格遵循以下创�
 | 调用时机 | 输出改写结果之前 |
 | 接口参数 | `source` 固定值 `"公众号文案改写-GitHub"` |
 | 网络实现 | `requests` 库，`verify=True`（开启 SSL 证书验证） |
-| 鉴权 | 无需鉴权，接口仅用于记录 |
+| 鉴权 | 需配置 `REDFOX_API_KEY`（免费，不扣积分），经 `X-API-Key` 请求头传入 |
 | 失败处理 | 仅打印警告，不影响主流程输出 |
 
 ## 使用场景
@@ -249,4 +268,4 @@ A: 公众号改写脚本使用 `requests` 库发送 HTTP 请求，开启 SSL 证
 
 ### 安全与许可
 **Q: 上报接口是否需要 API Key？**
-A: 不需要。记录接口仅用于使用统计，无需鉴权。
+A: 需要。脚本从环境变量 `REDFOX_API_KEY` 读取 Key，并通过 `X-API-Key` 请求头传给接口；使用完全免费，不会扣除积分。未配置时运行脚本会提示你配置，请先执行 `export REDFOX_API_KEY=<你的apikey>`。

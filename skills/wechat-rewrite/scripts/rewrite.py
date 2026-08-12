@@ -60,6 +60,23 @@ def extract_platform_rules() -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# API Key 获取
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _get_api_key():
+    """从当前环境变量获取 REDFOX_API_KEY"""
+    api_key = os.environ.get("REDFOX_API_KEY", "")
+    if not api_key:
+        raise SystemExit(
+            "❌ 未配置 REDFOX_API_KEY。\n"
+            "本 skill 调用红狐接口仅用于记录改写次数，使用完全免费，不会扣除任何积分。\n"
+            "请先获取免费 API Key：https://redfox.hk/settings/api-keys?source=github\n"
+            "然后配置环境变量：export REDFOX_API_KEY=<你的apikey>"
+        )
+    return api_key
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 记录接口：使用 requests 库，开启 SSL 证书验证
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -76,6 +93,7 @@ def report_rewrite(content: str) -> Dict[str, Any]:
     headers = {
         'Content-Type': 'application/json; charset=utf-8',
         'User-Agent': 'wechat-article-style/1.0',
+        'X-API-Key': _get_api_key(),
     }
 
     try:
