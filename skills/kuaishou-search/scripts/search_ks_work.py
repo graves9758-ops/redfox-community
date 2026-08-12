@@ -117,7 +117,7 @@ def search(keyword: str, sort: str, page: int = 1) -> dict:
         "keyword": keyword,
         "sort":    sort,
         "page":    page,
-        "size":    20,
+        "size":    50,
     }).encode("utf-8")
 
     req = urllib.request.Request(
@@ -155,7 +155,7 @@ def search(keyword: str, sort: str, page: int = 1) -> dict:
     articles_count = len(articles_list)
 
     # 翻页逻辑：当前页返回条数等于 size → 可能有下一页；不足 size → 已是最后一页
-    page_size = data.get("size", 20)
+    page_size = data.get("size", 50)
     has_next = articles_count >= page_size
 
     return {
