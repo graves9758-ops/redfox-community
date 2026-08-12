@@ -4,13 +4,14 @@
 
 ## Overview
 
-Search trending works on Kuaishou by keyword. Browse results with multi-dimensional sorting and time filters — see titles, authors, play counts, likes, comments, and saves at a glance. Click any title to jump directly to the original work.
+Search trending works on Kuaishou by keyword (broad database). Browse results with multi-dimensional sorting — see titles, authors, play counts, likes, comments, and saves at a glance. Click any title to jump directly to the original work, or extract video details and transcripts via work_id.
 
 **Core Value**
 
 - **Search and see instantly**: Enter any keyword and get a trending works list sorted by popularity.
-- **Comprehensive data**: Each work displays play count, likes, comments, saves, and a clickable link, with publish time down to the second.
-- **Multi-dimensional filtering**: Switch perspectives by sorting on plays, likes, comments, saves, and more.
+- **Comprehensive data**: Each work displays play count, likes, comments, saves, video duration, and a clickable link, with publish time down to the second.
+- **Multi-dimensional filtering**: Switch perspectives by sorting on general, latest, likes, and saves.
+- **Video detail extraction**: Each work's work_id can be used with the kuaishou-video-extract skill to get video details and extract transcripts.
 - **Stay updated**: Subscribe to keywords for daily push notifications — never miss a trend.
 
 **Who It's For**
@@ -26,11 +27,11 @@ Search trending works on Kuaishou by keyword. Browse results with multi-dimensio
 
 ### Core Features
 
-- **Keyword Search**: Search trending Kuaishou works by keyword and discover content in your target niche.
-- **Multi-dimensional Sorting**: Six sorting options — General Ranking, Latest, Most Liked, Most Played, Most Commented, Most Saved.
-- **Time Filtering**: Five time ranges — Any Time, Past Day, Past Week, Past Month, Past Year.
+- **Keyword Search**: Search trending Kuaishou works by keyword (broad database) and discover content in your target niche.
+- **Multi-dimensional Sorting**: Four sorting options — General Ranking, Latest, Most Liked, Most Saved.
 - **Pagination**: 20 results per page with multi-page browsing — never miss a work.
 - **Clickable Links**: Work titles are hyperlinked for one-click access to the original page.
+- **Video Detail Extraction**: Each work's work_id can be used with the kuaishou-video-extract skill to get video details and extract transcripts.
 - **Subscription**: Subscribe to daily keyword push notifications for the latest works.
 
 ---
@@ -54,12 +55,12 @@ Just describe what you're looking for in natural language — no commands to mem
 
 | Intent | Example | Effect |
 | ------ | ------- | ------ |
-| Search a topic | "Search food content from the past week" | Searches "food" within 1 week, sorted by likes |
-| Specify sort | "Show me the most played World Cup works" | Searches "World Cup", sorted by play count |
-| Specify date range | "Search popular travel content since June" | Parses date range and returns trending works |
-| Switch sort & time | "Re-search by latest, within the past week" | Switches to latest sort, 1 week time range |
+| Search a topic | "Search food content" | Searches "food", sorted by likes |
+| Specify sort | "Show me the most played World Cup works" | Searches "World Cup", sorted by likes |
+| Switch sort | "Re-search by general ranking" | Switches to general ranking sort |
 | Next page | "Next page" | Auto-increments page and shows the next 20 works |
-| Subscribe daily | "Confirm subscription" | Pushes latest works (all time) every day at 09:00 AM |
+| Extract video details | "Show video details for work #3" | Uses work_id with kuaishou-video-extract skill |
+| Subscribe daily | "Confirm subscription" | Pushes latest works every day at 09:00 AM |
 
 ### Example Output
 
@@ -88,7 +89,7 @@ After searching, you'll see a table similar to:
 ## Data Notes
 
 - Data is updated daily at **06:00 AM** — not a real-time query.
-- Subscription pushes run daily at **09:00 AM**, delivering the latest works across all time.
+- Subscription pushes run daily at **09:00 AM**, delivering the latest works.
 - Numbers ≥ 10,000 are displayed in `x.xk` / `x.xm` format (e.g. `12.5k`, `1.2w`) for easy reading.
 
 ---
