@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微博评论分析 - {{OPUS_ID}}</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg-primary: #0f0f0f;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #1e1e1e;
+    --bg-card-hover: #252525;
+    --text-primary: #f0ece6;
+    --text-secondary: #9a9590;
+    --text-muted: #666;
+    --accent: #ff8200;
+    --accent-light: #ffa033;
+    --accent-glow: rgba(255, 130, 0, 0.15);
+    --accent-border: rgba(255, 130, 0, 0.3);
+    --border: rgba(255, 255, 255, 0.06);
+
+    --positive: #4ade80;
+    --negative: #f87171;
+    --demand: #60a5fa;
+    --competitor: #fbbf24;
+
+    --font-display: 'Archivo Black', Impact, sans-serif;
+    --font-body: 'Space Grotesk', -apple-system, sans-serif;
+
+    --radius: 12px;
+    --radius-sm: 8px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* -- Header -- */
+.report-header {
+    text-align: center;
+    padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(1rem, 2vw, 1.5rem);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.report-header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.3rem;
+}
+
+.report-header .subtitle {
+    font-size: clamp(0.85rem, 1.3vw, 1rem);
+    color: var(--text-secondary);
+    font-weight: 300;
+}
+
+/* -- Stats Bar -- */
+.stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: clamp(0.6rem, 1.5vw, 1.5rem);
+    padding: clamp(0.8rem, 2vw, 1.2rem) clamp(0.8rem, 2vw, 1.5rem);
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    max-width: 900px;
+    margin: 0 auto clamp(1.5rem, 3vw, 2.5rem);
+    flex-wrap: nowrap;
+}
+
+.stat-item { text-align: center; flex: 1; min-width: 0; }
+
+.stat-value {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.6rem);
+    color: var(--accent);
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* -- Summary Cards -- */
+.summary-section {
+    max-width: 1000px;
+    margin: 0 auto clamp(2rem, 3vw, 2.5rem);
+}
+
+.summary-section h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid var(--accent);
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
+    gap: 1rem;
+}
+
+.summary-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.4rem;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent-border);
+}
+
+.summary-card .card-icon {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+}
+
+.summary-card .card-title {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.3rem;
+}
+
+.summary-card .card-ratio {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    margin-bottom: 0.6rem;
+}
+
+.summary-card .card-content {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.7;
+}
+
+.summary-card .card-content ul {
+    list-style: none;
+    padding: 0;
+}
+
+.summary-card .card-content li {
+    padding: 0.2rem 0;
+    position: relative;
+    padding-left: 1rem;
+}
+
+.summary-card .card-content li::before {
+    content: "\00B7";
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+.summary-card.positive { border-left: 3px solid var(--positive); }
+.summary-card.positive .card-icon,
+.summary-card.positive .card-title,
+.summary-card.positive .card-ratio { color: var(--positive); }
+
+.summary-card.negative { border-left: 3px solid var(--negative); }
+.summary-card.negative .card-icon,
+.summary-card.negative .card-title,
+.summary-card.negative .card-ratio { color: var(--negative); }
+
+.summary-card.demand { border-left: 3px solid var(--demand); }
+.summary-card.demand .card-icon,
+.summary-card.demand .card-title,
+.summary-card.demand .card-ratio { color: var(--demand); }
+
+.summary-card.competitor { border-left: 3px solid var(--competitor); }
+.summary-card.competitor .card-icon,
+.summary-card.competitor .card-title,
+.summary-card.competitor .card-ratio { color: var(--competitor); }
+
+/* -- Comment Table -- */
+.table-section {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.table-section h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid var(--accent);
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+}
+
+.comment-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 700px;
+}
+
+.comment-table thead {
+    background: var(--bg-card);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.comment-table th {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.comment-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.comment-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.comment-table tbody tr:hover {
+    background: var(--bg-card-hover);
+}
+
+.comment-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* -- User cell -- */
+.user-cell {
+    min-width: 120px;
+}
+
+.user-name {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.user-name:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+/* -- Index cell -- */
+.index-cell {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* -- Content cell -- */
+.content-cell {
+    max-width: 500px;
+    word-break: break-word;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+/* -- Number cells -- */
+.num-cell {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+}
+
+.time-cell {
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+/* -- Footer -- */
+.report-footer {
+    text-align: center;
+    padding: clamp(2rem, 4vw, 3rem) 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.report-footer .powered {
+    margin-top: 0.5rem;
+    color: var(--text-secondary);
+}
+
+/* -- Responsive -- */
+@media (max-width: 768px) {
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-bar {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
+
+    .stat-item {
+        flex: 0 1 auto;
+        min-width: 55px;
+    }
+
+    .comment-table {
+        font-size: 0.78rem;
+    }
+
+    .comment-table th,
+    .comment-table td {
+        padding: 0.5rem 0.6rem;
+    }
+}
+</style>
+</head>
+<body>
+
+<header class="report-header">
+    <h1>微博评论分析</h1>
+    <p class="subtitle">博文 {{OPUS_ID}} · 第 {{PAGE}} 页 · 共 {{TOTAL_COMMENTS}} 条评论</p>
+    <p class="subtitle" style="font-size: 0.8rem; margin-top: 0.3rem;">{{DATE}}</p>
+</header>
+
+<!-- Stats -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <div class="stat-value">{{TOTAL_COMMENTS}}</div>
+        <div class="stat-label">评论总数</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--accent-light);">{{TOTAL_LIKES}}</div>
+        <div class="stat-label">总点赞</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--positive);">{{POSITIVE_RATIO}}%</div>
+        <div class="stat-label">积极评价</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--negative);">{{NEGATIVE_RATIO}}%</div>
+        <div class="stat-label">负面评价</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--demand);">{{DEMAND_RATIO}}%</div>
+        <div class="stat-label">用户需求</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value" style="color: var(--competitor);">{{COMPETITOR_RATIO}}%</div>
+        <div class="stat-label">竞品对比</div>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-section">
+    <h2>📈 评论总结</h2>
+    <div class="summary-grid">
+        <div class="summary-card positive">
+            <div class="card-icon">✅</div>
+            <div class="card-title">积极评价</div>
+            <div class="card-ratio">{{POSITIVE_RATIO}}%</div>
+            <div class="card-content">{{SUMMARY_POSITIVE}}</div>
+        </div>
+        <div class="summary-card negative">
+            <div class="card-icon">⚠️</div>
+            <div class="card-title">负面评价</div>
+            <div class="card-ratio">{{NEGATIVE_RATIO}}%</div>
+            <div class="card-content">{{SUMMARY_NEGATIVE}}</div>
+        </div>
+        <div class="summary-card demand">
+            <div class="card-icon">💡</div>
+            <div class="card-title">用户需求</div>
+            <div class="card-ratio">{{DEMAND_RATIO}}%</div>
+            <div class="card-content">{{SUMMARY_DEMAND}}</div>
+        </div>
+        <div class="summary-card competitor">
+            <div class="card-icon">🔍</div>
+            <div class="card-title">竞品对比舆情</div>
+            <div class="card-ratio">{{COMPETITOR_RATIO}}%</div>
+            <div class="card-content">{{SUMMARY_COMPETITOR}}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Comment Table -->
+<div class="table-section">
+    <h2>💬 全部评论</h2>
+    <div class="table-wrapper">
+        <table class="comment-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px; text-align: center;">#</th>
+                    <th style="width: 140px;">用户</th>
+                    <th>评论内容</th>
+                    <th style="width: 80px; text-align: right;">👍 点赞</th>
+                    <th style="width: 160px;">发布时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{COMMENT_ROWS}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<footer class="report-footer">
+    <p>Generated at {{TIMESTAMP}}</p>
+    <p class="powered">Powered by 微博评论分析 Skill</p>
+</footer>
+
+</body>
+</html>
