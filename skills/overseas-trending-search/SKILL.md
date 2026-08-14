@@ -4,7 +4,7 @@ display_name: 海外跨平台热文搜索
 display_name_en: Overseas Trending Search
 description: 海外跨平台热文搜索 — 输入任意关键词（中文/英文），一次搜索 X / TikTok / YouTube 三平台热门内容，每平台 Top N（默认5）统一列表（平台/标题/作者/播放/点赞/评论/发布时间/链接），终端分组表格 + CSV 导出 + 交互式 HTML 报告（卡片/表格双视图）。按关键词语言智能优先同语言内容（中文词→中文优先，英文词→英文优先，其余语言兜底）。当用户需要搜索海外平台热点、跨平台内容对比、话题/竞品舆情监控、选题素材采集时使用。
 description_zh: 输入关键词（中英文均可），一次搜索 X / TikTok / YouTube 三平台热门内容，每平台 Top N 统一字段列表（平台/标题/作者/播放/点赞/评论/发布时间），中文关键词优先中文内容、英文关键词优先英文内容，终端分组表格 + CSV + 交互式 HTML 报告（卡片/表格双视图），适合热点追踪、跨平台对比与素材采集。
-description_en: Search any keyword (Chinese or English) across X / TikTok / YouTube and get each platform's Top N trending posts in one unified list (platform/title/author/views/likes/comments/date). Language-aware ranking: a Chinese keyword surfaces Chinese content first, an English keyword surfaces English content first, other languages as fallback. Grouped terminal table + CSV export + interactive HTML report (card/table views) — ideal for trend tracking, cross-platform comparison and content research.
+description_en: "Search any keyword (Chinese or English) across X / TikTok / YouTube and get each platform's Top N trending posts in one unified list (platform/title/author/views/likes/comments/date). Language-aware ranking: a Chinese keyword surfaces Chinese content first, an English keyword surfaces English content first, other languages as fallback. Grouped terminal table + CSV export + interactive HTML report (card/table views) — ideal for trend tracking, cross-platform comparison and content research."
 category: data-analysis
 version: 1.3.0
 author: 红狐数据

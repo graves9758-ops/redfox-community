@@ -1,4 +1,4 @@
-﻿---
+---
 name: bilibili-portfolio-search
 description: B站账号作品列表实时查询工具。根据B站UP主的UID获取该UP主发布的最新视频作品列表，支持游标翻页浏览更多作品。当用户想查看某个B站UP主的作品列表、B站账号视频、UP主投稿列表时使用。
 ---
