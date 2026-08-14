@@ -145,6 +145,7 @@ npx skills add https://github.com/redfox-data/redfox-community/tree/main/skills/
 - [搜索关键词获取抖音作品 (优质库)](https://redfox.hk/apis/douyin/774OBKK0)
 - [获取抖音账号作品列表 (优质库)](https://redfox.hk/apis/douyin/QEQLCKD6)
 - [搜索关键词获取抖音 AI 作品(优质库)](https://redfox.hk/apis/douyin/I8P3HTVH)
+- [视频提文案-提交任务](https://redfox.hk/apis/douyin/8DCJW2ZF)
 
 #### 小红书：
 
@@ -153,6 +154,9 @@ npx skills add https://github.com/redfox-data/redfox-community/tree/main/skills/
 - [搜索关键词获取小红书账号 (优质库)](https://redfox.hk/apis/xiaohongshu/439NFLBD)
 - [搜索关键词获取小红书作品 (优质库)](https://redfox.hk/apis/xiaohongshu/384C6W6B)
 - [搜索关键词获取小红书 AI 作品(优质库)](https://redfox.hk/apis/xiaohongshu/047JJ3UA)
+- [小红书爆款笔记洞察](https://redfox.hk/apis/xiaohongshu/3X8FGEEM)
+- [小红书七日爆款笔记](https://redfox.hk/apis/xiaohongshu/LBYLC5AK)
+- [视频提文案-提交任务](https://redfox.hk/apis/xiaohongshu/DCZW5V7A)
 
 #### 公众号：
 
@@ -163,6 +167,14 @@ npx skills add https://github.com/redfox-data/redfox-community/tree/main/skills/
 - [获取公众号账号作品列表 (优质库)](https://redfox.hk/apis/gongzhonghao/XNV30XZ3)
 - [根据作品地址获取公众号作品 (优质库)](https://redfox.hk/apis/gongzhonghao/VUTTKTP6)
 - [搜索关键词获取公众号 AI 创作作品 (优质库)](https://redfox.hk/apis/gongzhonghao/IE0887SO)
+
+#### 视频号：
+
+- [链接提文案-提交任务（视频号）](https://redfox.hk/apis/shipinhao/HR8CU3GG)
+
+#### 快手
+
+- [视频提文案-提交任务](https://redfox.hk/apis/kuaishou/8TUUDDCJ)
 
 #### 哔哩哔哩：
 
@@ -195,6 +207,22 @@ npx skills add https://github.com/redfox-data/redfox-community/tree/main/skills/
 - [上传图片](https://redfox.hk/apis/tool/FXDGJO1V)
 - [上传视频/图片/音频](https://redfox.hk/apis/tool/6L178PZD)
 - [短视频下载器](https://redfox.hk/apis/tool/AWUTFI4V)
+- [YouTube视频下载](https://redfox.hk/apis/tool/D52IUEIM)
+- [X(Twitter)视频下载](https://redfox.hk/apis/tool/7UW1PT1F)
+- [TikTok视频下载](https://redfox.hk/apis/tool/MQMDU19Q)
+- [小红书视频下载](https://redfox.hk/apis/tool/QPNFJRG1)
+- [视频号视频下载](https://redfox.hk/apis/tool/U2NJ13MW)
+- [抖音视频下载](https://redfox.hk/apis/tool/0W27H3O6)
+- [快手视频下载](https://redfox.hk/apis/tool/0ZIWOO8P)
+- [哔哩哔哩视频下载](https://redfox.hk/apis/tool/CWX77QIH)
+- [Instagram视频下载](https://redfox.hk/apis/tool/UUSP1G1P)
+
+#### TikTok：
+
+- [获取单个作品数据](https://redfox.hk/apis/tool-tiktok/6SE9WIHJ)
+- [获取用户主页作品数据](https://redfox.hk/apis/tool-tiktok/R473NUE9)
+- [关键词视频搜索](https://redfox.hk/apis/tool-tiktok/PXZXY8KQ)
+- [TikTok关键词搜索账号](https://redfox.hk/apis/tool-tiktok/20070019)
 
 #### 更多平台API：
 
