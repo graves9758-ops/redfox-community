@@ -1,0 +1,30 @@
+name: Notify dsh repo
+
+# Triggers the redfox-community-dsh repo's sync-skills.yml immediately
+# whenever skills/ changes land on main, so the dsh mirror updates in
+# near-real-time instead of waiting for its hourly schedule.
+#
+# Requires repo secret DSH_REPO_TOKEN (Settings → Secrets and variables
+# → Actions): a PAT with write access to redfox-data/redfox-community-dsh.
+#   - fine-grained PAT: resource = redfox-community-dsh only,
+#     permission = Contents: Read and write
+#   - classic PAT: scope = repo
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: repository_dispatch to redfox-community-dsh
+        env:
+          DSH_REPO_TOKEN: ${{ secrets.DSH_REPO_TOKEN }}
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: token $DSH_REPO_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/redfox-data/redfox-community-dsh/dispatches \
+            -d '{"event_type":"skills-updated"}'
