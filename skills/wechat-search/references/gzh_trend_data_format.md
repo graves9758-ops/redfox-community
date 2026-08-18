@@ -15,9 +15,10 @@
 **请求地址**：`POST https://redfox.hk/story/api/gzh/search/hotArticle`
 
 **请求头**：
+
 ```
 Content-Type: application/json
-X-API-Key: ak_c4fc9018ffb14ce4ae35dafd92f466c3
+X-API-Key: ak_xxxxxxxxxxxxxxxxx
 ```
 
 ## 输入格式
@@ -32,11 +33,11 @@ X-API-Key: ak_c4fc9018ffb14ce4ae35dafd92f466c3
 }
 ```
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `keyword` | string | 是 | 搜索关键词，多个关键词用逗号分隔 |
-| `startDate` | string | 是 | 开始日期，格式 yyyy-MM-dd |
-| `endDate` | string | 是 | 结束日期，格式 yyyy-MM-dd |
+| 参数        | 类型   | 必填 | 说明                             |
+| ----------- | ------ | ---- | -------------------------------- |
+| `keyword`   | string | 是   | 搜索关键词，多个关键词用逗号分隔 |
+| `startDate` | string | 是   | 开始日期，格式 yyyy-MM-dd        |
+| `endDate`   | string | 是   | 结束日期，格式 yyyy-MM-dd        |
 
 ### 脚本命令行参数
 
@@ -44,14 +45,14 @@ X-API-Key: ak_c4fc9018ffb14ce4ae35dafd92f466c3
 python scripts/fetch_gzh_trends.py --keyword <关键词> [选项]
 ```
 
-| 参数 | 必填 | 说明 | 默认值 |
-|------|------|------|--------|
-| `--keyword` | 是 | 搜索关键词，多个关键词用逗号分隔 | - |
-| `--start-date` | 否 | 开始日期，格式 yyyy-MM-dd | 最近30天 |
-| `--max-items` | 否 | 最多展示数量 | 10 |
-| `--output-format` | 否 | 输出格式：text、json 或 html | html |
-| `--output-file` | 否 | 输出文件路径 | 关键词_趋势数据.html |
-| `--debug` | 否 | 调试模式，打印原始API响应 | False |
+| 参数              | 必填 | 说明                             | 默认值                |
+| ----------------- | ---- | -------------------------------- | --------------------- |
+| `--keyword`       | 是   | 搜索关键词，多个关键词用逗号分隔 | -                     |
+| `--start-date`    | 否   | 开始日期，格式 yyyy-MM-dd        | 最近30天              |
+| `--max-items`     | 否   | 最多展示数量                     | 10                    |
+| `--output-format` | 否   | 输出格式：text、json 或 html     | html                  |
+| `--output-file`   | 否   | 输出文件路径                     | 关键词\_趋势数据.html |
+| `--debug`         | 否   | 调试模式，打印原始API响应        | False                 |
 
 ## 接口返回格式
 
@@ -77,42 +78,42 @@ python scripts/fetch_gzh_trends.py --keyword <关键词> [选项]
 
 ### 返回字段说明
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `code` | int | 状态码，2000表示成功 |
-| `msg` | string | 状态消息 |
-| `data` | object | 数据对象 |
-| `data.articles` | array | 文章列表 |
-| `data.latestHotArticles` | array | 最新热门文章列表 |
-| `data.hotTopics` | array | 热门话题（接口返回，对话中不展示，使用固定赛道列表替代） |
-| `data.keyword` | string | 搜索关键词 |
-| `data.pageNum` | int | 当前页码 |
-| `data.pageSize` | int | 每页数量 |
-| `data.relatedSearches` | array | 相关搜索（暂无数据） |
-| `data.tips` | string | 提示信息 |
-| `data.total` | int | 总数量 |
+| 字段                     | 类型   | 说明                                                     |
+| ------------------------ | ------ | -------------------------------------------------------- |
+| `code`                   | int    | 状态码，2000表示成功                                     |
+| `msg`                    | string | 状态消息                                                 |
+| `data`                   | object | 数据对象                                                 |
+| `data.articles`          | array  | 文章列表                                                 |
+| `data.latestHotArticles` | array  | 最新热门文章列表                                         |
+| `data.hotTopics`         | array  | 热门话题（接口返回，对话中不展示，使用固定赛道列表替代） |
+| `data.keyword`           | string | 搜索关键词                                               |
+| `data.pageNum`           | int    | 当前页码                                                 |
+| `data.pageSize`          | int    | 每页数量                                                 |
+| `data.relatedSearches`   | array  | 相关搜索（暂无数据）                                     |
+| `data.tips`              | string | 提示信息                                                 |
+| `data.total`             | int    | 总数量                                                   |
 
 ### 文章字段（articles数组元素）
 
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| `id` | string | 文章ID（唯一标识） |
-| `title` | string | 文章标题 |
-| `summary` | string | 文章摘要/正文片段 |
-| `author` | string | 公众号名称 |
-| `sourceUsernickname` | string | 来源用户昵称（可为null） |
-| `url` | string | 文章链接 |
-| `imageUrl` | string | 封面图片链接 |
-| `publicTime` | string | 发布时间（格式：YYYY-MM-DD HH:MM:SS） |
-| `likeCount` | int | 点赞数 |
-| `commentsCount` | int | 评论数（可为null） |
-| `watchCount` | int | 在看数 |
-| `clicksCount` | int | 阅读数 |
-| `popularityScore` | float | 热度评分 |
-| `recencyScore` | float | 时效评分 |
-| `relevanceScore` | float | 相关性评分 |
-| `totalScore` | float | 总评分 |
-| `publicTagInfo` | string | 标签信息（JSON字符串，可为null） |
+| 字段名               | 类型   | 说明                                  |
+| -------------------- | ------ | ------------------------------------- |
+| `id`                 | string | 文章ID（唯一标识）                    |
+| `title`              | string | 文章标题                              |
+| `summary`            | string | 文章摘要/正文片段                     |
+| `author`             | string | 公众号名称                            |
+| `sourceUsernickname` | string | 来源用户昵称（可为null）              |
+| `url`                | string | 文章链接                              |
+| `imageUrl`           | string | 封面图片链接                          |
+| `publicTime`         | string | 发布时间（格式：YYYY-MM-DD HH:MM:SS） |
+| `likeCount`          | int    | 点赞数                                |
+| `commentsCount`      | int    | 评论数（可为null）                    |
+| `watchCount`         | int    | 在看数                                |
+| `clicksCount`        | int    | 阅读数                                |
+| `popularityScore`    | float  | 热度评分                              |
+| `recencyScore`       | float  | 时效评分                              |
+| `relevanceScore`     | float  | 相关性评分                            |
+| `totalScore`         | float  | 总评分                                |
+| `publicTagInfo`      | string | 标签信息（JSON字符串，可为null）      |
 
 ## 脚本输出格式
 
@@ -148,27 +149,28 @@ python scripts/fetch_gzh_trends.py --keyword <关键词> [选项]
 
 ### 脚本输出字段说明
 
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| `photoId` | string | 文章ID |
-| `title` | string | 文章标题 |
-| `summary` | string | 文章摘要 |
-| `accountId` | string | 公众号ID/名称 |
-| `accountName` | string | 公众号名称 |
-| `fans` | int | 粉丝数（固定为0，接口未返回） |
-| `publicTime` | string | 发布时间 |
-| `noteLink` | string | 文章链接 |
-| `authorLink` | string | 作者二维码链接 |
-| `interactiveCount` | int | 互动总数（点赞+评论+在看） |
-| `likeCount` | int | 点赞数 |
-| `commentCount` | int | 评论数 |
-| `watchCount` | int | 在看数 |
-| `clicksCount` | string | 阅读数 |
-| `dataScore` | float | 数据表现分数（0-100分） |
+| 字段名             | 类型   | 说明                          |
+| ------------------ | ------ | ----------------------------- |
+| `photoId`          | string | 文章ID                        |
+| `title`            | string | 文章标题                      |
+| `summary`          | string | 文章摘要                      |
+| `accountId`        | string | 公众号ID/名称                 |
+| `accountName`      | string | 公众号名称                    |
+| `fans`             | int    | 粉丝数（固定为0，接口未返回） |
+| `publicTime`       | string | 发布时间                      |
+| `noteLink`         | string | 文章链接                      |
+| `authorLink`       | string | 作者二维码链接                |
+| `interactiveCount` | int    | 互动总数（点赞+评论+在看）    |
+| `likeCount`        | int    | 点赞数                        |
+| `commentCount`     | int    | 评论数                        |
+| `watchCount`       | int    | 在看数                        |
+| `clicksCount`      | string | 阅读数                        |
+| `dataScore`        | float  | 数据表现分数（0-100分）       |
 
 ## 数据评分规则
 
 脚本对文章进行数据表现评分（0-100分），评分维度：
+
 - 点赞权重 30%
 - 评论权重 25%
 - 在看权重 25%
@@ -179,6 +181,7 @@ python scripts/fetch_gzh_trends.py --keyword <关键词> [选项]
 ## HTML 输出格式
 
 HTML输出采用卡片式布局，Grid自适应2-4列，每张卡片包含：
+
 1. 序号标签
 2. 文章标题（可点击跳转）
 3. 作者信息 + 发布日期（作者可点击跳转）
