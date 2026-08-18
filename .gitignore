@@ -1,2 +1,9 @@
 __pycache__/
 *.pyc
+
+# ── Skill runtime artifacts (user-generated at runtime, never ship) ──
+skills/**/_user_meta.json
+skills/**/subscriptions.json
+skills/**/cache/
+skills/**/*_test_result.json
+skills/**/test_*.json
