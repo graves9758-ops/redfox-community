@@ -1,9 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-短剧-公众号信息源日报生成脚本 (增强版 v2.2)
+短剧-公众号信息源日报生成脚本 (增强版 v2.3)
 ==========================================
 每日扫描公众号短剧爆款内容,智能聚类题材后生成HTML日报
+
+v2.3 调整说明（确认制：无数据不自动查询）：
+- 【无数据确认制】查询无匹配数据 / 全量数据不足时，**禁止自动发起任何额外查询**
+  （禁止自动降级全量、禁止自动扩展题材）。脚本停止并输出推荐题材关键词，
+  由 Agent 询问用户是否按推荐词重新查询，得到用户确认后才可发起查询。
+- 全量查询数据不足（小于 AUTO_EXPAND_THRESHOLD）时仅提示推荐题材并等待确认，
+  已获取的数据仍正常生成日报。
+
+v2.3.1 调整说明（相关词命中直查）：
+- 【相关词命中直查】关键词校验匹配 topic_keywords 中规定的**题材名+全部相关词**
+  （如「打脸」命中逆袭题材相关词、「总裁」命中霸总题材相关词、「宠妻/替身」命中
+  霸总相关词等），命中后**直接使用该关键词查询数据**（不替换题材、不降级全量）。
 
 v2.2 调整说明（同步自"短剧-B站信息源" v2.2 增强 + 用户新规则）：
 - 【前置校验】查询前先判断用户的输入条件：
@@ -21,8 +33,9 @@ v2.0 增强说明（同步自B站版，针对"数据查询结果为空"问题的
    是否有数据；无数据立即拦截，避免盲目消耗多题材查询额度。
 2. 【P0-自动回退】--latest 从最近日期向前最多回退 FALLBACK_DAYS(默认7) 天，
    找到第一个有数据的日期再生成日报；输出中明确标注实际数据日期。
-3. 【P1-自动扩展题材】全量查询数据不足(小于 AUTO_EXPAND_THRESHOLD)时，
-   按 穿越→霸总→重生→悬疑→甜宠→逆袭 顺序追加定向查询补充数据。
+3. 【确认制-扩展题材】全量查询数据不足(小于 AUTO_EXPAND_THRESHOLD)时，
+   不再自动扩展题材；提示 穿越→霸总→重生→悬疑→甜宠→逆袭 推荐顺序，
+   由 Agent 询问用户确认后才按 --topics 重新查询。
 4. 【P1-空结果重试】单题材查询为空/异常时，间隔 RETRY_INTERVAL 秒重试 1 次。
 5. 【P1-题材词校验】--topics 传入明显非题材词时给出提示（不阻断，仅提醒）。
 6. 【P2-结构化空因】每次空结果输出原因分类：无数据 / 关键词无匹配 / API异常。
@@ -62,16 +75,33 @@ FALLBACK_DAYS = 7           # --latest 自动回退的最大天数
 RETRY_TIMES = 1             # 空结果/异常重试次数
 RETRY_INTERVAL = 4          # 重试间隔（秒）
 REQUEST_TIMEOUT = 30        # 单次请求超时（秒）
-AUTO_EXPAND_THRESHOLD = 100 # 全量结果少于该值时自动扩展题材
-AUTO_EXPAND_TOPICS = ["穿越", "霸总", "重生", "悬疑", "甜宠", "逆袭"]  # 扩展顺序
+AUTO_EXPAND_THRESHOLD = 100 # 全量结果少于该值时提示用户确认是否扩展题材（不自动扩展）
+AUTO_EXPAND_TOPICS = ["穿越", "霸总", "重生", "悬疑", "甜宠", "逆袭"]  # 推荐扩展顺序（仅供提示，需用户确认后才查询）
+HOT_TOPICS = ["穿越", "霸总", "重生", "悬疑", "甜宠", "逆袭", "年代", "战神", "古装"]  # 推荐题材顺序
 
 # 短剧题材词库：用于 --topics 输入校验提示
+# 规则：关键词需命中 topic_keywords 中规定的题材名+全部相关词（如「打脸」命中逆袭题材相关词），命中后直接用该关键词查询数据
+TOPIC_KEYWORDS_THESAURUS = {
+    "穿越": ["穿越", "时空", "古代", "现代", "回到", "大宋", "北宋", "南宋", "唐朝", "明朝", "清朝"],
+    "霸总": ["霸总", "总裁", "豪门", "冷酷", "宠妻", "娇妻", "替身"],
+    "重生": ["重生", "逆袭", "回到", "翻盘", "重来", "再生"],
+    "悬疑": ["悬疑", "推理", "反转", "惊悚", "谜案", "秘密", "真相"],
+    "甜宠": ["甜宠", "恋爱", "撒糖", "甜蜜", "宠溺", "甜甜"],
+    "逆袭": ["逆袭", "翻身", "打脸", "崛起", "反击", "报复"],
+    "年代": ["年代", "八零", "九零", "七零", "六零"],
+    "战神": ["战神", "龙王", "兵王", "高手"],
+    "古装": ["古装", "宫廷", "皇后", "贵妃", "王爷", "世子"],
+}
+# 全部有效词集合（题材名 + 各题材相关词 + 扩展词），用于关键词前置校验
 TOPIC_THESAURUS = {
     "穿越", "霸总", "重生", "悬疑", "甜宠", "逆袭", "年代", "战神",
     "古装", "总裁", "豪门", "复仇", "惊悚", "推理", "反转", "爽文",
     "科幻", "玄幻", "修仙", "都市", "职场", "萌宝", "萌娃", "亲子",
     "离婚", "闪婚", "替身", "虐恋", "先婚后爱", "双重生",
 }
+for _t, _kws in TOPIC_KEYWORDS_THESAURUS.items():
+    TOPIC_THESAURUS.add(_t)
+    TOPIC_THESAURUS.update(_kws)
 
 
 # ============ 工具函数 ============
@@ -254,7 +284,7 @@ def fetch_playlet_data(
     调用 API 查询公众号短剧数据（增强版）
 
     Args:
-        topics: 题材列表(逗号分隔)，None/空 → 全量查询，数据不足时自动扩展题材
+        topics: 题材列表(逗号分隔)，None/空 → 全量查询；数据不足时不自动扩展，提示用户确认
         start_time / end_time: 查询时间窗
         count: 扫描作品数量
         use_cache: 是否使用缓存
@@ -287,8 +317,8 @@ def fetch_playlet_data(
         return [], meta
 
     # ---- 确定查询题材序列 ----
-    # 用户指定题材 → 仅用用户列表（文档规则：自定义时不用扩展列表）
-    # 未指定 → 全量查询；数据不足时自动按 AUTO_EXPAND_TOPICS 扩展
+    # 用户指定题材 → 仅用用户列表（确认制：无匹配时不再自动降级/扩展）
+    # 未指定 → 全量查询；数据不足时提示推荐题材并等待用户确认，不自动扩展
     if topics:
         query_topics = list(topics)
         auto_expand = False
@@ -298,7 +328,6 @@ def fetch_playlet_data(
 
     all_items = []
     api_errors = 0
-    expanded = False
 
     for topic in query_topics:
         keyword = None if topic is None or topic == "短剧" else topic
@@ -310,25 +339,15 @@ def fetch_playlet_data(
         if items:
             all_items.extend(items)
 
-        # ---- P1-3 自动扩展题材：去重数不足且未满 count 时继续 ----
+        # ---- 确认制（v2.3）：全量数据不足时不再自动扩展题材 ----
+        # 仅提示推荐题材并等待用户确认，确认前不发起任何额外请求
         if auto_expand:
             unique_ids = {it.get("photoId") for it in all_items if it.get("photoId")}
-            if len(unique_ids) < min(count, AUTO_EXPAND_THRESHOLD) and not expanded:
-                expanded = True
-                print(f"  ➕ 全量数据不足({len(unique_ids)}条 < {AUTO_EXPAND_THRESHOLD})，"
-                      f"自动扩展题材: {'→'.join(AUTO_EXPAND_TOPICS)}")
-                for extra in AUTO_EXPAND_TOPICS:
-                    ep = build_payload(start_time, end_time, keyword=extra,
-                                       page_size=min(count, 200))
-                    e_items, e_err = _fetch_topic_once(api_key, ep, extra)
-                    if e_err:
-                        api_errors += 1
-                    if e_items:
-                        all_items.extend(e_items)
-                    unique_ids = {it.get("photoId") for it in all_items if it.get("photoId")}
-                    if len(unique_ids) >= count:
-                        break
-                break  # 扩展后结束循环
+            if len(unique_ids) < min(count, AUTO_EXPAND_THRESHOLD):
+                print(f"  ⚠️ 全量数据不足({len(unique_ids)}条 < {AUTO_EXPAND_THRESHOLD})，不自动扩展题材")
+                print(f"  💡 推荐题材: {'、'.join(AUTO_EXPAND_TOPICS)}")
+                print(f"  ❓ 请确认是否按推荐题材扩展查询（使用 --topics 重新查询），确认前不会发起任何额外请求")
+                meta["reason"] = "need_confirm_expand"
 
     # 去重(基于photoId)
     seen = set()
@@ -358,18 +377,8 @@ def fetch_playlet_data(
 
 # ============ 题材聚类 ============
 def cluster_by_topic(items):
-    """按题材聚类文章"""
-    topic_keywords = {
-        "穿越": ["穿越", "时空", "古代", "现代", "回到", "大宋", "北宋", "南宋", "唐朝", "明朝", "清朝"],
-        "霸总": ["霸总", "总裁", "豪门", "冷酷", "宠妻", "娇妻", "替身"],
-        "重生": ["重生", "逆袭", "回到", "翻盘", "重来", "再生"],
-        "悬疑": ["悬疑", "推理", "反转", "惊悚", "谜案", "秘密", "真相"],
-        "甜宠": ["甜宠", "恋爱", "撒糖", "甜蜜", "宠溺", "甜甜", "撒糖"],
-        "逆袭": ["逆袭", "翻身", "打脸", "崛起", "反击", "报复"],
-        "年代": ["年代", "八零", "九零", "七零", "六零"],
-        "战神": ["战神", "龙王", "兵王", "高手"],
-        "古装": ["古装", "宫廷", "皇后", "贵妃", "王爷", "世子"]
-    }
+    """按题材聚类文章（词库与 TOPIC_KEYWORDS_THESAURUS 保持一致）"""
+    topic_keywords = dict(TOPIC_KEYWORDS_THESAURUS)
     clusters = {}
     for item in items:
         title = item.get("title", "")
@@ -573,7 +582,7 @@ def find_latest_available_date(api_key, max_fallback=FALLBACK_DAYS):
 
 def main():
     global OUTPUT_DIR
-    parser = argparse.ArgumentParser(description="短剧-公众号信息源日报生成工具 (v2.2增强版)")
+    parser = argparse.ArgumentParser(description="短剧-公众号信息源日报生成工具 (v2.3确认制)")
     parser.add_argument("--topics", type=str, help="题材关键词,逗号分隔;不满足短剧题材词时提醒并推荐,不请求接口")
     parser.add_argument("--count", type=int, default=200, help="扫描文章数量")
     parser.add_argument("--date", type=str, help="指定日期 YYYY-MM-DD;超出有效范围时提醒并自动回退最近有数据的日期")
@@ -677,11 +686,22 @@ def main():
             "api_error": "接口调用异常",
         }.get(reason, "未知原因")
         print(f"📭 未查询到相关数据 [原因: {hint}]")
-        if reason == "no_data":
+        if reason == "keyword_no_match":
+            # v2.3 确认制：无匹配数据时展示推荐关键词，等待用户确认后才可查询，禁止自动查询
+            print("🛑 未发起任何额外查询（禁止自动降级全量 / 自动扩展题材）")
+            print(f"💡 推荐题材：{'、'.join(AUTO_EXPAND_TOPICS)}、年代、战神、古装、都市")
+            print(f"❓ 是否按推荐题材（如 {AUTO_EXPAND_TOPICS[0]}/{AUTO_EXPAND_TOPICS[1]}）重新查询？"
+                  f"请确认后使用 --topics 重新查询。")
+        elif reason == "no_data":
             print("💡 建议: 使用 --latest 自动回退到最近有数据的日期")
         return
 
     print(f"✅ 共获取 {len(items)} 篇短剧文章")
+
+    if meta.get("reason") == "need_confirm_expand":
+        # v2.3 确认制：全量数据不足时未自动扩展，提示推荐题材并等待用户确认
+        print(f"⚠️ 全量数据不足，未自动扩展题材（禁止自动查询）。推荐题材：{'、'.join(AUTO_EXPAND_TOPICS)}")
+        print(f"❓ 是否按推荐题材扩展查询？请确认后使用 --topics 重新查询（确认前不发起额外请求）。")
 
     clusters = cluster_by_topic(items)
     print(f"📊 聚类为 {len(clusters)} 个题材方向")

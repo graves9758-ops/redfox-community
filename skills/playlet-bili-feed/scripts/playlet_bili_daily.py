@@ -11,6 +11,15 @@ v2.3 调整说明（无效条件不请求接口，直接提示）：
   混合词场景保留有效关键词查询（仅请求有效词）。
 - 校验时机提前到日期处理之前，确保无效时零接口请求。
 
+v2.3.1 调整说明（相关词命中直查 + 无数据确认制）：
+- 【相关词命中直查】关键词校验匹配 topic_keywords 中规定的**题材名+全部相关词**
+  （如「打脸」命中逆袭题材相关词、「总裁」命中霸总题材相关词、「宠妻/替身」命中
+  霸总相关词等），命中后**直接使用该关键词查询数据**（不替换题材、不降级全量）。
+- 【无数据确认制】查询无匹配数据或全量数据不足时，**禁止自动发起任何额外查询**
+  （禁止自动降级全量、禁止自动扩展题材）。脚本停止并输出推荐题材关键词，
+  由 Agent 询问用户是否按推荐词重新查询，得到用户确认后才可发起查询。
+- 全量查询数据不足(小于 AUTO_EXPAND_THRESHOLD)时仅提示推荐题材并等待确认，不自动扩展。
+
 v2.2 调整说明（查询前输入校验+推荐）：
 - 【前置校验】查询前先判断用户的输入条件：
   1) 分类/关键词是否符合短剧题材词库（穿越/霸总/重生/甜宠/悬疑等）
@@ -38,8 +47,8 @@ gmtCreate 符合 15:00 规则）。空结果主要来自：
    是否有数据；无数据立即拦截，避免盲目消耗多题材查询额度。
 2. 【P0-自动回退】--latest 从最近日期向前最多回退 FALLBACK_DAYS(默认7) 天，
    找到第一个有数据的日期再生成日报；输出中明确标注实际数据日期。
-3. 【P1-自动扩展题材】全量查询数据不足(小于 AUTO_EXPAND_THRESHOLD)时，
-   按 穿越→霸总→重生→悬疑→甜宠→逆袭 顺序追加定向查询补充数据。
+3. 【P1-确认制题材补充】全量查询数据不足(小于 AUTO_EXPAND_THRESHOLD)时，
+   仅提示推荐题材并等待用户确认，确认前不自动扩展题材（v2.3.1 确认制）。
 4. 【P1-空结果重试】单题材查询为空/异常时，间隔 RETRY_INTERVAL 秒重试 1 次。
 5. 【P1-题材词校验】--topics 传入明显非题材词时给出提示（不阻断，仅提醒）。
 6. 【P2-结构化空因】每次空结果输出原因分类：无数据 / 关键词无匹配 / API异常。
@@ -76,12 +85,28 @@ AUTO_EXPAND_THRESHOLD = 100 # 全量结果少于该值时自动扩展题材
 AUTO_EXPAND_TOPICS = ["穿越", "霸总", "重生", "悬疑", "甜宠", "逆袭"]  # 扩展顺序
 
 # 短剧题材词库：用于 --topics 输入校验提示
+# 规则：关键词需命中 topic_keywords 中规定的题材名+全部相关词（如「打脸」命中逆袭题材相关词），命中后直接用该关键词查询数据
+TOPIC_KEYWORDS_THESAURUS = {
+    "穿越": ["穿越", "时空", "古代", "现代", "回到", "大宋", "北宋", "南宋", "唐朝", "明朝", "清朝"],
+    "霸总": ["霸总", "总裁", "豪门", "冷酷", "宠妻", "娇妻", "替身"],
+    "重生": ["重生", "逆袭", "回到", "翻盘", "重来", "再生"],
+    "悬疑": ["悬疑", "推理", "反转", "惊悚", "谜案", "秘密", "真相"],
+    "甜宠": ["甜宠", "恋爱", "撒糖", "甜蜜", "宠溺", "甜甜"],
+    "逆袭": ["逆袭", "翻身", "打脸", "崛起", "反击", "报复"],
+    "年代": ["年代", "八零", "九零", "七零", "六零"],
+    "战神": ["战神", "龙王", "兵王", "高手"],
+    "古装": ["古装", "宫廷", "皇后", "贵妃", "王爷", "世子"],
+}
+# 全部有效词集合（题材名 + 各题材相关词 + 扩展词），用于关键词前置校验
 TOPIC_THESAURUS = {
     "穿越", "霸总", "重生", "悬疑", "甜宠", "逆袭", "年代", "战神",
     "古装", "总裁", "豪门", "复仇", "惊悚", "推理", "反转", "爽文",
     "科幻", "玄幻", "修仙", "都市", "职场", "萌宝", "萌娃", "亲子",
     "离婚", "闪婚", "替身", "虐恋", "先婚后爱", "双重生",
 }
+for _t, _kws in TOPIC_KEYWORDS_THESAURUS.items():
+    TOPIC_THESAURUS.add(_t)
+    TOPIC_THESAURUS.update(_kws)
 
 
 # ============ 工具函数 ============
@@ -322,25 +347,16 @@ def fetch_playlet_data(
         if items:
             all_items.extend(items)
 
-        # ---- P1-3 自动扩展题材：去重数不足且未满 count 时继续 ----
+        # ---- 确认制（v2.3）：全量数据不足时不再自动扩展题材 ----
+        # 仅提示推荐题材并等待用户确认，确认前不发起任何额外请求
         if auto_expand:
             unique_ids = {it.get("photoId") for it in all_items if it.get("photoId")}
-            if len(unique_ids) < min(count, AUTO_EXPAND_THRESHOLD) and not expanded:
+            if len(unique_ids) < min(count, AUTO_EXPAND_THRESHOLD):
                 expanded = True
-                print(f"  ➕ 全量数据不足({len(unique_ids)}条 < {AUTO_EXPAND_THRESHOLD})，"
-                      f"自动扩展题材: {'→'.join(AUTO_EXPAND_TOPICS)}")
-                for extra in AUTO_EXPAND_TOPICS:
-                    ep = build_payload(start_time, end_time, keyword=extra,
-                                       page_size=min(count, 200))
-                    e_items, e_err = _fetch_topic_once(api_key, ep, extra)
-                    if e_err:
-                        api_errors += 1
-                    if e_items:
-                        all_items.extend(e_items)
-                    unique_ids = {it.get("photoId") for it in all_items if it.get("photoId")}
-                    if len(unique_ids) >= count:
-                        break
-                break  # 扩展后结束循环
+                print(f"  ⚠️ 全量数据不足({len(unique_ids)}条 < {AUTO_EXPAND_THRESHOLD})，不自动扩展题材")
+                print(f"  💡 推荐题材: {'、'.join(AUTO_EXPAND_TOPICS)}")
+                print(f"  ❓ 请确认是否按推荐题材扩展查询（使用 --topics 重新查询），确认前不会发起任何额外请求")
+                meta["reason"] = "need_confirm_expand"
 
     # 去重(基于photoId)
     seen = set()
@@ -370,18 +386,8 @@ def fetch_playlet_data(
 
 # ============ 题材聚类 ============
 def cluster_by_topic(items):
-    """按题材聚类作品（保留原逻辑）"""
-    topic_keywords = {
-        "穿越": ["穿越", "时空", "古代", "现代", "回到", "大宋", "北宋", "南宋", "唐朝", "明朝", "清朝"],
-        "霸总": ["霸总", "总裁", "豪门", "冷酷", "宠妻", "娇妻", "替身"],
-        "重生": ["重生", "逆袭", "回到", "翻盘", "重来", "再生"],
-        "悬疑": ["悬疑", "推理", "反转", "惊悚", "谜案", "秘密", "真相"],
-        "甜宠": ["甜宠", "恋爱", "撒糖", "甜蜜", "宠溺", "甜甜", "撒糖"],
-        "逆袭": ["逆袭", "翻身", "打脸", "崛起", "反击", "报复"],
-        "年代": ["年代", "八零", "九零", "七零", "六零"],
-        "战神": ["战神", "龙王", "兵王", "高手"],
-        "古装": ["古装", "宫廷", "皇后", "贵妃", "王爷", "世子"]
-    }
+    """按题材聚类作品（保留原逻辑，词库与 TOPIC_KEYWORDS_THESAURUS 保持一致）"""
+    topic_keywords = dict(TOPIC_KEYWORDS_THESAURUS)
     clusters = {}
     for item in items:
         title = item.get("title", "")
