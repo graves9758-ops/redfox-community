@@ -4,70 +4,70 @@
 
 ### 生成最新日报
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --latest
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --latest
 ```
 
 ### 生成指定日期日报
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --date 2026-06-10
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --date 2026-06-10
 ```
 
 ## 自定义题材查询
 
 ### 穿越题材
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --topics "穿越,时空,重生"
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --topics "穿越,时空,重生"
 ```
 
 ### 霸总题材
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --topics "霸总,总裁,豪门,宠妻"
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --topics "霸总,总裁,豪门,宠妻"
 ```
 
 ### 悬疑题材
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --topics "悬疑,推理,反转,惊悚"
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --topics "悬疑,推理,反转,惊悚"
 ```
 
 ### 多题材组合
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --topics "穿越,霸总,重生,悬疑"
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --topics "穿越,霸总,重生,悬疑"
 ```
 
 ## 订阅管理
 
 ### 开启订阅
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --subscribe
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --subscribe
 ```
 
 ### 关闭订阅
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --unsubscribe
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --unsubscribe
 ```
 
 ## 高级参数
 
 ### 自定义时间范围
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" \
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" \
   --start-time "2026-06-10 00:00:00" \
   --end-time "2026-06-10 23:59:59"
 ```
 
 ### 指定扫描数量
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --count 100
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --count 100
 ```
 
 ### 使用缓存数据
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --from-cache
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --from-cache
 ```
 
 ### 指定输出目录
 ```bash
-python3 "$SKILL_PATH/assets/daily_report.py" --output-dir "/path/to/output"
+python3 "$SKILL_PATH/scripts/playlet_bili_daily.py" --output-dir "/path/to/output"
 ```
 
 ## 常见场景

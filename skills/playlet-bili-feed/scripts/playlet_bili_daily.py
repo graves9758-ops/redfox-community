@@ -1,8 +1,55 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-短剧-B站信息源日报生成脚本
+短剧-B站信息源日报生成脚本 (增强版 v2.3)
+=========================================
 每日扫描B站短剧爆款内容,智能聚类题材后生成HTML日报
+
+v2.3 调整说明（无效条件不请求接口，直接提示）：
+- 关键词/分类不符合短剧题材词库（全部无效）时，**不调用任何接口**（含探活），
+  直接提示"关键词不满足短剧查询条件"并推荐相关分类和关键词后停止；
+  混合词场景保留有效关键词查询（仅请求有效词）。
+- 校验时机提前到日期处理之前，确保无效时零接口请求。
+
+v2.2 调整说明（查询前输入校验+推荐）：
+- 【前置校验】查询前先判断用户的输入条件：
+  1) 分类/关键词是否符合短剧题材词库（穿越/霸总/重生/甜宠/悬疑等）
+  2) 日期是否在有效查询范围（格式正确、不晚于今天）
+- 【提醒+推荐】关键词/分类不满足时，明确提醒"关键词不满足查询条件"，
+  并推荐相关的分类和关键词（优先从无效词中提取题材词，再补热门题材）；
+  无效关键词自动忽略，全部无效时自动降级全量查询（沿用v2.1兜底）。
+
+v2.1 调整说明（自动兜底+明确告知）：
+- 【日期兜底】用户查询的日期未更新或超过查询时间范围时，不再停留等待确认，
+  自动向前回退获取最近时间范围数据，并明确告知"当前查询时间未更新或超过查询
+  时间范围，已为您自动获取最近时间范围数据"。
+- 【关键词兜底】用户指定的关键词/题材无匹配数据时，自动降级为全量查询获取
+  数据，并明确告知"关键词未匹配，已为您自动获取全量数据"。
+
+v2.0 增强说明（针对"数据查询结果为空"问题的降失败率机制）：
+
+背景实证：脚本解析逻辑本身正常（2026-08-11 实测成功缓存 200 条 B站数据，
+gmtCreate 符合 15:00 规则）。空结果主要来自：
+  A. 数据源间歇性缺数/延迟（主因）：无 keyword 全量查询也空、凌晨查 T-2 也空
+  B. 关键词与短剧标题不匹配（次因）：热点词/商品词搜短剧必然空
+
+本版增强（非 Bug 修复，是降失败率机制）：
+1. 【P0-日期探活】查询前先用 pageSize=1、不带 keyword 的轻量请求探测目标日期
+   是否有数据；无数据立即拦截，避免盲目消耗多题材查询额度。
+2. 【P0-自动回退】--latest 从最近日期向前最多回退 FALLBACK_DAYS(默认7) 天，
+   找到第一个有数据的日期再生成日报；输出中明确标注实际数据日期。
+3. 【P1-自动扩展题材】全量查询数据不足(小于 AUTO_EXPAND_THRESHOLD)时，
+   按 穿越→霸总→重生→悬疑→甜宠→逆袭 顺序追加定向查询补充数据。
+4. 【P1-空结果重试】单题材查询为空/异常时，间隔 RETRY_INTERVAL 秒重试 1 次。
+5. 【P1-题材词校验】--topics 传入明显非题材词时给出提示（不阻断，仅提醒）。
+6. 【P2-结构化空因】每次空结果输出原因分类：无数据 / 关键词无匹配 / API异常。
+7. 【P2-防御式解析】兼容 {"code":2000,"data":{"list":[...]}} 与直出 list 两种
+   格式，防止服务端调整响应结构时脚本静默失效（纯加固，非修复）。
+
+用法与原版完全兼容：
+    python3 playlet_bili_daily.py --latest
+    python3 playlet_bili_daily.py --date 2026-08-05
+    python3 playlet_bili_daily.py --topics "穿越,霸总" --latest
 """
 
 import argparse
@@ -15,14 +62,29 @@ from datetime import datetime, timedelta
 from urllib import request, error
 
 
-# API 配置
+# ============ 配置 ============
 API_BASE_URL = "https://redfox.hk/story/api/parseWork/queryPlayletMsgs"
 CACHE_DIR = os.path.expanduser("~/.workbuddy/cache")
 CACHE_FILE = os.path.join(CACHE_DIR, "playlet_bili_data.json")
 OUTPUT_DIR = os.path.expanduser("~/Downloads/QoderReports")
-DATA_UPDATE_HOUR = 15  # 每日15:00更新前一天数据
+DATA_UPDATE_HOUR = 15       # 数据源声称的更新时刻（仅作提示参考，不再作为唯一依据）
+FALLBACK_DAYS = 7           # --latest 自动回退的最大天数
+RETRY_TIMES = 1             # 空结果/异常重试次数
+RETRY_INTERVAL = 4          # 重试间隔（秒）
+REQUEST_TIMEOUT = 30        # 单次请求超时（秒）
+AUTO_EXPAND_THRESHOLD = 100 # 全量结果少于该值时自动扩展题材
+AUTO_EXPAND_TOPICS = ["穿越", "霸总", "重生", "悬疑", "甜宠", "逆袭"]  # 扩展顺序
+
+# 短剧题材词库：用于 --topics 输入校验提示
+TOPIC_THESAURUS = {
+    "穿越", "霸总", "重生", "悬疑", "甜宠", "逆袭", "年代", "战神",
+    "古装", "总裁", "豪门", "复仇", "惊悚", "推理", "反转", "爽文",
+    "科幻", "玄幻", "修仙", "都市", "职场", "萌宝", "萌娃", "亲子",
+    "离婚", "闪婚", "替身", "虐恋", "先婚后爱", "双重生",
+}
 
 
+# ============ 工具函数 ============
 def get_api_key():
     """从环境变量获取 API Key"""
     api_key = os.environ.get("REDFOX_API_KEY")
@@ -34,108 +96,252 @@ def get_api_key():
 
 
 def calculate_latest_date():
-    """根据15:00规则计算最新可用日期"""
+    """按15:00规则估算最新可用日期（仅作初始起点，实际以探活为准）"""
     now = datetime.now()
     if now.hour < DATA_UPDATE_HOUR:
-        # 15:00前,最新可用日期是前天
         return (now - timedelta(days=2)).strftime("%Y-%m-%d")
     else:
-        # 15:00后,最新可用日期是昨天
         return (now - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 def validate_date(date_str):
-    """验证目标日期是否有数据"""
+    """旧接口保留：基于本地时钟的日期校验（新逻辑改走 probe_date）"""
     latest_date = calculate_latest_date()
     target_date = datetime.strptime(date_str, "%Y-%m-%d")
     latest = datetime.strptime(latest_date, "%Y-%m-%d")
-    
     return target_date <= latest, latest_date
 
 
+def check_topics(topics):
+    """
+    v2.2 前置校验：判断用户输入的分类/关键词是否符合短剧题材词库。
+    返回 (有效词列表, 无效词列表, 推荐词列表)
+    推荐逻辑：优先从无效词中提取包含的题材词，再补充热门题材词。
+    """
+    hot_topics = ["穿越", "霸总", "重生", "甜宠", "悬疑", "逆袭",
+                  "年代", "战神", "古装", "都市", "科幻"]
+    valid, invalid = [], []
+    for t in topics:
+        if t in TOPIC_THESAURUS or t == "短剧":
+            valid.append(t)
+        else:
+            invalid.append(t)
+    recommends = []
+    for t in invalid:
+        # 无效词若包含题材词（如"穿越重生"含"穿越""重生"），优先推荐
+        contained = [w for w in TOPIC_THESAURUS if w in t or t in w]
+        for c in contained:
+            if c not in recommends:
+                recommends.append(c)
+    for h in hot_topics:
+        if h not in recommends:
+            recommends.append(h)
+    return valid, invalid, recommends
+
+
+def check_date(date_str):
+    """
+    v2.2 前置校验：判断日期是否在有效查询范围（格式正确、不晚于今天）。
+    返回 (是否有效, 提示信息, 推荐日期或None)
+    """
+    try:
+        d = datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        return False, f"日期格式无效：{date_str}（应为 YYYY-MM-DD）", None
+    today = datetime.now().date()
+    if d.date() > today:
+        latest = calculate_latest_date()
+        return False, f"日期 {date_str} 超出有效查询范围（晚于今天，数据每日15:00更新前一天）", latest
+    return True, "", None
+
+
+def parse_response(result):
+    """
+    防御式响应解析（加固，非修复）：兼容两种格式
+    格式A(API实际完整响应): {"code":2000,"data":{"list":[...],"total":M},"msg":"..."}
+    格式B(兜底/直出):      {"list":[...], "pageNum":1, "pages":N, "total":M}
+    返回: (items列表, error_msg或None)
+    说明：脚本原始解析（code/data 包装）已实证工作正常；此处增加直出格式
+    兜底，防止服务端调整响应结构时脚本静默失效。
+    """
+    if not isinstance(result, dict):
+        return [], "响应非JSON对象"
+    # 格式A：code/data 包装（当前 API 实际格式）
+    if result.get("code") == 2000:
+        data = result.get("data") or {}
+        return data.get("list") or [], None
+    # 显式业务错误
+    code = result.get("code")
+    if code is not None:
+        msg = result.get("msg")
+        return [], f"API业务错误 code={code} msg={msg}"
+    # 格式B：直出 list（兜底）
+    if "list" in result:
+        return result.get("list") or [], None
+    return [], None
+
+
+def http_post(payload, api_key):
+    """执行一次 POST 请求，返回原始响应 dict（网络/HTTP 层异常向上抛）"""
+    data = json.dumps(payload).encode('utf-8')
+    req = request.Request(
+        API_BASE_URL,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "X-API-KEY": api_key
+        },
+        method="POST"
+    )
+    with request.urlopen(req, timeout=REQUEST_TIMEOUT) as response:
+        return json.loads(response.read().decode('utf-8'))
+
+
+def build_payload(start_time, end_time, keyword=None, page_size=200):
+    """构建请求体；keyword 为 None 时表示全量查询（不带 keyword 字段）"""
+    payload = {
+        "msgType": "短剧",
+        "platform": 6,  # 6=B站
+        "source": "短剧B站信息源-GitHub",
+        "pageNum": 1,
+        "pageSize": page_size,
+        "startTime": start_time,
+        "endTime": end_time,
+    }
+    if keyword:
+        payload["keyword"] = keyword
+    return payload
+
+
+def probe_date_available(api_key, start_time, end_time):
+    """
+    探活：pageSize=1 + 不带 keyword 的轻量请求，确认该日期是否有数据。
+    返回 (bool, info_str)；False 说明该日期数据源无任何数据（未更新/缺失）。
+    成本：每次探测约 1 次接口额度，远低于无脑全量查询。
+    """
+    payload = build_payload(start_time, end_time, keyword=None, page_size=1)
+    try:
+        result = http_post(payload, api_key)
+        items, err = parse_response(result)
+        if err:
+            print(f"  ⚠️ 探活请求异常: {err}")
+            return False, "probe_error"
+        if items:
+            return True, "ok"
+        return False, "no_data"
+    except Exception as e:
+        print(f"  ⚠️ 探活请求失败: {e}")
+        return False, "probe_fail"
+
+
+def _fetch_topic_once(api_key, payload, topic):
+    """单题材单次查询（含重试），返回 (items, api_error: bool)"""
+    for attempt in range(RETRY_TIMES + 1):
+        try:
+            result = http_post(payload, api_key)
+            items, err = parse_response(result)
+            if err:
+                if attempt < RETRY_TIMES:
+                    time.sleep(RETRY_INTERVAL)
+                continue
+            return items, False  # 解析成功（可能为空 list，但非异常）
+        except Exception as e:
+            if attempt < RETRY_TIMES:
+                print(f"  ⚠️ 题材 {topic} 第{attempt+1}次请求失败({e})，{RETRY_INTERVAL}s后重试...")
+                time.sleep(RETRY_INTERVAL)
+            else:
+                print(f"❌ 查询题材 {topic} 失败:{str(e)}")
+    return [], True
+
+
+# ============ 数据获取 ============
 def fetch_playlet_data(
     topics=None,
     start_time=None,
     end_time=None,
     count=200,
-    use_cache=False
+    use_cache=False,
 ):
     """
-    调用 API 查询B站短剧数据
-    
+    调用 API 查询B站短剧数据（增强版）
+
     Args:
-        topics: 题材列表,逗号分隔
-        start_time: 开始时间
-        end_time: 结束时间
-        count: 扫描数量
+        topics: 题材列表(逗号分隔)，None/空 → 全量查询，数据不足时自动扩展题材
+        start_time / end_time: 查询时间窗
+        count: 扫描作品数量
         use_cache: 是否使用缓存
-    
+
     Returns:
-        list: 作品列表
+        (items, meta) 其中 meta 含 reason 字段用于结构化空因:
+            reason in {"ok", "no_data", "probe_fail", "probe_error",
+                       "keyword_no_match", "api_error"}
     """
-    # 检查缓存
     if use_cache:
         cached_data = load_cache()
         if cached_data:
             print("📦 使用缓存数据")
-            return cached_data
-    
-    # 如果没有指定时间,使用默认逻辑
+            return cached_data, {"reason": "ok", "note": "cache"}
+
     if not start_time or not end_time:
         latest_date = calculate_latest_date()
         start_time = f"{latest_date} 00:00:00"
         end_time = f"{latest_date} 23:59:59"
-    
-    # 如果没有指定题材,查询全部短剧
-    if not topics:
-        topics = ["短剧"]
-    
-    all_items = []
+
     api_key = get_api_key()
-    
-    # 批量查询每个题材
-    for topic in topics:
-        payload = {
-            "msgType": "短剧",
-            "platform": 6,  # 6=B站
-            "source": "短剧B站信息源-GitHub",
-            "pageNum": 1,
-            "pageSize": min(count, 200),
-            "startTime": start_time,
-            "endTime": end_time
-        }
-        
-        # 只有当题材不是"短剧"时才添加keyword
-        if topic != "短剧":
-            payload["keyword"] = topic
-        
-        try:
-            data = json.dumps(payload).encode('utf-8')
-            req = request.Request(
-                API_BASE_URL,
-                data=data,
-                headers={
-                    "Content-Type": "application/json",
-                    "X-API-KEY": api_key
-                },
-                method="POST"
-            )
-            
-            with request.urlopen(req, timeout=30) as response:
-                result = json.loads(response.read().decode('utf-8'))
-                
-                # 检查响应状态(红狐API成功码为2000)
-                if result.get("code") != 2000:
-                    print(f"❌ API 错误:{result.get('msg', '未知错误')}")
-                    continue
-                
-                items = result.get("data", {}).get("list", [])
-                all_items.extend(items)
-                
-        except Exception as e:
-            print(f"❌ 查询题材 {topic} 失败:{str(e)}")
-            continue
-    
+    meta = {"reason": "ok", "probed": False, "date": start_time[:10]}
+
+    # ---- P0-2 探活：先确认该日期数据源是否有数据 ----
+    available, info = probe_date_available(api_key, start_time, end_time)
+    meta["probed"] = True
+    if not available:
+        meta["reason"] = "no_data" if info == "no_data" else info
+        print(f"📭 日期 {start_time[:10]} 数据源无数据（{info}），跳过查询以避免浪费额度")
+        return [], meta
+
+    # ---- 确定查询题材序列 ----
+    # 用户指定题材 → 仅用用户列表（文档规则：自定义时不用扩展列表）
+    # 未指定 → 全量查询；数据不足时自动按 AUTO_EXPAND_TOPICS 扩展
+    if topics:
+        query_topics = list(topics)
+        auto_expand = False
+    else:
+        query_topics = [None]
+        auto_expand = True
+
+    all_items = []
+    api_errors = 0
+    expanded = False
+
+    for topic in query_topics:
+        keyword = None if topic is None or topic == "短剧" else topic
+        payload = build_payload(start_time, end_time, keyword=keyword,
+                                page_size=min(count, 200))
+        items, had_error = _fetch_topic_once(api_key, payload, topic or "全量")
+        if had_error:
+            api_errors += 1
+        if items:
+            all_items.extend(items)
+
+        # ---- P1-3 自动扩展题材：去重数不足且未满 count 时继续 ----
+        if auto_expand:
+            unique_ids = {it.get("photoId") for it in all_items if it.get("photoId")}
+            if len(unique_ids) < min(count, AUTO_EXPAND_THRESHOLD) and not expanded:
+                expanded = True
+                print(f"  ➕ 全量数据不足({len(unique_ids)}条 < {AUTO_EXPAND_THRESHOLD})，"
+                      f"自动扩展题材: {'→'.join(AUTO_EXPAND_TOPICS)}")
+                for extra in AUTO_EXPAND_TOPICS:
+                    ep = build_payload(start_time, end_time, keyword=extra,
+                                       page_size=min(count, 200))
+                    e_items, e_err = _fetch_topic_once(api_key, ep, extra)
+                    if e_err:
+                        api_errors += 1
+                    if e_items:
+                        all_items.extend(e_items)
+                    unique_ids = {it.get("photoId") for it in all_items if it.get("photoId")}
+                    if len(unique_ids) >= count:
+                        break
+                break  # 扩展后结束循环
+
     # 去重(基于photoId)
     seen = set()
     unique_items = []
@@ -144,33 +350,27 @@ def fetch_playlet_data(
         if item_id and item_id not in seen:
             seen.add(item_id)
             unique_items.append(item)
-    
-    # B站短剧字段映射:
-    # - readCount 有真实数据(播放量),部分历史数据可能为0
-    # - likeCount 为真实点赞数
-    # - commentCount 为真实评论数
-    # - shareCount 为真实分享数
-    # - url 字段为None,需要用photoId(BV号)拼接
-    
+
     # 按点赞量排序
     unique_items.sort(key=lambda x: x.get("likeCount", 0), reverse=True)
-    
+
+    if not unique_items:
+        # 探活通过但实际查询为空 → 大概率是关键词无匹配
+        if topics and topics != [None]:
+            meta["reason"] = "keyword_no_match"
+        else:
+            meta["reason"] = "no_data"
+        return [], meta
+
     # 保存缓存
     save_cache(unique_items)
-    
-    return unique_items[:count]
+    meta["reason"] = "ok"
+    return unique_items[:count], meta
 
 
+# ============ 题材聚类 ============
 def cluster_by_topic(items):
-    """
-    按题材聚类作品
-    
-    Args:
-        items: 作品列表
-    
-    Returns:
-        dict: {题材: [作品列表]}
-    """
+    """按题材聚类作品（保留原逻辑）"""
     topic_keywords = {
         "穿越": ["穿越", "时空", "古代", "现代", "回到", "大宋", "北宋", "南宋", "唐朝", "明朝", "清朝"],
         "霸总": ["霸总", "总裁", "豪门", "冷酷", "宠妻", "娇妻", "替身"],
@@ -182,77 +382,59 @@ def cluster_by_topic(items):
         "战神": ["战神", "龙王", "兵王", "高手"],
         "古装": ["古装", "宫廷", "皇后", "贵妃", "王爷", "世子"]
     }
-    
     clusters = {}
-    
     for item in items:
         title = item.get("title", "")
-        matched_topic = "其他"
-        
-        # 统计匹配的题材数量
         matched_topics = []
         for topic, keywords in topic_keywords.items():
             if any(kw in title for kw in keywords):
                 matched_topics.append(topic)
-        
-        # 如果有匹配,使用第一个匹配的题材
-        if matched_topics:
-            matched_topic = matched_topics[0]
-        
-        if matched_topic not in clusters:
-            clusters[matched_topic] = []
-        clusters[matched_topic].append(item)
-    
+        matched_topic = matched_topics[0] if matched_topics else "其他"
+        clusters.setdefault(matched_topic, []).append(item)
     return clusters
 
 
+# ============ HTML 日报 ============
+def format_number(num):
+    """格式化数字(万→w)"""
+    if num is None:
+        return "0"
+    if num >= 10000:
+        return f"{num/10000:.1f}w"
+    return str(num)
+
+
 def generate_html_report(items, clusters, date_str):
-    """
-    生成HTML日报(参照AI-B站信息源格式)
-    
-    Args:
-        items: 作品列表
-        clusters: 题材聚类
-        date_str: 日期字符串
-    
-    Returns:
-        str: HTML文件路径
-    """
+    """生成HTML日报（保留原样式，B站蓝 #00A1D6）"""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
     html_file = os.path.join(OUTPUT_DIR, f"短剧B站日报_{date_str}.html")
-    
-    # 生成日期显示
+
     try:
-        from datetime import datetime as dt
-        dt_obj = dt.strptime(date_str, "%Y-%m-%d")
+        dt_obj = datetime.strptime(date_str, "%Y-%m-%d")
         weekdays = ["一", "二", "三", "四", "五", "六", "日"]
         date_cn = f"{dt_obj.year}年{dt_obj.month}月{dt_obj.day}日 星期{weekdays[dt_obj.weekday()]}"
     except ValueError:
         date_cn = date_str
-    
-    # 计算统计数据
+
     total_count = len(items)
     topic_count = len(clusters)
     total_likes = sum(item.get("likeCount", 0) for item in items)
     avg_likes = total_likes / total_count if total_count > 0 else 0
-    
-    # 生成题材卡片
+
     category_cards = ""
-    for i, (topic, topic_items) in enumerate(sorted(clusters.items(), key=lambda x: len(x[1]), reverse=True), 1):
+    for i, (topic, topic_items) in enumerate(
+            sorted(clusters.items(), key=lambda x: len(x[1]), reverse=True), 1):
         articles_html = ""
-        for item in topic_items[:5]:  # 每个题材展示前5个
+        for item in topic_items[:5]:
             title = item.get("title", "无标题")
             author = item.get("userName", "")
             cover = item.get("coverUrl") or ""
-            photo_id = item.get("photoId") or ""  # B站作品ID
-            
-            # 获取原始数值，为0时不展示该字段
+            photo_id = item.get("photoId") or ""
+
             raw_shares = item.get("shareCount", 0) or 0
             raw_likes = item.get("likeCount", 0) or 0
             raw_comments = item.get("commentCount", 0) or 0
-            
-            # 动态构建指标HTML：值为0时不展示
+
             metrics_parts = []
             if raw_shares > 0:
                 metrics_parts.append(f'<span class="metric">🔗 {format_number(raw_shares)}</span>')
@@ -261,19 +443,17 @@ def generate_html_report(items, clusters, date_str):
             if raw_comments > 0:
                 metrics_parts.append(f'<span class="metric">💬 {format_number(raw_comments)}</span>')
             metrics_html = ''.join(metrics_parts)
-            
+
             cover_html = ""
             if cover:
                 cover_html = f'<img class="article-cover" src="{cover}" alt="" loading="lazy">'
-            
-            # B站链接生成:使用BV号拼接B站视频链接
+
             if photo_id:
-                # photoId是BV号格式(如BV1onEQ6sEiL)
                 url = f"https://www.bilibili.com/video/{photo_id}"
                 title_html = f'<a href="{url}" target="_blank" class="article-title">{title}</a>'
             else:
                 title_html = f'<span class="article-title">{title}</span>'
-            
+
             articles_html += f'''
                 <div class="article-item">
                     {cover_html}
@@ -287,7 +467,7 @@ def generate_html_report(items, clusters, date_str):
                         </div>
                     </div>
                 </div>'''
-        
+
         category_cards += f'''
         <div class="category-card reveal">
             <div class="card-header">
@@ -298,10 +478,8 @@ def generate_html_report(items, clusters, date_str):
             <div class="card-body">{articles_html}
             </div>
         </div>'''
-    
-    # 生成完整HTML
-    timestamp = dt.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     html_content = f'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -354,143 +532,203 @@ a.article-title:hover {{ color: #00A1D6; text-decoration: underline; }}
 <div class="footer">Generated at {timestamp} by 短剧-B站信息源 Skill<br>数据说明:每日15:00更新前一天的数据 | 数据来源:红狐Hub</div>
 </body>
 </html>'''
-    
+
     with open(html_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
-    
     return html_file
 
 
-def format_number(num):
-    """格式化数字(万→w)"""
-    if num is None:
-        return "0"
-    if num >= 10000:
-        return f"{num/10000:.1f}w"
-    return str(num)
-
-
+# ============ 缓存 ============
 def load_cache():
-    """加载缓存数据"""
     if not os.path.exists(CACHE_FILE):
         return None
-    
     try:
         with open(CACHE_FILE, 'r', encoding='utf-8') as f:
             cache_data = json.load(f)
             if time.time() - cache_data.get("timestamp", 0) < 3600:
                 return cache_data.get("items")
-    except:
+    except Exception:
         pass
-    
     return None
 
 
 def save_cache(items):
-    """保存缓存数据"""
     os.makedirs(CACHE_DIR, exist_ok=True)
-    
-    cache_data = {
-        "timestamp": time.time(),
-        "items": items
-    }
-    
+    cache_data = {"timestamp": time.time(), "items": items}
     try:
         with open(CACHE_FILE, 'w', encoding='utf-8') as f:
             json.dump(cache_data, f, ensure_ascii=False, indent=2)
-    except:
+    except Exception:
         pass
 
 
+# ============ 主流程 ============
+def find_latest_available_date(api_key, max_fallback=FALLBACK_DAYS):
+    """
+    P0-2 自动回退：从最近日期开始向前探测，返回第一个有数据的日期。
+    返回 (date_str, found: bool)
+    """
+    latest = calculate_latest_date()
+    cursor = datetime.strptime(latest, "%Y-%m-%d")
+    for i in range(max_fallback + 1):
+        d = (cursor - timedelta(days=i)).strftime("%Y-%m-%d")
+        print(f"  🔎 探测 {d} ...", end="")
+        ok, info = probe_date_available(
+            api_key, f"{d} 00:00:00", f"{d} 23:59:59"
+        )
+        print(" 有数据" if ok else f" 无数据({info})")
+        if ok:
+            return d, True
+    return latest, False
+
+
 def main():
-    parser = argparse.ArgumentParser(description=" 短剧-B站信息源日报生成工具")
-    parser.add_argument("--topics", type=str, help="题材关键词,逗号分隔")
+    global OUTPUT_DIR
+    parser = argparse.ArgumentParser(description="短剧-B站信息源日报生成工具 (v2.3增强版)")
+    parser.add_argument("--topics", type=str, help="题材关键词,逗号分隔;全部不符合短剧题材词时不请求接口直接提示")
     parser.add_argument("--count", type=int, default=200, help="扫描作品数量")
-    parser.add_argument("--date", type=str, help="指定日期 YYYY-MM-DD")
+    parser.add_argument("--date", type=str, help="指定日期 YYYY-MM-DD;超出有效范围时提醒并自动回退最近有数据的日期")
     parser.add_argument("--start-time", type=str, help="开始时间 YYYY-MM-DD HH:MM:SS")
     parser.add_argument("--end-time", type=str, help="结束时间 YYYY-MM-DD HH:MM:SS")
-    parser.add_argument("--latest", action="store_true", help="使用最新有数据的日期")
+    parser.add_argument("--latest", action="store_true", help="使用最新有数据的日期(自动回退)")
     parser.add_argument("--output-dir", type=str, default=OUTPUT_DIR, help="输出目录")
     parser.add_argument("--api-key", type=str, help="指定 API Key")
     parser.add_argument("--subscribe", action="store_true", help="开启每日订阅")
     parser.add_argument("--unsubscribe", action="store_true", help="关闭每日订阅")
     parser.add_argument("--from-cache", action="store_true", help="使用缓存数据")
-    
     args = parser.parse_args()
-    
-    # 处理订阅
+
     if args.subscribe:
         print("✅ 已开启每日订阅,日报将自动保存至:", OUTPUT_DIR)
         return
     if args.unsubscribe:
         print("✅ 已关闭每日订阅")
         return
-    
-    # 确定日期
-    if args.latest:
-        date_str = calculate_latest_date()
+
+    if args.output_dir:
+        OUTPUT_DIR = args.output_dir
+
+    api_key = args.api_key or get_api_key()
+
+    # ---- v2.3 前置校验①：分类/关键词是否符合短剧题材词库（不满足时不请求任何接口）----
+    topics = None
+    if args.topics:
+        raw_topics = [t.strip() for t in args.topics.split(",") if t.strip()]
+        valid_topics, invalid_topics, recommends = check_topics(raw_topics)
+        if invalid_topics:
+            print(f"⚠️ 关键词 {invalid_topics} 不满足短剧查询条件（短剧按题材/剧情词匹配标题，非短剧题材词无法查询）")
+            print(f"💡 推荐相关分类和关键词：{'、'.join(recommends[:10])}")
+            if valid_topics:
+                print(f"✅ 已保留有效关键词 {valid_topics} 继续查询，无效关键词已自动忽略")
+                topics = valid_topics
+            else:
+                print("🔇 所有关键词/分类均不满足短剧查询条件，本次未调用任何接口；请使用上述推荐词重新查询")
+                return
+        else:
+            topics = valid_topics
+
+    # ---- 确定查询日期 ----
+    if args.start_time:
+        start_time = args.start_time
+        date_str = args.start_time[:10]
+        end_time = args.end_time or f"{date_str} 23:59:59"
+    elif args.latest:
+        # P0-2 自动回退：探测最近有数据的日期
+        print(f"🔎 --latest: 自动寻找最近有数据的日期(最多回退{FALLBACK_DAYS}天)...")
+        date_str, found = find_latest_available_date(api_key)
+        if not found:
+            print(f"📭 最近 {FALLBACK_DAYS} 天内均无数据，请稍后再试或联系数据源确认更新状态")
+            return
         start_time = f"{date_str} 00:00:00"
         end_time = f"{date_str} 23:59:59"
+        print(f"✅ 已定位最新可用日期: {date_str}")
     elif args.date:
         date_str = args.date
-        has_data, latest_date = validate_date(date_str)
-        if not has_data:
-            print(f"⚠️ {date_str}数据尚未更新")
-            print(f"数据更新规则:每日15:00更新前一天的数据")
-            print(f"当前可查询的最新日期:{latest_date}")
-            print(f"\n是否需要查询{latest_date}的数据?")
-            return
+        # v2.2: 前置校验——日期格式与有效查询范围
+        date_ok, date_msg, date_suggest = check_date(date_str)
+        if not date_ok:
+            print(f"⚠️ {date_msg}")
+            if date_suggest:
+                print(f"💡 推荐查询时间范围：{date_suggest}（已为您自动获取该时间范围数据）")
+        # 探活式预检（替代纯本地时钟判断）
+        ok, info = probe_date_available(api_key, f"{date_str} 00:00:00", f"{date_str} 23:59:59")
+        if not ok:
+            # v2.1: 日期兜底——未更新/超范围时自动回退最近有数据的日期，不再等待确认
+            print(f"⚠️ 当前查询时间 {date_str} 未更新或超过查询时间范围，已为您自动获取最近时间范围数据...")
+            new_date, found = find_latest_available_date(api_key)
+            if not found:
+                print(f"📭 最近 {FALLBACK_DAYS} 天内均无数据，请稍后再试或联系数据源确认更新状态")
+                return
+            print(f"✅ 已为您自动获取最近时间范围数据: {new_date}（原查询 {date_str} 未更新或超过查询时间范围）")
+            date_str = new_date
         start_time = f"{date_str} 00:00:00"
         end_time = f"{date_str} 23:59:59"
     else:
         date_str = calculate_latest_date()
         start_time = f"{date_str} 00:00:00"
         end_time = f"{date_str} 23:59:59"
-    
-    # 使用自定义时间(如果提供)
-    if args.start_time:
-        start_time = args.start_time
-        date_str = args.start_time[:10]
-    if args.end_time:
-        end_time = args.end_time
-    
-    # 解析题材
-    topics = None
-    if args.topics:
-        topics = [t.strip() for t in args.topics.split(",")]
-    
+
     print(f"🔍 正在查询 {date_str} 的B站短剧数据...")
-    
-    # 查询数据
-    items = fetch_playlet_data(
+
+    items, meta = fetch_playlet_data(
         topics=topics,
         start_time=start_time,
         end_time=end_time,
         count=args.count,
-        use_cache=args.from_cache
+        use_cache=args.from_cache,
     )
-    
+
     if not items:
-        print("📭 未查询到相关数据")
-        return
-    
+        reason = meta.get("reason", "unknown")
+        if reason == "keyword_no_match":
+            # v2.1: 关键词兜底——无匹配时自动降级为全量查询，不再停留等待确认
+            print(f"⚠️ 关键词 {topics} 未匹配到相关数据，已为您自动获取全量短剧数据...")
+            items, meta2 = fetch_playlet_data(
+                topics=None,
+                start_time=start_time,
+                end_time=end_time,
+                count=args.count,
+                use_cache=args.from_cache,
+            )
+            if items:
+                print(f"✅ 关键词 {topics} 无匹配，已为您自动获取全量数据 {len(items)} 部")
+            else:
+                hint2 = {
+                    "no_data": "数据源当日无数据（未更新或缺失）",
+                    "probe_fail": "探测请求失败（网络/接口异常）",
+                    "probe_error": "探测请求异常（接口返回异常）",
+                    "keyword_no_match": "查询条件(题材词)在该日期无匹配作品",
+                    "api_error": "接口调用异常",
+                }.get(meta2.get("reason", "unknown"), "未知原因")
+                print(f"📭 未查询到相关数据 [原因: {hint2}]")
+                if meta2.get("reason") == "no_data":
+                    print("💡 建议: 使用 --latest 自动回退到最近有数据的日期")
+                return
+        else:
+            hint = {
+                "no_data": "数据源当日无数据（未更新或缺失）",
+                "probe_fail": "探测请求失败（网络/接口异常）",
+                "probe_error": "探测请求异常（接口返回异常）",
+                "keyword_no_match": "查询条件(题材词)在该日期无匹配作品",
+                "api_error": "接口调用异常",
+            }.get(reason, "未知原因")
+            print(f"📭 未查询到相关数据 [原因: {hint}]")
+            if reason == "no_data":
+                print("💡 建议: 使用 --latest 自动回退到最近有数据的日期")
+            return
+
     print(f"✅ 共获取 {len(items)} 部短剧作品")
-    
-    # 题材聚类
+
     clusters = cluster_by_topic(items)
     print(f"📊 聚类为 {len(clusters)} 个题材方向")
-    
-    # 生成HTML日报
+
     html_file = generate_html_report(items, clusters, date_str)
     print(f"📄 日报已生成:{html_file}")
-    
-    # 自动打开
+
     webbrowser.open(f"file://{html_file}")
-    
-    # 输出终端摘要
+
     print(f"\n## 短剧-B站信息源 · {date_str} 日报\n")
     print(f"**扫描 {len(items)} 部热门短剧,聚类 {len(clusters)} 个题材方向**\n")
-    
     print("### 题材概览\n")
     print("| 题材 | 数量 | 占比 | 爆款亮点 |")
     print("|------|------|------|---------|")
