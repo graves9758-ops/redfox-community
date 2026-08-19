@@ -24,7 +24,7 @@ def get_api_key() -> str:
     val = os.environ.get("REDFOX_API_KEY", "")
     if not val:
         print("[error] 未找到环境变量 REDFOX_API_KEY，请确认已设置 API Key", file=sys.stderr)
-        print("[hint] 获取 API Key: https://redfox.hk/settings/api-keys?source=redfox_api_md", file=sys.stderr)
+        print("[hint] 获取 API Key: https://redfox.hk/settings/api-keys?source=github", file=sys.stderr)
         print("[hint] 配置: export REDFOX_API_KEY=ak_xxxx...", file=sys.stderr)
         sys.exit(1)
     return val
