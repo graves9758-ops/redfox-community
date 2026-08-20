@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全球AI新闻简报 — {{KEYWORD}}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f3f4f6;--card:#ffffff;--border:#e5e7eb;--accent:#2563eb;--accent2:#38bdf8;--green:#16a34a;--red:#dc2626;--yellow:#d97706;--text:#1f2937;--muted:#6b7280;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding:24px}
+.container{max-width:1200px;margin:0 auto}
+h1{font-size:28px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+h2{font-size:22px;color:var(--accent);margin:32px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+h3{font-size:18px;color:var(--text);margin:16px 0 8px}
+.formula-note{font-size:12px;color:var(--muted);font-weight:400;margin-left:6px}
+.subtitle{color:var(--muted);font-size:14px;margin-bottom:24px}
+/* Overview Cards */
+.overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
+.stat-card .label{font-size:13px;color:var(--muted);margin-bottom:4px}
+.stat-card .value{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+/* Section */
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px}
+/* Timeline */
+.timeline{position:relative;padding-left:28px;margin:16px 0}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;margin-bottom:20px}
+.timeline-item::before{content:'';position:absolute;left:-24px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.timeline-item .time{font-size:12px;color:var(--muted)}
+.timeline-item .desc{font-size:14px;margin-top:4px}
+.timeline-item .source{font-size:12px;color:var(--accent);margin-top:2px}
+/* Topic Tags */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.tag{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--border);background:rgba(37,99,235,.06);color:var(--accent)}
+/* Topic Detail Cards */
+.topic-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-top:14px}
+.topic-card{background:rgba(37,99,235,.04);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.topic-card .tname{font-weight:600;font-size:14px;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.topic-card .tname::before{content:'';width:8px;height:8px;border-radius:2px;background:linear-gradient(135deg,var(--accent),var(--accent2));flex-shrink:0}
+.topic-card .tcount{font-size:12px;color:var(--muted);font-weight:400}
+.topic-card ul{margin:0;padding-left:18px}
+.topic-card li{font-size:13px;color:var(--text);margin:5px 0;line-height:1.55}
+.topic-card li::marker{color:var(--accent)}
+/* Insight Cards */
+.insight{background:rgba(37,99,235,.05);border-left:3px solid var(--accent);padding:12px 16px;margin:8px 0;border-radius:0 8px 8px 0;font-size:14px}
+/* Sentiment Bar */
+.sentiment-bar{display:flex;height:28px;border-radius:14px;overflow:hidden;margin:12px 0;font-size:13px;font-weight:600}
+.sentiment-bar .pos{background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center}
+.sentiment-bar .neu{background:#9ca3af;color:#fff;display:flex;align-items:center;justify-content:center}
+.sentiment-bar .neg{background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center}
+/* KOL Cards */
+.kol-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin:12px 0}
+.kol-card{display:flex;align-items:center;gap:12px;background:rgba(37,99,235,.05);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.kol-card img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+.kol-card .name{font-weight:600;font-size:14px}
+.kol-card .name a{color:var(--accent);text-decoration:none}
+.kol-card .name a:hover{text-decoration:underline}
+.kol-card .meta{font-size:12px;color:var(--muted)}
+/* Platform Comparison Table */
+.compare-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+.compare-table th{background:rgba(37,99,235,.08);color:var(--accent);padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)}
+.compare-table td{padding:10px 12px;border-bottom:1px solid var(--border)}
+.compare-table tr:hover{background:rgba(37,99,235,.04)}
+/* Bar Chart (CSS) */
+.bar-chart{margin:16px 0}
+.bar-row{display:flex;align-items:center;margin:6px 0}
+.bar-label{width:80px;font-size:13px;color:var(--muted);flex-shrink:0}
+.bar-track{flex:1;height:24px;background:var(--border);border-radius:12px;overflow:hidden;margin:0 12px}
+.bar-fill{height:100%;border-radius:12px;background:linear-gradient(90deg,var(--accent),var(--accent2));display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:600;transition:width .6s}
+.bar-value{font-size:13px;color:var(--text);width:80px;text-align:right;flex-shrink:0}
+/* Tabs */
+.tabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:0;border-bottom:2px solid var(--border)}
+.tab{padding:10px 18px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none;padding:16px 0}
+.tab-content.active{display:block}
+/* Content Cards */
+.content-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin:12px 0}
+.content-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:transform .2s}
+.content-card:hover{transform:translateY(-2px)}
+.content-card img{width:100%;height:180px;object-fit:cover;display:block;background:#fff}
+.content-card .body{padding:14px}
+.content-card .title{font-weight:600;font-size:14px;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.content-card .author{font-size:12px;color:var(--muted);margin-bottom:8px}
+.content-card .metrics{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.content-card .metrics span{display:flex;align-items:center;gap:4px}
+.content-card a{color:var(--accent);font-size:13px;text-decoration:none;display:inline-block;margin-top:8px}
+.content-card a:hover{text-decoration:underline}
+.footer{text-align:center;padding:32px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<h1>全球AI新闻简报</h1>
+<p class="subtitle">关键词：「{{KEYWORD}}」 | 覆盖 {{PLATFORM_COUNT}} 个平台 | 共 {{TOTAL_ITEMS}} 条内容 | 数据时间范围：{{DATA_TIME_RANGE_SHORT}}</p>
+
+<!-- Overview Cards -->
+<div class="overview">
+  <div class="stat-card"><div class="label">覆盖平台</div><div class="value">{{PLATFORM_COUNT}}</div></div>
+  <div class="stat-card"><div class="label">内容总数</div><div class="value">{{TOTAL_ITEMS}}</div></div>
+  <div class="stat-card"><div class="label">总互动量</div><div class="value">{{TOTAL_ENGAGEMENT}}</div></div>
+  <div class="stat-card"><div class="label">活跃平台</div><div class="value">{{MOST_ACTIVE_PLATFORM}}</div></div>
+</div>
+
+<!-- ========== 板块一：新闻事件 ========== -->
+<h2>一、新闻事件</h2>
+
+<div class="section">
+  <h3>事件概述</h3>
+  <p>{{EVENT_SUMMARY}}</p>
+</div>
+
+<div class="section">
+  <h3>关键事件时间线</h3>
+  <div class="timeline">
+    <!-- {{TIMELINE_ITEMS}} -->
+    <div class="timeline-item">
+      <div class="time">{{TIME}}</div>
+      <div class="desc">{{DESCRIPTION}}</div>
+      <div class="source">{{SOURCE_PLATFORM}} · {{SOURCE_AUTHOR}}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>热点话题</h3>
+  <div class="tag-cloud">
+    <!-- {{TOPIC_TAGS}} -->
+    <span class="tag">{{TOPIC_NAME}} ({{PLATFORM_COUNT}}平台)</span>
+  </div>
+  <div class="topic-list">
+    <!-- {{TOPIC_DETAILS}} 每个热点话题的代表内容卡片 -->
+    <div class="topic-card">
+      <div class="tname">{{TOPIC_NAME}} <span class="tcount">{{PLATFORM_COUNT}}平台</span></div>
+      <ul>
+        <li>{{TOPIC_ITEM}}</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 板块二：新闻解读 ========== -->
+<h2>二、新闻解读</h2>
+
+<div class="section">
+  <h3>核心摘要</h3>
+  <div class="insight">{{CORE_SUMMARY}}</div>
+</div>
+
+<div class="section">
+  <h3>关键发现</h3>
+  <!-- {{KEY_FINDINGS}} -->
+  <div class="insight">{{FINDING_TEXT}}</div>
+</div>
+
+<div class="section">
+  <h3>舆情风向</h3>
+  <div class="sentiment-bar">
+    <div class="pos" style="width:{{POSITIVE_PCT}}%">正面 {{POSITIVE_PCT}}%</div>
+    <div class="neu" style="width:{{NEUTRAL_PCT}}%">中性 {{NEUTRAL_PCT}}%</div>
+    <div class="neg" style="width:{{NEGATIVE_PCT}}%">负面 {{NEGATIVE_PCT}}%</div>
+  </div>
+  <p><strong>核心共识：</strong>{{CONSENSUS_POINTS}}</p>
+  <p><strong>核心争议：</strong>{{CONTROVERSY_POINTS}}</p>
+</div>
+
+<div class="section">
+  <h3>大V观点</h3>
+  <div class="kol-grid">
+    <!-- {{KOL_ITEMS}} -->
+    <div class="kol-card">
+      <img src="{{KOL_AVATAR}}" alt="">
+      <div>
+        <div class="name"><a href="{{KOL_URL}}" target="_blank">{{KOL_NAME}}</a></div>
+        <div class="meta">{{KOL_PLATFORM}} · {{KOL_FOLLOWERS}} 粉丝</div>
+        <div class="meta">{{KOL_VIEWPOINT}}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 板块三：各平台解读倾向 ========== -->
+<h2>三、各平台不同的解读倾向</h2>
+
+<div class="section">
+  <h3>跨平台对比矩阵</h3>
+  <table class="compare-table">
+    <thead>
+      <tr><th>平台</th><th>内容数</th><th>总互动</th><th>情感倾向</th><th>关注焦点</th><th>代表观点</th></tr>
+    </thead>
+    <tbody>
+      <!-- {{PLATFORM_COMPARISON_ROWS}} -->
+      <tr>
+        <td>{{PLATFORM}}</td><td>{{ITEM_COUNT}}</td><td>{{TOTAL_ENGAGEMENT}}</td>
+        <td>{{SENTIMENT}}</td><td>{{FOCUS}}</td><td>{{VIEWPOINT}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h3>各平台互动量对比 <span class="formula-note">（互动量 = 点赞 + 评论 + 分享 + 播放）</span></h3>
+  <div class="bar-chart">
+    <!-- {{BAR_CHART_ROWS}} -->
+    <div class="bar-row">
+      <span class="bar-label">{{PLATFORM}}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:{{BAR_PCT}}%">{{BAR_VALUE}}</div></div>
+      <span class="bar-value">{{ENGAGEMENT_NUM}}</span>
+    </div>
+  </div>
+</div>
+
+<!-- {{PLATFORM_DIFF_HIGHLIGHTS}} 各平台差异亮点分析 -->
+
+<!-- ========== 板块四：数据源 ========== -->
+<h2>四、数据源 <span class="formula-note">（{{DATA_TIME_RANGE}}）</span></h2>
+
+<div class="section">
+  <div class="tabs">
+    <!-- {{TAB_BUTTONS}} -->
+    <div class="tab active" onclick="switchTab(this, 'tab-{{PLATFORM_ID}}')">{{PLATFORM_NAME}} ({{COUNT}})</div>
+  </div>
+
+  <!-- {{TAB_CONTENTS}} 每个平台一个 tab-content -->
+  <div class="tab-content active" id="tab-{{PLATFORM_ID}}">
+    <div class="content-grid">
+      <!-- {{CONTENT_CARDS}} -->
+      <div class="content-card">
+        <img src="{{COVER_URL}}" alt="" onerror="this.onerror=null;this.removeAttribute('src')">
+        <div class="body">
+          <div class="title">{{TITLE}}</div>
+          <div class="author">{{AUTHOR}} · {{PUBLISH_TIME}}</div>
+          <div class="metrics">
+            <span>&#128077; {{LIKES}}</span>
+            <span>&#128172; {{COMMENTS}}</span>
+            <span>&#128257; {{SHARES}}</span>
+            <span>&#128065; {{VIEWS}}</span>
+          </div>
+          <a href="{{URL}}" target="_blank">查看原文 &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  全球AI新闻简报 · Powered by Redfox API · {{GENERATED_AT}}
+</div>
+
+</div><!-- .container -->
+
+<script>
+function switchTab(el, id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
