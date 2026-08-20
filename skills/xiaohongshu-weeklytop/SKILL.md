@@ -317,7 +317,7 @@ A: HTML 生成时从已获取的 JSON 数据文件读取，与表格使用完全
 **Q7: API 请求失败或无数据？**
 
 A: 按以下步骤排查：
-1. 确认网络可访问  [红狐Hub 官网](https://redfox.hk/)
+1. 确认网络可访问  [红狐Hub 官网](https://redfox.hk/?source=github)
 2. 检查 `--rank_date` 是否为有效日期
 3. 尝试更换关键词或指定 `--category`
 4. 19:00 前查询时，确认是否应使用前天日期
