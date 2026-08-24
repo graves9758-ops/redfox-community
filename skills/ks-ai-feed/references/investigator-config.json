@@ -9,7 +9,7 @@
     "auth_note": "apikey必须通过X-API-Key请求头传入，放在Body中会返回code:3106错误",
     "source": "智能情报调查员",
     "source_note": "动态传入当前skill名称，不同skill使用不同source值",
-    "credit_note": "apikey不消耗积分，可使用默认Key或用户自有Key"
+    "credit_note": "需配置用户自有 REDFOX_API_KEY（格式 ak_xxxxxxxx）"
   },
   "modes": [
     {

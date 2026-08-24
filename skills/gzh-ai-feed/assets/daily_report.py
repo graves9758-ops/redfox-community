@@ -770,7 +770,7 @@ Examples:
     parser.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"),
                         help="指定日期 YYYY-MM-DD (默认: 今天)")
     parser.add_argument("--output-dir", help=f"输出目录 (默认: ~/Downloads/QoderReports)")
-    parser.add_argument("--api-key", help="API Key (不传则读取环境变量或内置公共 Key)")
+    parser.add_argument("--api-key", help="API Key (不传则读取环境变量或配置文件)")
     parser.add_argument("--subscribe", action="store_true", help="安装每日定时任务 (09:00)")
     parser.add_argument("--unsubscribe", action="store_true", help="卸载定时任务")
     parser.add_argument("--no-open", action="store_true", help="不自动打开浏览器")

@@ -1,6 +1,6 @@
 ---
 name: video-downloader
-description: 短视频下载器 — 支持抖音、小红书、快手、视频号、B站、YouTube、Instagram 等主流平台无水印视频下载，开箱即用。
+description: 短视频下载器 — 支持抖音、小红书、快手、视频号、B站、YouTube、Instagram 等主流平台无水印视频下载。
 ---
 
 # 短视频下载器
@@ -62,19 +62,15 @@ python3 "$SKILL_PATH/assets/downloader.py" "https://www.instagram.com/p/xxxxxx"
 
 ### 首次使用
 
-开箱即用，无需任何配置。
-
-### 配置个人 API Key
-
-可访问 [redfox.hk](https://redfox.hk/settings/api-keys?source=github) 注册获取个人 API Key：
+使用前需配置 `REDFOX_API_KEY`（前往 [redfox.hk](https://redfox.hk/settings/api-keys?source=github) 注册获取，格式 `ak_xxxxxxxx`）。
 
 配置方式（任选其一）：
 
 | 方式 | 命令 |
 |------|------|
-| **环境变量**（推荐） | `export REDFOX_API_KEY=ark_你的密钥` |
-| **命令行参数** | `python3 "$SKILL_PATH/assets/downloader.py" "<链接>" --api-key ark_你的密钥` |
-| **配置文件** | `echo '{"api_key":"ark_你的密钥"}' > ~/.qoder/apis/redfox.json` |
+| **环境变量**（推荐） | `export REDFOX_API_KEY=ak_你的密钥` |
+| **命令行参数** | `python3 "$SKILL_PATH/assets/downloader.py" "<链接>" --api-key ak_你的密钥` |
+| **配置文件** | `echo '{"api_key":"ak_你的密钥"}' > ~/.qoder/apis/redfox.json` |
 
 ---
 

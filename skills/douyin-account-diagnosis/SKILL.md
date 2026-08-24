@@ -31,7 +31,7 @@ description: "一键诊断抖音账号运营健康度。基于红狐数据服务
 
 ## 🔧 一键安装
 
-> 本技能自动接入红狐服务，开箱即用，无需额外配置。
+> 本技能需配置 `REDFOX_API_KEY` 后使用（前往 [红狐hub](https://redfox.hk/settings/api-keys?source=github) 注册获取）。
 
 本技能为标准 Skill 文件包，兼容所有支持 Skill 机制的 AI Agent 平台。选择你使用的平台，按对应方式安装即可：
 
@@ -61,9 +61,7 @@ description: "一键诊断抖音账号运营健康度。基于红狐数据服务
 
 ### 🔑 鉴权
 
-> 本技能自动接入红狐后台服务，无需手动配置即可使用。
->
-> 如需使用自己的额度，可前往 [红狐hub](https://redfox.hk/settings/api-keys?source=github) 获取 API KEY，并通过以下任一方式配置：
+> 使用前请配置 API Key，可前往 [红狐hub](https://redfox.hk/settings/api-keys?source=github) 获取（格式 `ak_xxxxxxxx`），并通过以下任一方式配置：
 >
 > 1. 设置环境变量 `REDFOX_API_KEY`
 > 2. 使用命令行参数 `--api-key`

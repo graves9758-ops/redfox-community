@@ -262,7 +262,7 @@ Examples:
         """,
     )
     parser.add_argument("prompt", help="图片生成/编辑提示词 (最多 500 字)")
-    parser.add_argument("--api-key", help="API Key (不传则读取环境变量或内置公共 Key)")
+    parser.add_argument("--api-key", help="API Key (不传则读取环境变量或配置文件)")
     parser.add_argument("-o", "--output-dir", help="输出目录 (默认 ~/Downloads/QoderImages)")
     parser.add_argument("-n", "--count", type=int, default=1, help="生成图片数量 (1-10, 默认 1)")
     parser.add_argument("--size", default="1024x1792",

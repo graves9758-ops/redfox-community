@@ -5,7 +5,7 @@
 通过红狐(RedFox) API 获取抖音账号数据，进行六维度诊断分析并输出报告。
 
 用法: python douyin_diagnosis.py <抖音昵称或抖音号> [--api-key <你的API Key>]
-API Key 优先级: 命令行 --api-key > 环境变量 REDFOX_API_KEY > 内置默认密钥
+API Key 优先级: 命令行 --api-key > 环境变量 REDFOX_API_KEY
 """
 
 import os
@@ -26,8 +26,20 @@ SOURCE = "抖音账号诊断-GitHub"
 
 
 def resolve_api_key(cli_key=None):
-    """解析使用的 API Key：命令行参数 > 环境变量 REDFOX_API_KEY > 内置默认密钥"""
-    return cli_key or os.environ.get("REDFOX_API_KEY")
+    """解析使用的 API Key：命令行参数 > 环境变量 REDFOX_API_KEY。未配置则返回 None。"""
+    return cli_key or os.environ.get("REDFOX_API_KEY") or None
+
+
+def require_api_key(cli_key=None):
+    """解析 API Key；未配置时输出引导信息并退出。"""
+    api_key = resolve_api_key(cli_key)
+    if api_key:
+        return api_key
+    print("[错误] 未配置 API Key")
+    print("[hint] 获取: https://redfox.hk/settings/api-keys?source=github")
+    print("[hint] 配置: export REDFOX_API_KEY=ak_xxxxxxxx")
+    print("[hint] 或: python douyin_diagnosis.py <账号> --api-key ak_xxxxxxxx")
+    sys.exit(1)
 
 # ============================================================
 # 工具函数
@@ -819,7 +831,7 @@ def main():
     keyword = args[0]
     print(f"正在查询抖音账号: {keyword} ...")
 
-    acc = query_account(keyword, resolve_api_key(cli_key))
+    acc = query_account(keyword, require_api_key(cli_key))
     if not acc:
         print("未查询到该账号，请检查昵称或抖音号是否正确。")
         sys.exit(1)

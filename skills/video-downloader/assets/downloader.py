@@ -27,7 +27,6 @@ CONFIG_DIR = Path.home() / ".qoder" / "apis"
 CONFIG_FILE = CONFIG_DIR / "redfox.json"
 
 ENV_KEY = "REDFOX_API_KEY"
-PUBLIC_API_KEY = "ak_b45b6a6881f4400fb321428947eb6661"
 
 PLATFORM_MAP = {
     "dy": "抖音",
@@ -79,7 +78,25 @@ def get_api_key(cli_key=None):
         except (json.JSONDecodeError, OSError):
             pass
 
-    return PUBLIC_API_KEY
+    return None
+
+
+def require_api_key(cli_key=None):
+    """Resolve API key or exit with configuration guidance."""
+    api_key = get_api_key(cli_key=cli_key)
+    if api_key:
+        return api_key
+
+    print(f"{RED}╔══════════════════════════════════════════════════╗{RESET}")
+    print(f"{RED}║  未配置 API Key，请通过以下方式之一配置：      ║{RESET}")
+    print(f"{RED}║                                                ║{RESET}")
+    print(f"{RED}║  export REDFOX_API_KEY=ak_你的密钥             ║{RESET}")
+    print(f"{RED}║  python3 downloader.py <url> --api-key ak_xxx  ║{RESET}")
+    print(RED + "║  echo '{\"api_key\":\"ak_你的密钥\"}' > ~/.qoder/apis/redfox.json ║" + RESET)
+    print(f"{RED}║                                                ║{RESET}")
+    print(f"{RED}║  注册获取 Key: https://redfox.hk/settings/api-keys ║{RESET}")
+    print(f"{RED}╚══════════════════════════════════════════════════╝{RESET}")
+    sys.exit(1)
 
 
 def save_api_key(api_key):
@@ -203,16 +220,16 @@ def main():
         epilog="""
 Examples:
   python3 downloader.py https://v.douyin.com/xxxxxx/
-  python3 downloader.py https://b23.tv/xxxxxx --api-key ark_xxxxx
+  python3 downloader.py https://b23.tv/xxxxxx --api-key ak_xxxxx
   python3 downloader.py https://xhslink.com/o/xxxxxx -o ~/Videos
 
 也可通过环境变量 REDFOX_API_KEY 配置密钥：
-  export REDFOX_API_KEY=ark_xxxxx
+  export REDFOX_API_KEY=ak_xxxxx
   python3 downloader.py <url>
         """,
     )
     parser.add_argument("url", help="视频/图文链接")
-    parser.add_argument("--api-key", help="API Key（格式 ark_xxx，不传则读取环境变量或配置文件）")
+    parser.add_argument("--api-key", help="API Key（格式 ak_xxx，不传则读取环境变量或配置文件）")
     parser.add_argument("-o", "--output-dir", help="输出目录（默认 ~/Downloads/QoderVideos）")
     parser.add_argument(
         "--save-key",
@@ -232,10 +249,13 @@ Examples:
     print(banner)
 
     # ── API Key ──
-    api_key = get_api_key(cli_key=args.api_key)
+    api_key = require_api_key(cli_key=args.api_key)
 
     # Save key if requested
     if args.save_key:
+        if not args.api_key:
+            warn("--save-key 需要同时传入 --api-key")
+            sys.exit(1)
         save_api_key(api_key)
 
     # ── URL ──
@@ -282,7 +302,8 @@ Examples:
             error("缺少 API Key")
         elif code == 3107:
             error("API Key 无效或已失效，请检查是否正确")
-            print("  配置方式：export REDFOX_API_KEY=ark_你的密钥")
+            print("  配置方式：export REDFOX_API_KEY=ak_你的密钥")
+            print("  获取 Key：https://redfox.hk/settings/api-keys?source=github")
         elif code == 400:
             error(f"请求参数错误: {msg}")
         else:

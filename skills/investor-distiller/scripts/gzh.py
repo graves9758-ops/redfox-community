@@ -9,7 +9,7 @@
 UUID 缓存：首次获取后自动保存到 output/{account}_uuids.json，
 后续运行直接读取缓存，避免重复消耗积分。
 
-认证：REDFOX_API_KEY（环境变量 > 配置文件 > 公共Key）
+认证：REDFOX_API_KEY（CLI 参数 > 环境变量 > 配置文件）
 """
 
 import json
@@ -75,7 +75,7 @@ def step(msg):
 # ─── API Key 管理 ──────────────────────────────────────────────────────────────────
 
 def get_api_key(cli_key=None):
-    """获取 API Key：CLI参数 > 环境变量 > 配置文件 > 公共Key"""
+    """获取 API Key：CLI参数 > 环境变量 > 配置文件。未配置返回空字符串。"""
     if cli_key:
         return cli_key
     env_key = os.environ.get(ENV_KEY)
@@ -89,7 +89,7 @@ def get_api_key(cli_key=None):
                 return key
         except (json.JSONDecodeError, OSError):
             pass
-    return ''
+    return ""
 
 
 # ─── Step 1: 获取文章UUID列表 ──────────────────────────────────────────────────────
@@ -301,6 +301,10 @@ def fetch_articles(account, author_name="", count=None, api_key=None, force_refr
         return []
 
     key = get_api_key(api_key)
+    if not key:
+        error("未配置 API Key，请设置环境变量 REDFOX_API_KEY=ak_xxxxxxxx")
+        error("获取 Key: https://redfox.hk/settings/api-keys?source=github")
+        return []
 
     session = requests.Session()
     session.headers.update({

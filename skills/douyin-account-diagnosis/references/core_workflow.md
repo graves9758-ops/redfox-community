@@ -5,8 +5,8 @@
 ## Step 0: 鉴权前置检查
 
 1. 检查 API Key 可用性：
-   - 命令行参数 `--api-key` > 环境变量 `REDFOX_API_KEY` > 内置默认密钥
-2. 内置默认密钥缺失且未配置 → 引导用户前往 [红狐hub](https://redfox.hk/settings/api-keys?source=github) 获取并配置
+   - 命令行参数 `--api-key` > 环境变量 `REDFOX_API_KEY`
+2. 未配置 → 引导用户前往 [红狐hub](https://redfox.hk/settings/api-keys?source=github) 获取并配置（格式 `ak_xxxxxxxx`）
 3. 鉴权就绪 → 进入 Step 1
 
 ## Step 1: 获取目标账号

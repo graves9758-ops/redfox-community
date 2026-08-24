@@ -772,7 +772,7 @@
 
         <div class="slide-content">
             <h1 class="reveal">短视频下载器</h1>
-            <p class="reveal subtitle">支持抖音 · 小红书 · 快手 · B站<br>无水印视频下载，开箱即用</p>
+            <p class="reveal subtitle">支持抖音 · 小红书 · 快手 · B站<br>无水印视频下载，配置 API Key 即可用</p>
             <p class="reveal tagline">粘贴链接 · 即刻下载</p>
             <p class="reveal meta">Qoder Skill — 审核演示</p>
         </div>
@@ -790,7 +790,7 @@
             <p class="section-num reveal">01</p>
             <h2 class="reveal">能力概述</h2>
             <p class="reveal" style="margin-bottom: clamp(0.8rem, 2vh, 1.5rem); max-width: min(90vw, 700px);">
-                从主流短视频平台解析作品链接，获取无水印的原始视频，开箱即用。
+                从主流短视频平台解析作品链接，获取无水印的原始视频，配置 API Key 后即可使用。
             </p>
 
             <div class="feature-grid" style="grid-template-columns: repeat(2, 1fr); max-width: min(90vw, 800px); align-self: center;">
@@ -917,11 +917,6 @@
             <p class="reveal" style="margin-bottom: clamp(0.8rem, 2vh, 1.5rem);">多种 API Key 配置方式，按需选择</p>
 
             <div class="config-list">
-                <div class="config-item reveal">
-                    <span class="method">内置公共 Key</span>
-                    <span class="desc">开箱即用，免费约 10000 次</span>
-                    <span class="badge">无需配置</span>
-                </div>
                 <div class="config-item reveal">
                     <span class="method">环境变量</span>
                     <span class="desc">设置一次，全局生效</span>
@@ -1069,12 +1064,12 @@
 
             <div class="faq-grid">
                 <div class="faq-card reveal-scale">
-                    <div class="q">公共 Key 有多少次免费额度？</div>
-                    <div class="a">约 10000 次。超出后 API 返回 3107 错误，需配置自己的 Key。</div>
+                    <div class="q">未配置 API Key 会怎样？</div>
+                    <div class="a">脚本会提示配置方式并退出。请先设置环境变量 <code>REDFOX_API_KEY</code> 或使用 <code>--api-key</code>。</div>
                 </div>
                 <div class="faq-card reveal-scale">
                     <div class="q">如何获取自己的 API Key？</div>
-                    <div class="a">前往 <strong style="color: var(--accent-warm); font-weight: 500;">redfox.hk</strong> 注册获取，格式为 ark_xxx。</div>
+                    <div class="a">前往 <strong style="color: var(--accent-warm); font-weight: 500;">redfox.hk</strong> 注册获取，格式为 ak_xxx。</div>
                 </div>
                 <div class="faq-card reveal-scale">
                     <div class="q">下载的视频有水印吗？</div>
@@ -1113,8 +1108,8 @@
                 </div>
                 <div class="advantage-card reveal-scale">
                     <span class="icon">🚀</span>
-                    <h3>开箱即用</h3>
-                    <p>内置公共 Key，拿到就能用</p>
+                    <h3>配置即用</h3>
+                    <p>设置 REDFOX_API_KEY 后贴链即可下载</p>
                 </div>
                 <div class="advantage-card reveal-scale">
                     <span class="icon">🔒</span>

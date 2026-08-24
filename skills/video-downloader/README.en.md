@@ -12,7 +12,7 @@ Paste a short video link and get watermark-free download URLs instantly — Douy
 - **Clean, watermark-free**: every returned video is watermark-free, ready for collecting, editing, or remixing.
 - **12+ platforms covered**: Douyin, Xiaohongshu, Kuaishou, WeChat Channels, Bilibili, YouTube, Instagram, X, TikTok, Threads, Facebook, Vimeo — mobile share links and desktop web links all recognized.
 - **Image posts too**: beyond videos, all images in a post can be downloaded and saved together with sequential naming.
-- **Zero setup, ready to go**: no configuration needed — paste a link and download. Progress bar shown in real time, even for large files.
+- **Paste and download with progress**: after configuring your API Key, paste a link and download. Progress bar shown in real time, even for large files.
 
 **Who Is It For**
 

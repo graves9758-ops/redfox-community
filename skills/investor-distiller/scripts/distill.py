@@ -79,7 +79,9 @@ def check_env():
     if key:
         info(f"API Key 已配置（{key[:8]}...）")
     else:
-        warn("未找到 API Key，将使用公共Key（可能受限）")
+        error("未找到 API Key，请先配置 REDFOX_API_KEY")
+        error("获取: https://redfox.hk/settings/api-keys?source=github")
+        issues.append("REDFOX_API_KEY")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     info(f"输出目录: {OUTPUT_DIR}")
