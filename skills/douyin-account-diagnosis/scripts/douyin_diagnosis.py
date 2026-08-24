@@ -24,13 +24,10 @@ API_URL = "https://redfox.hk/story/api/dyUser/queryData"
 # 技能来源标识（所有接口调用必须携带）
 SOURCE = "抖音账号诊断-GitHub"
 
-# 内置默认密钥（用户未配置自己的 API Key 时使用，保证开箱即用）
-DEFAULT_API_KEY = "ak_1e449a28ae344cd1b7aa14ca481de8bb"
-
 
 def resolve_api_key(cli_key=None):
     """解析使用的 API Key：命令行参数 > 环境变量 REDFOX_API_KEY > 内置默认密钥"""
-    return cli_key or os.environ.get("REDFOX_API_KEY") or DEFAULT_API_KEY
+    return cli_key or os.environ.get("REDFOX_API_KEY")
 
 # ============================================================
 # 工具函数

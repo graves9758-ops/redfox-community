@@ -38,7 +38,6 @@ WORK_DETAIL_URL = "https://redfox.hk/story/api/gzhData/queryWork"
 CONFIG_DIR = Path.home() / ".qoder" / "apis"
 CONFIG_FILE = CONFIG_DIR / "redfox.json"
 ENV_KEY = "REDFOX_API_KEY"
-PUBLIC_API_KEY = "ak_db0e200c049b44288d46da0e758d53dd"
 SOURCE = "公众号投资博主蒸馏-GitHub"
 
 PAGE_SIZE = 20  # queryWorkList offset 步进为20，非10
@@ -90,7 +89,7 @@ def get_api_key(cli_key=None):
                 return key
         except (json.JSONDecodeError, OSError):
             pass
-    return PUBLIC_API_KEY
+    return ''
 
 
 # ─── Step 1: 获取文章UUID列表 ──────────────────────────────────────────────────────
