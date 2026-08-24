@@ -144,20 +144,29 @@ https://clawhub.ai/user/redfox-data
 #### Douyin
 
 - [Get Douyin content details (Premium)](https://redfox.hk/apis/douyin/0OT1E306)
+- [Get Douyin content details (Wide)](https://redfox.hk/apis/douyin/FK67XDVQ)
 - [Get Douyin account info (Premium)](https://redfox.hk/apis/douyin/XUT4CECZ)
 - [Search Douyin accounts by keyword (Premium)](https://redfox.hk/apis/douyin/P5CHB3BZ)
+- [Search Douyin accounts by keyword (Wide)](https://redfox.hk/apis/douyin/L6OUNUN1)
 - [Search Douyin content by keyword (Premium)](https://redfox.hk/apis/douyin/774OBKK0)
+- [Search Douyin content by keyword (Wide)](https://redfox.hk/apis/douyin/OWIBYU1V)
 - [Get Douyin account content list (Premium)](https://redfox.hk/apis/douyin/QEQLCKD6)
+- [Get Douyin account content list (Wide)](https://redfox.hk/apis/douyin/QSL2ZSXM)
 - [Search Douyin AI content by keyword (Premium)](https://redfox.hk/apis/douyin/I8P3HTVH)
 - [Extract video transcript — submit task](https://redfox.hk/apis/douyin/8DCJW2ZF)
+- [Douyin hot account recommendations](https://redfox.hk/apis/douyin/20060017)
+- [Douyin daily hot content ranking](https://redfox.hk/apis/douyin/HUCIASU)
 
 #### Xiaohongshu (RED)
 
+- [Xiaohongshu hot account recommendations](https://redfox.hk/apis/xiaohongshu/20060016)
 - [Get Xiaohongshu account info (Premium)](https://redfox.hk/apis/xiaohongshu/4IVIDHEN)
 - [Get Xiaohongshu content details (Premium)](https://redfox.hk/apis/xiaohongshu/KR1LPTBF)
 - [Search Xiaohongshu accounts by keyword (Premium)](https://redfox.hk/apis/xiaohongshu/439NFLBD)
 - [Search Xiaohongshu content by keyword (Premium)](https://redfox.hk/apis/xiaohongshu/384C6W6B)
 - [Search Xiaohongshu AI content by keyword (Premium)](https://redfox.hk/apis/xiaohongshu/047JJ3UA)
+- [Get Xiaohongshu account content list (Premium)](https://redfox.hk/apis/xiaohongshu/XN3ULENA)
+- [Get Xiaohongshu top-level comments (Wide)](https://redfox.hk/apis/xiaohongshu/5AM3X4HZ)
 - [Xiaohongshu viral note insights](https://redfox.hk/apis/xiaohongshu/3X8FGEEM)
 - [Xiaohongshu 7-day viral notes](https://redfox.hk/apis/xiaohongshu/LBYLC5AK)
 - [Extract video transcript — submit task](https://redfox.hk/apis/xiaohongshu/DCZW5V7A)
@@ -165,19 +174,33 @@ https://clawhub.ai/user/redfox-data
 #### WeChat Official Accounts
 
 - [Get WeChat account info (Premium)](https://redfox.hk/apis/gongzhonghao/6C4A77XR)
+- [Get WeChat account info (Wide)](https://redfox.hk/apis/gongzhonghao/KUQYSQNX)
 - [Get WeChat article by content UUID (Premium)](https://redfox.hk/apis/gongzhonghao/XEO0QQNF)
+- [Get WeChat article by content UUID (Wide)](https://redfox.hk/apis/gongzhonghao/1LDQ7E1C)
 - [Search WeChat accounts by keyword (Premium)](https://redfox.hk/apis/gongzhonghao/DNVPQZEZ)
+- [Search WeChat accounts by keyword (Wide)](https://redfox.hk/apis/gongzhonghao/5Y84NI1D)
 - [Search WeChat articles by keyword (Premium)](https://redfox.hk/apis/gongzhonghao/PW97QFBS)
+- [Search WeChat articles by keyword (Wide)](https://redfox.hk/apis/gongzhonghao/FVQ8D4W5)
 - [Get WeChat account article list (Premium)](https://redfox.hk/apis/gongzhonghao/XNV30XZ3)
-- [Get WeChat article by URL (Premium)](https://redfox.hk/apis/gongzhonghao/VUTTKTP6)
+- [Get WeChat account article list (Wide)](https://redfox.hk/apis/gongzhonghao/8IQD0BJC)
+- [Get WeChat article by URL (Realtime)](https://redfox.hk/apis/gongzhonghao/I3CIBRI2)
 - [Search WeChat AI-generated articles by keyword (Premium)](https://redfox.hk/apis/gongzhonghao/IE0887SO)
 
 #### WeChat Channels
 
-- [Extract transcript from link — submit task (WeChat Channels)](https://redfox.hk/apis/shipinhao/HR8CU3GG)
+- [Search WeChat Channels content by keyword (Wide)](https://redfox.hk/apis/shipinhao/E7G00COY)
+- [Search WeChat Channels accounts by keyword (Wide)](https://redfox.hk/apis/shipinhao/NL4I3533)
+- [Get WeChat Channels content details (Wide)](https://redfox.hk/apis/shipinhao/OE4KUEUO)
+- [Get WeChat Channels account content list (Wide)](https://redfox.hk/apis/shipinhao/OVUTOTCV)
+- [Update WeChat Channels content details by link (Realtime)](https://redfox.hk/apis/shipinhao/OVUTOTCV)
+- [Extract transcript from link — submit task (WeChat Channels)](https://redfox.hk/apis/shipinhao/MH5YA9DL)
 
 #### Kuaishou
 
+- [Search Kuaishou accounts (Wide)](https://redfox.hk/apis/kuaishou/GU17EVLV)
+- [Get Kuaishou account content list (Wide)](https://redfox.hk/apis/kuaishou/27DQ6SF9)
+- [Get Kuaishou content details (Wide)](https://redfox.hk/apis/kuaishou/UOM99OQI)
+- [Search Kuaishou content by keyword (Wide)](https://redfox.hk/apis/kuaishou/ZWR31P2A)
 - [Extract video transcript — submit task](https://redfox.hk/apis/kuaishou/8TUUDDCJ)
 
 #### Bilibili
@@ -187,15 +210,57 @@ https://clawhub.ai/user/redfox-data
 - [Search Bilibili accounts by keyword (Premium)](https://redfox.hk/apis/bilibili/ZXJLJQ21)
 - [Search Bilibili content by keyword (Premium)](https://redfox.hk/apis/bilibili/LEN9QXR3)
 - [Get Bilibili account content list (Premium)](https://redfox.hk/apis/bilibili/VPA67I98)
+- [Get Bilibili audio URL](https://redfox.hk/apis/bilibili/9Q2PQBKU)
+- [Extract transcript from link — submit task](https://redfox.hk/apis/bilibili/SQ4FHFZX)
 
 #### Toutiao
 
 - [Get Toutiao account content list (Realtime)](https://redfox.hk/apis/jinritoutiao/28CFGF5I)
 - [Get Toutiao content details (Realtime)](https://redfox.hk/apis/jinritoutiao/PAB6Z75Y)
+- [Get Toutiao content comments (Realtime)](https://redfox.hk/apis/jinritoutiao/ZMFVK589)
+- [Search Toutiao accounts by keyword (Realtime)](https://redfox.hk/apis/jinritoutiao/4QS1F8DE)
+- [Get Toutiao account content list (Realtime)](https://redfox.hk/apis/jinritoutiao/R1IGR09H)
 
 #### TikTok
 
+- [Get single TikTok post data](https://redfox.hk/apis/tool-tiktok/6SE9WIHJ)
+- [Get TikTok user homepage posts](https://redfox.hk/apis/tool-tiktok/R473NUE9)
+- [TikTok keyword video search](https://redfox.hk/apis/tool-tiktok/PXZXY8KQ)
 - [Search TikTok accounts by keyword](https://redfox.hk/apis/tool-tiktok/20070019)
+
+#### X (Twitter)
+
+- [X (Twitter) get comments](<https://redfox.hk/apis/X(Twitter)/ABJQXHUE>)
+- [X (Twitter) get user info](<https://redfox.hk/apis/X(Twitter)/AKFHJMXQ>)
+- [X (Twitter) search tweets](<https://redfox.hk/apis/X(Twitter)/5K5EG87P>)
+- [X (Twitter) get single tweet details](<https://redfox.hk/apis/X(Twitter)/QCP75W33>)
+
+#### YouTube
+
+- [YouTube extract video transcript](https://redfox.hk/apis/Youtube/WYRKHK6C)
+- [YouTube search videos](https://redfox.hk/apis/Youtube/GC5SC5HS)
+- [YouTube get video details](https://redfox.hk/apis/Youtube/609DF2IR)
+- [YouTube get video comments](https://redfox.hk/apis/Youtube/WULKP6JP)
+
+#### Instagram
+
+- [Instagram unified search](https://redfox.hk/apis/Instagram/GM0TISWI)
+- [Instagram get user info](https://redfox.hk/apis/Instagram/3YJT69FL)
+- [Instagram get post details](https://redfox.hk/apis/Instagram/Z9M88QI8)
+- [Instagram get post comments](https://redfox.hk/apis/Instagram/U1SGKF2G)
+
+#### Autohome
+
+- [Autohome search content by keyword](https://redfox.hk/apis/qichezhijia/CI7VW144)
+
+#### Dongchedi
+
+- [Dongchedi search content by keyword](https://redfox.hk/apis/dongchedi/W86F8SSK)
+- [Dongchedi content details](https://redfox.hk/apis/dongchedi/QQ5E3EZ9)
+
+#### Yiche
+
+- [Yiche video details](https://redfox.hk/apis/yiche/3BXWEB6Y)
 
 #### AI search
 
@@ -220,13 +285,6 @@ https://clawhub.ai/user/redfox-data
 - [Kuaishou video download](https://redfox.hk/apis/tool/0ZIWOO8P)
 - [Bilibili video download](https://redfox.hk/apis/tool/CWX77QIH)
 - [Instagram video download](https://redfox.hk/apis/tool/UUSP1G1P)
-
-#### TikTok
-
-- [Get single post data](https://redfox.hk/apis/tool-tiktok/6SE9WIHJ)
-- [Get user homepage posts](https://redfox.hk/apis/tool-tiktok/R473NUE9)
-- [Keyword video search](https://redfox.hk/apis/tool-tiktok/PXZXY8KQ)
-- [Search TikTok accounts by keyword](https://redfox.hk/apis/tool-tiktok/20070019)
 
 #### More platform APIs
 
