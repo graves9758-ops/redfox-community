@@ -833,7 +833,11 @@ def main():
 
     acc = query_account(keyword, require_api_key(cli_key))
     if not acc:
-        print("未查询到该账号，请检查昵称或抖音号是否正确。")
+        print("未查询到该抖音账号信息")
+        print(f"- 抖音号 {keyword} 不存在或已被注销")
+        print("- 抖音号输入有误 — 请核对是否区分大小写，是否为正确的抖音号（非 UID、非昵称）")
+        print("- 尚未收录 — 当前仅收录了粉丝数≧1万的账号")
+        print("- 申请收录 — 如需收录请发送邮件至 redfoxdata@proton.me，申请通过后可进行每日定时数据追踪与分析")
         sys.exit(1)
 
     report = generate_report(acc)
