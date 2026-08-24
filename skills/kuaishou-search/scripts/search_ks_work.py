@@ -21,6 +21,7 @@ if sys.stderr.encoding and sys.stderr.encoding.lower() != "utf-8":
     sys.stderr.reconfigure(encoding="utf-8")
 
 API_URL = "https://redfox.hk/story/api/ksAllData/searchWork"
+SOURCE = "快手作品搜索-GitHub"
 
 # 排序方式枚举
 SORT_MAP = {
@@ -118,6 +119,7 @@ def search(keyword: str, sort: str, page: int = 1) -> dict:
         "sort":    sort,
         "page":    page,
         "size":    50,
+        "source":  SOURCE,
     }).encode("utf-8")
 
     req = urllib.request.Request(

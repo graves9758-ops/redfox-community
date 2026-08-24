@@ -17,6 +17,7 @@ import urllib.error
 from datetime import datetime
 
 API_URL = "https://redfox.hk/story/api/ksAllData/queryWorkDetail"
+SOURCE = "快手账号作品查询-GitHub"
 
 
 def get_api_key() -> str:
@@ -84,6 +85,7 @@ def query_work_detail(photo_id: str) -> dict:
 
     payload = {
         "photoId": photo_id,
+        "source": SOURCE,
     }
 
     req = urllib.request.Request(

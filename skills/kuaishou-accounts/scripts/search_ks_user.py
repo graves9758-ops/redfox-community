@@ -15,6 +15,7 @@ import urllib.request
 import urllib.error
 
 API_URL = "https://redfox.hk/story/api/ksAllData/searchUser"
+SOURCE = "快手账号搜索-GitHub"
 
 MAX_SIZE = 50  # 每页条数上限
 
@@ -72,6 +73,7 @@ def search_user(account_name: str, page: int = 1, page_size: int = 20) -> dict:
         "accountName": account_name,
         "page":        page,
         "pageSize":    page_size,
+        "source":      SOURCE,
     }
 
     req = urllib.request.Request(

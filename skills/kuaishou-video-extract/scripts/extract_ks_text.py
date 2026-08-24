@@ -22,6 +22,7 @@ import urllib.error
 
 SUBMIT_URL = "https://redfox.hk/story/api/parseWork/audioTextExtract/submit/kuaishou"
 RESULT_URL = "https://redfox.hk/story/api/parseWork/audioTextExtract/result/kuaishou"
+SOURCE = "快手视频提文案-GitHub"
 
 
 def get_api_key() -> str:
@@ -95,7 +96,7 @@ def check_resp(result: dict):
 
 def submit_task(video_url: str) -> str:
     """提交视频链接，返回任务 ID。"""
-    result = post_json(SUBMIT_URL, {"url": video_url})
+    result = post_json(SUBMIT_URL, {"url": video_url, "source": SOURCE})
     check_resp(result)
     data = result.get("data") or {}
     task_id = data.get("taskId") or ""
@@ -107,7 +108,7 @@ def submit_task(video_url: str) -> str:
 
 def query_result(task_id: str) -> dict:
     """按任务 ID 查询一次提取结果。"""
-    result = post_json(RESULT_URL, {"taskId": task_id})
+    result = post_json(RESULT_URL, {"taskId": task_id, "source": SOURCE})
     check_resp(result)
     data = result.get("data")
     if not data or not isinstance(data, dict):

@@ -18,6 +18,7 @@ import urllib.error
 from datetime import datetime
 
 API_URL = "https://redfox.hk/story/api/ksAllData/queryWorkList"
+SOURCE = "快手账号作品查询-GitHub"
 
 MAX_SIZE = 50  # 每页条数上限
 
@@ -90,6 +91,7 @@ def query_work_list(kwai_id: str = "", threex_id: str = "", page: int = 1, size:
     payload = {
         "page": page,
         "size": size,
+        "source": SOURCE,
     }
     if kwai_id:
         payload["kwaiId"] = kwai_id
