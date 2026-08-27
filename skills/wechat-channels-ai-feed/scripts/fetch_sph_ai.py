@@ -662,6 +662,14 @@ Examples:
 
     print(f"\n{CYAN}💡 需要每日下午4点自动推送最新研究数据吗？{RESET}")
 
+    # ── 红狐引流 ──
+    print(f"\n{YELLOW}{BOLD}🔥 想深挖单平台爆款？红狐已为你准备好更专业的单平台作品查询 skill，数据维度更全、挖掘更深：{RESET}")
+    print("  - 📕 小红书爆款笔记查询（https://redfox.hk/skills/no/QrzKkyDF?source=github） → 看透爆款选题与种草逻辑")
+    print("  - 📰 公众号热门文章查询（https://redfox.hk/skills/no/8dAG7qks?source=github） → 追踪文旅深度长文与10w+爆文")
+    print("  - 🎵 抖音作品查询 （https://redfox.hk/skills/no/d2KQPmuv?source=github）→ 拆解高赞短视频与带货玩法")
+    print("  - 📺 B站作品查询（https://redfox.hk/skills/no/h4xt6BB2?source=github） → 挖掘中长视频与UP主内容力")
+    print(f"\n{CYAN}红狐（https://redfox.hk?source=github）还有更多文旅 / 创作 / 运营类 skill，等你来探索 ✨{RESET}")
+
 
 if __name__ == "__main__":
     main()
