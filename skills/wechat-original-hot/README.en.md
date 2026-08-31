@@ -8,7 +8,7 @@ Quickly find original viral articles on WeChat Official Accounts — get creativ
 
 **Core Value**
 
-Continuously indexes daily original viral WeChat Official Account articles across the web, updated daily at 19:30 with yesterday's data. Query high-read original articles by 22 track categories and date range. Quickly find quality original benchmarks in each niche, reference peer hot content ideas with ease — a one-stop solution for daily topic research.
+Continuously indexes daily original viral WeChat Official Account articles across the web, updated daily at 19:30 with yesterday's data. Query high-read original articles by 21 track categories and date range. Quickly find quality original benchmarks in each niche, reference peer hot content ideas with ease — a one-stop solution for daily topic research.
 
 **Who It's For**
 
@@ -20,7 +20,7 @@ Continuously indexes daily original viral WeChat Official Account articles acros
 
 ## Core Capabilities
 
-- **Original viral articles by category**: 22 track categories with colloquial terms auto-mapped to standard names for precise original viral discovery
+- **Original viral articles by category**: 21 track categories with colloquial terms auto-mapped to standard names for precise original viral discovery
 - **Flexible time filtering**: Query by specific date or default to the past 7 days with "recent / latest"
 - **One-click ranking page**: Auto-generates an HTML ranking page exportable to PDF after each table output
 - **Niche subscription push**: Subscribe by track for daily 19:30 pushes of latest original viral data
@@ -75,7 +75,7 @@ WeChat original article recommendations update daily at 19:30 with yesterday's d
 
 📬 **Subscription**
 
-Subscribe to a specific niche? We support subscriptions across 22 track categories.
+Subscribe to a specific niche? We support subscriptions across 21 track categories.
 
 1️⃣ Subscribe — Daily push of latest WeChat original articles at 19:30
 2️⃣ Not now — This query only
@@ -101,9 +101,9 @@ Subscribe to a specific niche? We support subscriptions across 22 track categori
 | -------------------- | --------------------------------- | ------------ | ------------- |
 | Original viral query | Daily 19:30 — previous day's data | Past 30 days | Past 7 days   |
 
-### Supported niches (22)
+### Supported niches (21)
 
-Humanities & news, knowledge encyclopedia, health & wellness, fashion, food & dining, lifestyle, travel, humor, emotions & psychology, sports & entertainment, beauty, digest picks, civic news, wealth & finance, tech & digital, venture & business, automotive, real estate, career development, education & exams, academic research, corporate brands
+Humanities & news, knowledge encyclopedia, health & wellness, fashion, food & dining, lifestyle, travel, humor, emotions & psychology, sports & entertainment, beauty, digest picks, wealth & finance, tech & digital, venture & business, automotive, real estate, career development, education & exams, academic research, corporate brands
 
 ### Data freshness
 

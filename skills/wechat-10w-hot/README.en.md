@@ -9,7 +9,7 @@ Quickly find WeChat Official Account articles that reached **10w+** reads in a s
 **Core Value**
 
 - **Capture viral articles at a glance**: Daily indexing of **10w+** read articles across industries — instantly see where top traffic is heading
-- **Lock in vertical niches**: Query and subscribe to **10w+** updates across 22 track categories so your topics stay on course
+- **Lock in vertical niches**: Query and subscribe to **10w+** updates across 21 track categories so your topics stay on course
 - **Decode viral DNA**: Automatically break down title traits, content themes, posting timing, and account characteristics into reusable creative patterns
 - **Immersive viewing and export**: WeChat-green themed visual ranking pages with one-click PDF export for team sharing and offline review
 
@@ -24,7 +24,7 @@ Quickly find WeChat Official Account articles that reached **10w+** reads in a s
 ## Core Capabilities
 
 - **10w+ article recommendations**: Daily update of yesterday's latest WeChat Official Account **10w+** read article rankings
-- **Overall + niche rankings**: Browse all-category hot articles or focus on tech, finance, health, and 22 other verticals
+- **Overall + niche rankings**: Browse all-category hot articles or focus on tech, finance, health, and 21 other verticals
 - **Viral pattern analysis**: More than a data list — extract title, content, timing, and account patterns from real viral posts
 - **Visual ranking page**: Generate visual HTML layouts with image or PDF export
 - **Subscription push**: Subscribe by niche for daily scheduled pushes of the latest 10w+ articles (when the platform supports it)
@@ -91,7 +91,7 @@ Account characteristics: …
 
 📬 **Subscription**
 
-Subscribe to a specific niche? We support subscriptions across 22 track categories.
+Subscribe to a specific niche? We support subscriptions across 21 track categories.
 
 1️⃣ Subscribe — Daily push of latest 10w+ WeChat articles at 19:30
 2️⃣ Not now — This query only
@@ -118,9 +118,9 @@ Subscribe to a specific niche? We support subscriptions across 22 track categori
 | Overall      | Daily 19:30 — previous day's data | Past 30 days |
 | Niche tracks | Daily 19:30 — previous day's data | Past 30 days |
 
-### Supported niches (22)
+### Supported niches (21)
 
-Humanities & news, knowledge encyclopedia, health & wellness, fashion, food & dining, lifestyle, travel, humor, emotions & psychology, sports & entertainment, beauty, digest picks, civic news, wealth & finance, tech & digital, venture & business, automotive, real estate, career development, education & exams, academic research, corporate brands
+Humanities & news, knowledge encyclopedia, health & wellness, fashion, food & dining, lifestyle, travel, humor, emotions & psychology, sports & entertainment, beauty, digest picks, wealth & finance, tech & digital, venture & business, automotive, real estate, career development, education & exams, academic research, corporate brands
 
 ### Data freshness
 
