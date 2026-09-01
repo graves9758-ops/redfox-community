@@ -1,0 +1,67 @@
+{
+  "name": "抖音作品爬取",
+  "version": "3.0.0",
+  "description": "输入抖音账号名称或账号ID，通过红狐API广域库获取账号基础信息和近期作品内容列表（支持分页，最多50条/页）",
+  "tags": ["抖音", "作品爬取", "内容采集", "作品列表", "数据导出"],
+  "triggers": [
+    "爬取抖音作品",
+    "抖音作品列表",
+    "查看抖音视频",
+    "抖音内容采集",
+    "抓取抖音作品",
+    "导出抖音作品",
+    "下载抖音作品数据",
+    "抖音作品数据导出"
+  ],
+  "input_type": "account_identifier",
+  "input_fields": ["uniqueName", "userId", "shortId"],
+  "output_template": {
+    "sections": [
+      {
+        "order": 1,
+        "name": "账号基础信息",
+        "format": "表格（昵称/抖音号/UID/粉丝数/作品总数）"
+      },
+      {
+        "order": 2,
+        "name": "近期作品",
+        "format": "表格（#/发布时间/标题/点赞/评论/分享/收藏/互动/链接），支持分页，最多50条/页，按发布时间倒序"
+      },
+      {
+        "order": 3,
+        "name": "数据亮点",
+        "format": "互动量TOP3分析 + 账号特征分析"
+      },
+      {
+        "order": 4,
+        "name": "数据说明",
+        "format": "数据范围/数据来源"
+      }
+    ],
+    "footer": "爬取时间 | 数据来源：红狐API /story/api/dy/data/listWorkByAccount"
+  },
+  "data_source": "api_only",
+  "api_config": {
+    "base_url": "https://redfox.hk",
+    "endpoint": "/story/api/dy/data/listWorkByAccount",
+    "method": "POST",
+    "auth_header": "X-API-KEY",
+    "env_var": "REDFOX_API_KEY",
+    "success_code": 2000,
+    "resource_id": "/story/api/dy/data/listWorkByAccount"
+  },
+  "data_scope": {
+    "works_range": "近期作品数据，支持分页，最多50条/页",
+    "works_field": "list",
+    "works_sort": "按发布时间倒序",
+    "history_total_field": "total",
+    "pagination": {
+      "pageNum": "页码（从1开始，默认1）",
+      "pageSize": "每页大小（默认10，最大50）",
+      "startDate": "开始时间（格式：YYYY-MM-DD）",
+      "endDate": "结束时间（格式：YYYY-MM-DD）"
+    },
+    "account_info_source": "从作品项的author*字段提取（authorName/authorUniqueId/authorUid/authorSecUid/authorFansCount等）",
+    "work_item_fields": ["content", "likeCount", "commentCount", "shareCount", "collectCount", "publishTime", "opusUrl", "videoId", "videoType", "coverUrl", "duration", "tagList", "imageUrlList"]
+  }
+}

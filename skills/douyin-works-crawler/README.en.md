@@ -4,11 +4,11 @@
 
 ## Overview
 
-A Douyin content data retrieval tool. Enter a Douyin nickname or ID to instantly fetch account basic info and recent works (up to 50 items), including engagement data and direct video links—plus a TOP 3 engagement analysis and account feature summary to help you quickly understand the target account's content performance.
+A Douyin content data retrieval tool (v3.0, wide-area database edition). Enter a Douyin nickname or ID to instantly fetch account basic info and recent works (pagination supported, up to 50 items per page) from the RedFox API wide-area database, including engagement data and direct video links—plus a TOP 3 engagement analysis and account feature summary to help you quickly understand the target account's content performance.
 
 **Core Value**
 
-- **One-click works retrieval**: Enter a nickname or Douyin ID to automatically fetch account basic info (followers, total likes, total works, RedFox Index) and recent work lists.
+- **One-click works retrieval**: Enter a nickname or Douyin ID to automatically fetch account basic info (nickname, Douyin ID, UID, followers, total works) and recent work lists.
 - **Auto data highlight analysis**: TOP 3 engagement works analysis + account feature summary (posting frequency, content direction, engagement trends, viral patterns)—quickly identify content worth learning from.
 - **Direct work links**: Each work comes with a direct link—click to jump to the original video.
 
@@ -25,13 +25,13 @@ A Douyin content data retrieval tool. Enter a Douyin nickname or ID to instantly
 
 ### Core Capabilities
 
-- **Account info query**: Enter a Douyin nickname or ID to instantly fetch account basic data (followers, total likes, total works, RedFox Index, etc.).
-- **Recent works retrieval**: Automatically fetch recent works (up to 50 items), including likes, comments, shares, engagement counts, and direct work links.
-- **Data highlight analysis**: Output TOP 3 engagement works analysis + account feature analysis (posting frequency, engagement trends, viral patterns).
+- **Account info query**: Enter a Douyin nickname or ID to instantly fetch account basic data (nickname, Douyin ID, UID, followers, total works).
+- **Recent works retrieval**: Automatically fetch recent works (pagination supported, up to 50 items per page), including likes, comments, shares, collects, engagement counts, and direct work links.
+- **Data highlight analysis**: Output TOP 3 engagement works analysis + account feature analysis (posting frequency, content direction, engagement trends, viral patterns).
 
 ### Highlights
 
-- **Smart recognition**: Automatically detects input type (nickname/ID)—Chinese input uses nickname search, non-Chinese uses precise ID search.
+- **Smart recognition**: Automatically detects input type—pure numeric input uses precise userId search; Chinese or letter input uses uniqueName nickname search.
 - **Direct links**: Nickname links to account homepage; each work provides a direct video link.
 - **Safe & secure**: Data service-based access—no Douyin account login required.
 
@@ -64,12 +64,12 @@ Simply describe your query needs in natural language—no commands to memorize.
 
 After querying, you will receive the following structured results:
 
-**Account Basic Info**: Nickname (clickable to homepage), Douyin ID, region, followers, total likes, total works, RedFox Index
+**Account Basic Info**: Nickname (clickable to homepage), Douyin ID, UID, followers, total works
 
-**Recent Works List** (up to 50 items, reverse chronological):
+**Recent Works List** (pagination supported, up to 50 items per page, reverse chronological):
 
-| # | Publish Time | Title | Likes | Comments | Shares | Engagement | Link |
-| … | … | … | … | … | … | … | Clickable to original video |
+| # | Publish Time | Title | Likes | Comments | Shares | Collects | Engagement | Link |
+| … | … | … | … | … | … | … | … | Clickable to original video |
 
 **Data Highlights**: TOP 3 engagement works analysis + Account features (posting frequency, content direction, engagement trends, viral patterns)
 
@@ -91,10 +91,22 @@ After querying, you will receive the following structured results:
 
 ## Important Data Notes
 
-- The work list shows recent works only—up to 50 items in reverse chronological order, not the account's full historical works.
+- The work list shows recent works only—pagination supported (up to 50 items per page) in reverse chronological order, not the account's full historical works; the account's total historical works come from the API's `total` field.
+- Engagement counts are calculated manually: likes + comments + shares + collects.
+- Direct work links come from the API's `opusUrl` field.
+- Account basic info is extracted from the `author*` fields of each work item; there is no separate account info endpoint.
 - Number formatting: ≥10k displays as `x.xw` (e.g., 3.2w), ≥100M displays as `x.x亿`; <10k uses comma separators.
 - Douyin nicknames are not unique; nickname queries may return fuzzy matches—use Douyin ID for precise lookup.
-- All data comes exclusively from the data platform; no third-party supplementation or estimation.
+- All data comes exclusively from the RedFox API wide-area database; the wide-area database only covers trending data, so some accounts may not be available. No third-party supplementation or estimation.
 > 💼 另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise)对接咨询
+
+---
+
+## Data Source
+
+- **Sole data source**: RedFox Data API (wide-area database)
+- **Query endpoint**: `POST https://redfox.hk/story/api/dy/data/listWorkByAccount`
+- **Authentication**: `X-API-KEY` request header (env var `REDFOX_API_KEY`, format `ak_xxx`)
+- **Data scope**: Recent works, pagination supported (up to 50 items per page); the wide-area database only covers trending data.
 
 ---
