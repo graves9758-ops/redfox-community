@@ -140,20 +140,29 @@ npx skills add https://github.com/redfox-data/redfox-community/tree/main/skills/
 #### 抖音：
 
 - [获取抖音作品内容详情 (优质库)](https://redfox.hk/apis/douyin/0OT1E306)
+- [获取抖音作品内容详情 (广域库)](https://redfox.hk/apis/douyin/FK67XDVQ)
 - [获取抖音账号信息 (优质库)](https://redfox.hk/apis/douyin/XUT4CECZ)
 - [搜索关键词获取抖音账号 (优质库)](https://redfox.hk/apis/douyin/P5CHB3BZ)
+- [搜索关键词获取抖音账号 (广域库)](https://redfox.hk/apis/douyin/L6OUNUN1)
 - [搜索关键词获取抖音作品 (优质库)](https://redfox.hk/apis/douyin/774OBKK0)
+- [搜索关键词获取抖音作品 (广域库)](https://redfox.hk/apis/douyin/OWIBYU1V)
 - [获取抖音账号作品列表 (优质库)](https://redfox.hk/apis/douyin/QEQLCKD6)
+- [获取抖音账号作品列表 (广域库)](https://redfox.hk/apis/douyin/QSL2ZSXM)
 - [搜索关键词获取抖音 AI 作品(优质库)](https://redfox.hk/apis/douyin/I8P3HTVH)
 - [视频提文案-提交任务](https://redfox.hk/apis/douyin/8DCJW2ZF)
+- [抖音热门账号推荐](https://redfox.hk/apis/douyin/20060017)
+- [抖音每日热门作品榜](https://redfox.hk/apis/douyin/HUCIASU)
 
 #### 小红书：
 
+- [小红书热门账号推荐](https://redfox.hk/apis/xiaohongshu/20060016)
 - [获取小红书账号信息 (优质库)](https://redfox.hk/apis/xiaohongshu/4IVIDHEN)
 - [获取小红书作品内容详情 (优质库)](https://redfox.hk/apis/xiaohongshu/KR1LPTBF)
 - [搜索关键词获取小红书账号 (优质库)](https://redfox.hk/apis/xiaohongshu/439NFLBD)
 - [搜索关键词获取小红书作品 (优质库)](https://redfox.hk/apis/xiaohongshu/384C6W6B)
 - [搜索关键词获取小红书 AI 作品(优质库)](https://redfox.hk/apis/xiaohongshu/047JJ3UA)
+- [查询小红书账号作品列表（优质库](https://redfox.hk/apis/xiaohongshu/XN3ULENA)
+- [获取小红书一级评论（广域库）](https://redfox.hk/apis/xiaohongshu/5AM3X4HZ)
 - [小红书爆款笔记洞察](https://redfox.hk/apis/xiaohongshu/3X8FGEEM)
 - [小红书七日爆款笔记](https://redfox.hk/apis/xiaohongshu/LBYLC5AK)
 - [视频提文案-提交任务](https://redfox.hk/apis/xiaohongshu/DCZW5V7A)
@@ -161,19 +170,33 @@ npx skills add https://github.com/redfox-data/redfox-community/tree/main/skills/
 #### 公众号：
 
 - [获取公众号账号信息 (优质库)](https://redfox.hk/apis/gongzhonghao/6C4A77XR)
+- [获取公众号账号信息 (广域库)](https://redfox.hk/apis/gongzhonghao/KUQYSQNX)
 - [根据作品uuid获取公众号作品 (优质库)](https://redfox.hk/apis/gongzhonghao/XEO0QQNF)
+- [根据作品uuid获取公众号作品 (广域库)](https://redfox.hk/apis/gongzhonghao/1LDQ7E1C)
 - [搜索关键词获取公众号账号 (优质库)](https://redfox.hk/apis/gongzhonghao/DNVPQZEZ)
+- [搜索关键词获取公众号账号 (广域库)](https://redfox.hk/apis/gongzhonghao/5Y84NI1D)
 - [搜索关键词获取公众号作品 (优质库)](https://redfox.hk/apis/gongzhonghao/PW97QFBS)
+- [搜索关键词获取公众号作品 (广域库)](https://redfox.hk/apis/gongzhonghao/FVQ8D4W5)
 - [获取公众号账号作品列表 (优质库)](https://redfox.hk/apis/gongzhonghao/XNV30XZ3)
-- [根据作品地址获取公众号作品 (优质库)](https://redfox.hk/apis/gongzhonghao/VUTTKTP6)
+- [获取公众号账号作品列表 (广域库)](https://redfox.hk/apis/gongzhonghao/8IQD0BJC)
+- [根据作品地址获取公众号作品（实时）](https://redfox.hk/apis/gongzhonghao/I3CIBRI2)
 - [搜索关键词获取公众号 AI 创作作品 (优质库)](https://redfox.hk/apis/gongzhonghao/IE0887SO)
 
 #### 视频号：
 
-- [链接提文案-提交任务（视频号）](https://redfox.hk/apis/shipinhao/HR8CU3GG)
+- [搜索关键词获取视频号作品 (广域库)](https://redfox.hk/apis/shipinhao/E7G00COY)
+- [搜索关键词获取视频号账号 (广域库)](https://redfox.hk/apis/shipinhao/NL4I3533)
+- [获取视频号作品内容详情 (广域库)](https://redfox.hk/apis/shipinhao/OE4KUEUO)
+- [获取视频号账号作品列表 (广域库)](https://redfox.hk/apis/shipinhao/OVUTOTCV)
+- [视频号作品链接更新详情（实时）](https://redfox.hk/apis/shipinhao/OVUTOTCV)
+- [链接提文案-提交任务（视频号）](https://redfox.hk/apis/shipinhao/MH5YA9DL)
 
 #### 快手
 
+- [快手账号搜索（广域库）](https://redfox.hk/apis/kuaishou/GU17EVLV)
+- [快手按账号获取作品列表（广域库）](https://redfox.hk/apis/kuaishou/27DQ6SF9)
+- [快手按作品获取正文详情（广域库）](https://redfox.hk/apis/kuaishou/UOM99OQI)
+- [快手按关键词搜索作品（广域库）](https://redfox.hk/apis/kuaishou/ZWR31P2A)
 - [视频提文案-提交任务](https://redfox.hk/apis/kuaishou/8TUUDDCJ)
 
 #### 哔哩哔哩：
@@ -183,15 +206,57 @@ npx skills add https://github.com/redfox-data/redfox-community/tree/main/skills/
 - [搜索关键词获取哔哩哔哩账号 (优质库)](https://redfox.hk/apis/bilibili/ZXJLJQ21)
 - [搜索关键词获取哔哩哔哩作品 (优质库)](https://redfox.hk/apis/bilibili/LEN9QXR3)
 - [获取哔哩哔哩账号作品列表 (优质库)](https://redfox.hk/apis/bilibili/VPA67I98)
+- [获取哔哩哔哩音频地址](https://redfox.hk/apis/bilibili/9Q2PQBKU)
+- [链接提文案-提交任务](https://redfox.hk/apis/bilibili/SQ4FHFZX)
 
 #### 今日头条
 
 - [获取今日头条账号作品列表 (实时)](https://redfox.hk/apis/jinritoutiao/28CFGF5I)
 - [获取今日头条作品内容详情 (实时)](https://redfox.hk/apis/jinritoutiao/PAB6Z75Y)
+- [获取今日头条作品评论 (实时)](https://redfox.hk/apis/jinritoutiao/ZMFVK589)
+- [获取今日头条关键词搜索账号 (实时)](https://redfox.hk/apis/jinritoutiao/4QS1F8DE)
+- [获取今日头条账号作品列表 (实时)](https://redfox.hk/apis/jinritoutiao/R1IGR09H)
 
 #### Tiktok：
 
+- [TikTok获取单个作品数据](https://redfox.hk/apis/tool-tiktok/6SE9WIHJ)
+- [TikTok获取用户主页作品数据](https://redfox.hk/apis/tool-tiktok/R473NUE9)
+- [TikTok关键词视频搜索](https://redfox.hk/apis/tool-tiktok/PXZXY8KQ)
 - [Tiktok关键词搜索账号](https://redfox.hk/apis/tool-tiktok/20070019)
+
+#### X(Twitter):
+
+- [X(Twitter)获取评论](<https://redfox.hk/apis/X(Twitter)/ABJQXHUE>)
+- [X(Twitter)获取用户信息](<https://redfox.hk/apis/X(Twitter)/AKFHJMXQ>)
+- [X(Twitter)搜索推文](<https://redfox.hk/apis/X(Twitter)/5K5EG87P>)
+- [X(Twitter)获取单个推文详情](<https://redfox.hk/apis/X(Twitter)/QCP75W33>)
+
+#### Youtube:
+
+- [Youtube视频提文案](https://redfox.hk/apis/Youtube/WYRKHK6C)
+- [Youtube搜索视频](https://redfox.hk/apis/Youtube/GC5SC5HS)
+- [Youtube获取视频详情](https://redfox.hk/apis/Youtube/609DF2IR)
+- [Youtube获取视频评论](https://redfox.hk/apis/Youtube/WULKP6JP)
+
+#### Instagram:
+
+- [Instagram综合搜索](https://redfox.hk/apis/Instagram/GM0TISWI)
+- [Instagram获取用户信息](https://redfox.hk/apis/Instagram/3YJT69FL)
+- [Instagram获取帖子详情](https://redfox.hk/apis/Instagram/Z9M88QI8)
+- [Instagram获取帖子评论](https://redfox.hk/apis/Instagram/U1SGKF2G)
+
+#### 汽车之家:
+
+- [汽车之家关键词搜索作品](https://redfox.hk/apis/qichezhijia/CI7VW144)
+
+#### 懂车帝:
+
+- [懂车帝关键词搜索作品](https://redfox.hk/apis/dongchedi/W86F8SSK)
+- [懂车帝作品详情](https://redfox.hk/apis/dongchedi/QQ5E3EZ9)
+
+#### 易车:
+
+- [易车视频详情](https://redfox.hk/apis/yiche/3BXWEB6Y)
 
 #### AI搜索：
 
@@ -216,13 +281,6 @@ npx skills add https://github.com/redfox-data/redfox-community/tree/main/skills/
 - [快手视频下载](https://redfox.hk/apis/tool/0ZIWOO8P)
 - [哔哩哔哩视频下载](https://redfox.hk/apis/tool/CWX77QIH)
 - [Instagram视频下载](https://redfox.hk/apis/tool/UUSP1G1P)
-
-#### TikTok：
-
-- [获取单个作品数据](https://redfox.hk/apis/tool-tiktok/6SE9WIHJ)
-- [获取用户主页作品数据](https://redfox.hk/apis/tool-tiktok/R473NUE9)
-- [关键词视频搜索](https://redfox.hk/apis/tool-tiktok/PXZXY8KQ)
-- [TikTok关键词搜索账号](https://redfox.hk/apis/tool-tiktok/20070019)
 
 #### 更多平台API：
 
