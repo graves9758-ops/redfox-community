@@ -29,14 +29,6 @@ class DouyinWorksFetcher:
             "X-API-KEY": self.api_key
         }
 
-    def _is_chinese(self, text: str) -> bool:
-        """判断输入是否包含中文字符"""
-        return bool(re.search(r'[\u4e00-\u9fff]', text))
-
-    def _is_pure_numeric_id(self, text: str) -> bool:
-        """判断输入是否为纯数字ID（userId通常是纯数字uid）"""
-        return text.isdigit()
-
     def _make_request(self, endpoint: str, payload: Dict) -> Dict:
         """发送API请求"""
         url = f"{self.BASE_URL}{endpoint}"
@@ -81,15 +73,26 @@ class DouyinWorksFetcher:
                 "need_sync": bool (可选，未查询到账号时为True)
             }
         """
-        # 自动识别输入类型，构建请求参数
-        # 新接口参数：userId（纯数字uid）、uniqueName（昵称/展示ID）、shortId（短ID）
-        # 纯数字 → userId；含中文或字母 → uniqueName
-        if self._is_pure_numeric_id(account):
-            payload = {"userId": account, "source": "抖音作品爬取-GitHub"}
-            query_mode = "userId"
-        else:
-            payload = {"uniqueName": account, "source": "抖音作品爬取-GitHub"}
-            query_mode = "uniqueName"
+        # 中文昵称为非唯一标识，广域库大概率未收录，引导用户使用抖音号查询
+        if re.search(r'[\u4e00-\u9fff]', account):
+            print(f"⚠️ 检测到中文昵称输入：「{account}」")
+            print(f"   中文昵称不唯一，暂不支持昵称查询，请使用抖音号/抖音ID查询。")
+            print(f"   抖音号类型示例：")
+            print(f"     - 纯字母：luoyonghao")
+            print(f"     - 字母+数字：18561019369wn")
+            print(f"     - 纯数字：50734407794")
+            print(f"   抖音号查看方式：抖音APP → 目标账号主页 → 昵称下方")
+            print()
+            return {
+                "success": False,
+                "account": None,
+                "works": [],
+                "error": "中文昵称暂不支持查询，请使用抖音号/抖音ID"
+            }
+
+        # 统一使用 uniqueName 查询（用户输入的是抖音号或昵称，非内部UID）
+        payload = {"uniqueName": account, "source": "抖音作品爬取"}
+        query_mode = "uniqueName"
 
         print(f"🔍 正在查询抖音账号: {account} (模式: {query_mode})")
 

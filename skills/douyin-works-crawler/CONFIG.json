@@ -14,7 +14,7 @@
     "抖音作品数据导出"
   ],
   "input_type": "account_identifier",
-  "input_fields": ["uniqueName", "userId", "shortId"],
+  "input_fields": ["uniqueName"],
   "output_template": {
     "sections": [
       {

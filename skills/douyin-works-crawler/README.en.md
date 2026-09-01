@@ -4,11 +4,11 @@
 
 ## Overview
 
-A Douyin content data retrieval tool (v3.0, wide-area database edition). Enter a Douyin nickname or ID to instantly fetch account basic info and recent works (pagination supported, up to 50 items per page) from the RedFox API wide-area database, including engagement data and direct video links—plus a TOP 3 engagement analysis and account feature summary to help you quickly understand the target account's content performance.
+A Douyin content data retrieval tool. Enter a Douyin ID (pure letters, letters+digits, or pure digits) to instantly fetch account basic info and recent works (pagination supported, up to 50 items per page) from the RedFox API wide-area database, including engagement data and direct video links—plus a TOP 3 engagement analysis and account feature summary to help you quickly understand the target account's content performance. Chinese nickname queries are not supported and will be blocked with guidance to use the Douyin ID instead.
 
 **Core Value**
 
-- **One-click works retrieval**: Enter a nickname or Douyin ID to automatically fetch account basic info (nickname, Douyin ID, UID, followers, total works) and recent work lists.
+- **One-click works retrieval**: Enter a Douyin ID (pure letters, letters+digits, or pure digits) to automatically fetch account basic info (nickname, Douyin ID, UID, followers, total works) and recent work lists.
 - **Auto data highlight analysis**: TOP 3 engagement works analysis + account feature summary (posting frequency, content direction, engagement trends, viral patterns)—quickly identify content worth learning from.
 - **Direct work links**: Each work comes with a direct link—click to jump to the original video.
 
@@ -25,13 +25,13 @@ A Douyin content data retrieval tool (v3.0, wide-area database edition). Enter a
 
 ### Core Capabilities
 
-- **Account info query**: Enter a Douyin nickname or ID to instantly fetch account basic data (nickname, Douyin ID, UID, followers, total works).
+- **Account info query**: Enter a Douyin ID to instantly fetch account basic data (nickname, Douyin ID, UID, followers, total works).
 - **Recent works retrieval**: Automatically fetch recent works (pagination supported, up to 50 items per page), including likes, comments, shares, collects, engagement counts, and direct work links.
 - **Data highlight analysis**: Output TOP 3 engagement works analysis + account feature analysis (posting frequency, content direction, engagement trends, viral patterns).
 
 ### Highlights
 
-- **Smart recognition**: Automatically detects input type—pure numeric input uses precise userId search; Chinese or letter input uses uniqueName nickname search.
+- **Chinese nickname interception**: All queries use the uniqueName parameter; Chinese nickname input is blocked directly (no API call) with guidance to provide a Douyin ID.
 - **Direct links**: Nickname links to account homepage; each work provides a direct video link.
 - **Safe & secure**: Data service-based access—no Douyin account login required.
 
@@ -56,9 +56,9 @@ Simply describe your query needs in natural language—no commands to memorize.
 
 | Intent | Example phrase | Result |
 | ------ | -------------- | ------ |
-| Query account works | "Crawl Douyin works for 周幺姑家常菜" | Fetch account basic info + recent work list + data highlight analysis |
-| Precise query | "Query works for Douyin ID cdjjc028" | Precise ID match, avoiding nickname ambiguity |
-| Export data | "Export works data for 周幺姑家常菜" | Get structured works data |
+| Query account works | "Crawl Douyin works for luoyonghao" | Fetch account basic info + recent work list + data highlight analysis |
+| Precise query | "Query works for Douyin ID cdjjc028" | Precise ID match |
+| Export data | "Export works data for luoyonghao" | Get structured works data |
 
 ### Output Example
 
@@ -83,7 +83,7 @@ After querying, you will receive the following structured results:
 | Scenario | Role | Example question | Benefit |
 | -------- | ---- | ---------------- | ------- |
 | Brand competitor monitoring | Brand marketing manager | "Check the works data and engagement of this competitor Douyin account for me" | Stay on top of competitor content trends; optimize your own strategy |
-| MCN creator evaluation | MCN operations staff | "Show me this creator's followers, likes, and recent works data" | Quickly evaluate creator value; support signing decisions |
+| MCN creator evaluation | MCN operations staff | "Show me this creator's followers and recent works data" | Quickly evaluate creator value; support signing decisions |
 | Content optimization learning | Douyin creator | "Check the works of top accounts in my niche and analyze viral patterns" | Find content optimization directions; boost account engagement |
 | Data analysis reports | Data analyst | "Export works data for these Douyin accounts for analysis" | Efficiently fetch structured data to support analysis reports |
 
@@ -96,7 +96,7 @@ After querying, you will receive the following structured results:
 - Direct work links come from the API's `opusUrl` field.
 - Account basic info is extracted from the `author*` fields of each work item; there is no separate account info endpoint.
 - Number formatting: ≥10k displays as `x.xw` (e.g., 3.2w), ≥100M displays as `x.x亿`; <10k uses comma separators.
-- Douyin nicknames are not unique; nickname queries may return fuzzy matches—use Douyin ID for precise lookup.
+- Chinese nickname queries are not supported (nicknames are not unique, and the wide-area database rarely covers nicknames). Use the Douyin ID instead—found via Douyin APP → target account homepage → below the nickname; supported types: pure letters (e.g., luoyonghao), letters+digits (e.g., 18561019369wn), and pure digits (e.g., 50734407794).
 - All data comes exclusively from the RedFox API wide-area database; the wide-area database only covers trending data, so some accounts may not be available. No third-party supplementation or estimation.
 > 💼 另外红狐配套全量数据库可提供完整详实数据，如需了解采购方案，可前往红狐hub[企业服务](https://redfox.hk/dashboard/enterprise)对接咨询
 
