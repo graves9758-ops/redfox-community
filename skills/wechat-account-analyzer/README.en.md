@@ -26,8 +26,8 @@ WeChat Official Account Analyzer is an intelligent diagnostic tool. Simply enter
 
 ### Core Capabilities
 
-- 📊 **Four-Dimensional Scoring**: Content health + user engagement + core data + operational compliance, each scored on a 100-point scale
-- 🏆 **Smart Rating**: S/A/B/C/D/E six-level rating with industry benchmarking to understand your standing
+- 📊 **Four-Dimensional Scoring**: Diagnose content health / user engagement / core data / operational compliance, with v4.1 category-adaptive weighting (auto-tuned weights/thresholds for 6 account types) and explicit viral-hit (100k+ reads) scoring
+- 🏆 **Smart Rating**: S/A/B/C/D/E six-level rating (S ≥ 80) with industry benchmarking to understand your standing
 - 📈 **Content Data Display**: Views, likes, comments, and reposts for recent posts at a glance
 - 💡 **Optimization Suggestions**: Prioritized with "Problem → Suggestion → Expected Result" structure
 - 🔍 **Similar Account Discovery**: Auto-match peer accounts for horizontal comparison

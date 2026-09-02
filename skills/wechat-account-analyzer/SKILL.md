@@ -15,7 +15,7 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 
 - **核心价值**：告别主观判断，用数据驱动公众号运营决策。一次诊断即可看清账号全貌，明确优化方向
 - **适用对象**：公众号号主、新媒体运营、MCN机构、品牌方、内容创作者
-- **技术基础**：基于红狐数据平台，结合智能评分引擎自动生成诊断报告
+- **技术基础**：基于红狐API实时数据 + Python评分引擎 + Agent智能建议生成
 
 ---
 
@@ -25,8 +25,8 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 
 | 功能 | 说明 |
 |------|------|
-| 📊 **四维评分** | 内容健康度 + 用户活跃度 + 核心数据 + 运营规范性，每维百分制 |
-| 🏆 **智能评级** | S/A/B/C/D/E 六级评级（S≥85分）+ 行业对标分析 |
+| 📊 **四维度评分** | 四维度诊断评分（内容健康度/用户活跃度/核心数据/运营规范性），v4.1分类自适应（6类账号自动调整权重/阈值），爆款率（10万+）显式计分 |
+| 🏆 **智能评级** | S/A/B/C/D/E 六级评级（S≥80分）+ 行业对标分析 |
 | 📈 **数据可视化** | 近期作品数据表格，阅读/点赞/评论/在看一目了然 |
 | 💡 **优化建议** | 分紧急/重点/持续三级，每条建议含预期量化效果 |
 | 🔍 **相似账号** | 自动匹配同赛道对标账号，横向对比找差距 |
@@ -44,7 +44,7 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 
 ### 前置条件
 - 已安装 Python 3.8+
-- 已注册 [红狐Hub](https://redfox.hk?source=github) 账号并获取 API Key
+- 已注册 [红狐Hub](https://redfox.hk/) 账号并获取 API Key
 
 ### 安装步骤
 
@@ -58,8 +58,8 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 ### 配置 API Key
 
 #### 获取 API Key
-1. 访问 [红狐Hub 官网](https://redfox.hk/?source=github) 了解服务详情
-2. 前往 [注册页面](https://redfox.hk/login?source=github) 注册账号
+1. 访问 [红狐Hub 官网](https://redfox.hk/) 了解服务详情
+2. 前往 [注册页面](https://redfox.hk/login) 注册账号
 3. **新注册用户将获赠免费积分**，可立即开始使用
 4. 注册登录后，在个人中心获取 API Key，格式为 `ak_xxxxxxxx`
 
@@ -105,7 +105,7 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 
 **示例3：未查到账号**
 > 用户：诊断“不存在的公众号123”
-> AI：未查询到账号【不存在的公众号123】，该账号可能名称有误或暂无数据，请核实公众号名称后重试。
+> AI：未查询到账号【不存在的公众号123】，该账号可能尚未收录或名称有误，请核实公众号名称后重试。
 
 ### ⚠️ 输出格式强制规范
 
@@ -173,10 +173,16 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 公众号账号诊断/
 ├── SKILL.md                     # 技能说明文档（本文件）
 ├── scripts/
-│   └── wechat_analyzer.py       # 核心脚本：数据查询+评分引擎+报告生成
+│   ├── wechat_analyzer.py       # 入口点：argparse 命令路由（query/sync/generate_html）
+│   ├── api_client.py             # HTTP 通信层：红狐 API 凭证管理 + POST 请求封装
+│   ├── scoring.py                # 评分引擎：作品辅助函数 + 四维度评分 + 等级判定
+│   ├── analyzer.py               # 分析编排：单账号评分处理 + 查询/同步命令
+│   ├── report.py                 # HTML 报告：模板替换 + 单账号/多账号报告生成
+│   └── test_wechat_analyzer.py   # 单元测试：辅助函数 + 评分函数容错（42 个测试）
 ├── references/
 │   ├── core_workflow.md         # 核心工作流（Agent执行参考）
-│   └── workflow_guide.md        # 工作流详细指南
+│   ├── workflow_guide.md        # 工作流详细指南
+│   └── api_guide.md             # API接口与评分逻辑说明
 ├── assets/
 │   └── report_template.html     # 单账号HTML报告模板
 └── output/                      # 输出目录（运行时自动生成）
@@ -196,15 +202,20 @@ description: 公众号账号诊断工具是对任意公众号账号进行四维�
 
 ### 核心模块
 
-| 模块 | 职责 |
-|------|------|
-| `cmd_query` | API 查询 + 原始数据保存 |
-| `_analyze_single_account` | 四维度评分计算 + 结构化输出 |
-| `_score_content_health` | 内容健康度（6子项加权，0-10分） |
-| `_score_user_activity` | 用户活跃度（5子项加权，0-10分） |
-| `_score_core_data` | 核心数据表现（6子项，0-43分） |
-| `_score_operation_compliance` | 运营规范性（3子项，0-10分） |
-| `cmd_generate_html` | 单账号 HTML 报告生成 |
+| 模块文件 | 函数 | 职责 |
+|----------|------|------|
+| `wechat_analyzer.py` | `main` | argparse 入口，路由到各子命令 |
+| `api_client.py` | `https_post` | 红狐 API HTTP POST 请求封装 |
+| `api_client.py` | `_get_credential` | 环境变量 → shell 配置文件读取 API Key |
+| `scoring.py` | `_score_content_health` | 内容健康度（6子项加权，0-10分） |
+| `scoring.py` | `_score_user_activity` | 用户活跃度（5子项加权，0-10分） |
+| `scoring.py` | `_score_core_data` | 核心数据表现（6子项，0-31分） |
+| `scoring.py` | `_score_operation_compliance` | 运营规范性（3子项，0-10分） |
+| `analyzer.py` | `cmd_query` | API 查询 + 原始数据保存 |
+| `analyzer.py` | `_analyze_single_account` | 四维度评分计算 + 结构化输出 |
+| `analyzer.py` | `cmd_sync_notes` | 同步账号作品数据（订阅推送） |
+| `report.py` | `cmd_generate_html` | 单账号 HTML 报告生成 |
+| `report.py` | `cmd_generate_multi_html` | 多账号对比 HTML 报告生成 |
 
 ---
 
@@ -242,7 +253,7 @@ A: 数据来自红狐API，时效性取决于API缓存策略。报告末尾会�
 
 **Q6: 提示"未查询到该公众号信息"？**
 
-A: 可能原因：① 账号名称输入有误；② 该账号暂无相关数据。请检查名称准确性后重试。
+A: 可能原因：① 账号名称输入有误；② 该账号近期发文未达收录标准。请检查名称准确性后重试。
 
 **Q7: 数据看起来不对怎么办？**
 
@@ -252,5 +263,5 @@ A: 所有数据来自红狐API接口，诊断结果仅反映接口返回的数�
 
 ### 获取帮助
 
-- 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/?source=github)
+- 红狐Hub 官网：[https://redfox.hk/](https://redfox.hk/)
 - 技能实现细节：参见 [核心工作流](references/core_workflow.md)
