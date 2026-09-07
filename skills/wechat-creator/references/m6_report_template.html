@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>爆款封面分析报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 30px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        h1.report-title { color: #1a1a1a; margin-bottom: 30px; font-size: 28px; border-bottom: 3px solid #1890ff; padding-bottom: 15px; }
+        .info-bar { background: #e6f7ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
+        .info-bar strong { color: #1a1a1a; }
+        .style-card { background: #fafafa; border-radius: 12px; padding: 24px; margin: 20px 0; border: 1px solid #e8e8e8; }
+        .style-name { font-size: 20px; font-weight: 600; color: #1890ff; margin-bottom: 8px; }
+        .style-freq { display: inline-block; background: #e6f7ff; padding: 4px 12px; border-radius: 4px; font-size: 14px; color: #1890ff; margin-bottom: 12px; }
+        .style-core { color: #52c41a; font-weight: 500; margin: 12px 0; }
+        .style-features { color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 16px; }
+        .cover-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+        .cover-grid a { width: 180px; height: 77px; border-radius: 6px; overflow: hidden; display: block; }
+        .cover-grid img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+        .divider { border: none; border-top: 2px dashed #e8e8e8; margin: 40px 0; }
+        .plan-card { background: #fafafa; border-radius: 12px; padding: 24px; margin: 25px 0; border: 2px solid #1890ff; }
+        .plan-card h2 { font-size: 20px; font-weight: 600; color: #1890ff; margin-bottom: 12px; }
+        .plan-core { color: #52c41a; font-weight: 500; margin: 10px 0; font-size: 16px; }
+        .plan-card h3 { color: #333; margin: 20px 0 15px; font-size: 18px; }
+        .case-ref { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 20px; margin: 15px 0; display: flex; gap: 20px; align-items: flex-start; }
+        .case-ref .cover-wrap { width: 300px; height: 128px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block; flex-shrink: 0; }
+        .case-ref .cover-wrap img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+        .case-ref .info { flex: 1; }
+        .case-ref .info .title a { color: #1890ff; text-decoration: none; font-weight: 500; font-size: 18px; }
+        .case-ref .info .author { color: #666; font-size: 14px; margin: 8px 0; }
+        .case-ref .info .reads { display: inline-block; background: #fff7e6; color: #fa8c16; padding: 4px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+        .prompt-box { background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px; padding: 16px; margin: 20px 0; }
+        .prompt-box .label { color: #52c41a; font-weight: 600; margin-bottom: 8px; }
+        .prompt-box .content { color: #333; font-size: 14px; line-height: 1.8; background: #fff; padding: 12px; border-radius: 4px; word-break: break-all; }
+        .select-area { background: #fafafa; border-radius: 12px; padding: 24px; margin: 20px 0; border: 1px solid #e8e8e8; }
+        .select-area h2 { margin: 0 0 16px; font-size: 20px; color: #1890ff; }
+        .select-area .options { font-size: 15px; line-height: 2; color: #333; }
+        .select-area .options .option { margin-bottom: 8px; }
+        .select-area .options .hint { color: #666; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div class="container" id="app"></div>
+
+<script>
+// ====== 数据注入区域（Agent 只需替换此处的 JSON） ======
+var __REPORT_DATA__ = {
+    "keyword": "",
+    "analysisCount": 0,
+    "styles": [],
+    "plans": []
+};
+// ====== 数据注入区域结束 ======
+
+(function() {
+    var d = __REPORT_DATA__;
+    if (!d.keyword) { document.getElementById('app').innerHTML = '<p style="text-align:center;padding:60px;color:#999">等待数据注入...</p>'; return; }
+
+    var html = '';
+
+    // 标题
+    html += '<h1 class="report-title">📊 爆款封面分析报告</h1>';
+
+    // 信息栏
+    html += '<div class="info-bar"><strong>关键词：</strong>' + esc(d.keyword) + ' | <strong>数据来源：</strong>公众号爆款雷达接口 | <strong>分析数量：</strong>' + d.analysisCount + '张封面</div>';
+
+    // 风格类型
+    for (var i = 0; i < d.styles.length; i++) {
+        var s = d.styles[i];
+        html += '<div class="style-card">';
+        html += '<div class="style-name">' + esc(s.name) + '</div>';
+        html += '<span class="style-freq">出现频次：' + s.count + '/' + d.analysisCount + '</span>';
+        html += '<div class="style-core">核心视觉：' + esc(s.coreVisual) + '</div>';
+        html += '<div class="style-features">关键特征：' + esc(s.features) + '</div>';
+        if (s.covers && s.covers.length > 0) {
+            html += '<div class="cover-grid">';
+            var maxCovers = Math.min(s.covers.length, 5);
+            for (var j = 0; j < maxCovers; j++) {
+                var url = esc(s.covers[j]);
+                html += '<a href="' + url + '" target="_blank"><img src="' + url + '" alt="封面示例"></a>';
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+    }
+
+    // 分隔线
+    html += '<hr class="divider">';
+    html += '<h1 class="report-title">🎯 爆款封面设计方案</h1>';
+
+    // 设计方案
+    for (var i = 0; i < d.plans.length; i++) {
+        var p = d.plans[i];
+        var n = i + 1;
+        html += '<div class="plan-card">';
+        html += '<h2>方案' + n + '：' + esc(p.name) + '</h2>';
+        html += '<div class="plan-core">核心视觉：' + esc(p.coreVisual) + '</div>';
+
+        // 案例参考
+        html += '<h3>案例参考</h3>';
+        html += '<div class="case-ref">';
+        html += '<a href="' + esc(p.case.imageUrl) + '" target="_blank" class="cover-wrap"><img src="' + esc(p.case.imageUrl) + '" alt="封面图"></a>';
+        html += '<div class="info">';
+        html += '<div class="title"><a href="' + esc(p.case.url) + '" target="_blank">' + esc(p.case.title) + '</a></div>';
+        html += '<div class="author">作者：' + esc(p.case.author) + '</div>';
+        html += '<span class="reads">阅读：' + esc(p.case.reads) + '</span>';
+        html += '</div></div>';
+
+        // 生图提示词
+        html += '<h3>生图提示词</h3>';
+        html += '<div class="prompt-box">';
+        html += '<div class="label">公众号封面图</div>';
+        html += '<div class="content">' + esc(p.prompt) + '</div>';
+        html += '</div>';
+
+        html += '</div>';
+    }
+
+    // 方案选择区域
+    html += '<hr class="divider">';
+    html += '<div class="select-area">';
+    html += '<h2>🎯 请选择您想要的封面设计方案</h2>';
+    html += '<div class="options">';
+    var labels = ['一', '二', '三'];
+    for (var i = 0; i < d.plans.length; i++) {
+        html += '<div class="option"><strong>方案' + labels[i] + '：</strong>' + esc(d.plans[i].name) + ' - ' + esc(d.plans[i].coreVisual) + '</div>';
+    }
+    html += '<div class="hint">';
+    html += '<strong>💡 请选择：</strong><br>';
+    html += 'A. 回复"方案1"、"方案2"或"方案3"直接选择方案<br>';
+    html += 'B. 如果您有产品图、人物图或场景图想作为参考，可以和方案编号一起发送<br>';
+    html += '<span style="margin-left:24px">例如：直接发送图片 + "方案1"</span>';
+    html += '</div></div></div>';
+
+    document.title = '爆款封面分析报告 - ' + d.keyword + '主题';
+    document.getElementById('app').innerHTML = html;
+
+    function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+})();
+</script>
+</body>
+</html>
