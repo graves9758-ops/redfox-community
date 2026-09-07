@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{KEYWORD}} · 小红书低粉爆款笔记TOP{{TOP_N}}</title>
+    <!-- 使用多个CDN源，确保html2pdf.js能够加载 -->
+    <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+    <script>
+        // 如果第一个CDN加载失败，尝试第二个
+        if (typeof html2pdf === 'undefined') {
+            var script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            document.head.appendChild(script);
+        }
+        // 如果第二个也失败，尝试第三个
+        if (typeof html2pdf === 'undefined') {
+            var script = document.createElement('script');
+            script.src = 'https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
+            document.head.appendChild(script);
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.8;
+            padding: 12px;
+        }
+
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .brand-header {
+            background: linear-gradient(135deg, #fff 0%, #fffbf0 100%);
+            padding: 32px 24px 28px;
+            text-align: center;
+            border-bottom: 3px solid #ff2442;
+        }
+
+        .brand-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #ff2442;
+            margin-bottom: 8px;
+        }
+
+        .brand-subtitle {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .data-criteria {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+            padding: 2px 8px;
+            background: rgba(255, 36, 66, 0.06);
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sort-tags {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sort-tag {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: #ffeef0;
+            color: #ff2442;
+        }
+
+        .export-btn {
+            background: #ff2442;
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover {
+            background: #e01f3a;
+            transform: translateY(-1px);
+        }
+
+        .article-list {
+            padding: 0 20px 20px;
+        }
+
+        .article-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #f0f0f0;
+            transition: all 0.3s;
+        }
+
+        .article-item:last-child {
+            border-bottom: none;
+        }
+
+        .article-item:hover {
+            background: #fafafa;
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        .article-body {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .article-rank {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            background: #f5f5f5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .article-rank.top {
+            background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
+            color: white;
+            font-size: 16px;
+        }
+
+        .article-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .article-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .article-title:hover {
+            color: #ff2442;
+        }
+
+        .article-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .info-source-link {
+            text-decoration: none;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .info-source-link:hover {
+            color: #ff2442;
+        }
+
+        .info-stat {
+            color: #666;
+        }
+
+        .info-stat-value {
+            color: #ff2442;
+            font-weight: 500;
+        }
+
+        .article-analysis {
+            margin-top: 12px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #ff2442;
+        }
+
+        /* 作者头像样式 */
+        .author-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 4px;
+            object-fit: cover;
+        }
+
+        .author-avatar-placeholder {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #eee;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        .analysis-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #ff2442;
+            margin-bottom: 4px;
+        }
+
+        .analysis-text {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* 爆款规律分析样式 */
+        .insights-section {
+            padding: 20px 24px;
+            background: #fff5f6;
+            border-top: 1px solid #ffe5e8;
+        }
+
+        .insights-section .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ff2442;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .insights-content {
+            font-size: 13px;
+            color: #333;
+            line-height: 1.8;
+        }
+
+        .insights-content h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ff2442;
+            margin: 16px 0 8px 0;
+        }
+
+        .insights-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .insights-content ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 8px 0;
+        }
+
+        .insights-content li {
+            padding-left: 16px;
+            position: relative;
+            margin-bottom: 4px;
+        }
+
+        .insights-content li::before {
+            content: "•";
+            color: #ff2442;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .insights-content strong {
+            color: #ff2442;
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                border-radius: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="brand-header">
+            <div class="brand-title">{{KEYWORD}} · 小红书低粉爆款笔记TOP{{TOP_N}}</div>
+            <div class="brand-subtitle">{{UPDATE_TIME}} 更新</div>
+            <div class="data-criteria">数据查询标准：粉丝数低于5000、笔记点赞数大于500</div>
+        </div>
+
+        <div class="action-bar">
+            <div class="sort-tags">
+                <span class="sort-tag">互动数排序</span>
+            </div>
+            <button class="export-btn" onclick="exportToPDF()">📥 导出PDF</button>
+        </div>
+
+        <div class="article-list">
+            <!-- 文章列表将在这里动态插入 -->
+            {{ARTICLES_HTML}}
+        </div>
+    </div>
+
+    <script>
+        function exportToPDF() {
+            // 检查html2pdf是否加载成功
+            if (typeof html2pdf === 'undefined') {
+                alert('PDF导出功能暂时不可用，请检查网络连接后刷新页面重试');
+                return;
+            }
+
+            const element = document.querySelector('.container');
+            const button = document.querySelector('.export-btn');
+            button.style.display = 'none';
+
+            // 计算内容高度，决定PDF尺寸
+            const contentHeight = element.scrollHeight;
+            const contentWidth = element.scrollWidth;
+            // 根据内容比例决定纸张尺寸，mm为单位，1mm ≈ 3.78px
+            const pdfWidth = Math.max(210, Math.ceil(contentWidth / 3.78) + 20);
+            const pdfHeight = Math.max(297, Math.ceil(contentHeight / 3.78) + 20);
+
+            const opt = {
+                margin: 0,
+                filename: '{{KEYWORD}}_小红书爆款笔记.pdf',
+                image: { type: 'jpeg', quality: 0.95 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: [pdfWidth, pdfHeight],
+                    orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait'
+                },
+                pagebreak: { mode: 'none' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                button.style.display = 'block';
+            });
+        }
+
+        // 页面加载完成后检查CDN状态
+        window.addEventListener('load', function() {
+            if (typeof html2pdf === 'undefined') {
+                console.warn('html2pdf.js加载失败，PDF导出功能不可用');
+                const btn = document.querySelector('.export-btn');
+                if (btn) {
+                    btn.style.opacity = '0.5';
+                    btn.title = 'PDF导出功能不可用，请检查网络连接';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
